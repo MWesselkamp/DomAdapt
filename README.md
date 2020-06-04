@@ -1,5 +1,5 @@
 # DomAdapt
+
 Process-guided domain adaption with sparse data.
 
-This is a line from R studio.
-This is a line from GitHub.
+1. GPP data will be simulated from the semi-empirical PRELES model (PREdict Light-use Efficiency and Soil Water content).
