@@ -1,9 +1,19 @@
-#=====================#
-# Simulate GPP data   #
-#=====================#
+#===========================#
+# Latin Hypercube Sampling  #
+#===========================#
 
+# set seed for reproducability
+set.seed(123)
+
+# if not available,install packages
 if(!require(Rpreles)){devtools::install_github('MikkoPeltoniemi/Rpreles')}
+if(!require(lhs)){install.packages("lhs")}
+
+# load packages
 library(Rpreles)
+library(lhs)
+library(tidyverse)
+library(dplyr)
 
 # Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 #   Climatic input for four boreal sites in Finland.
@@ -12,14 +22,13 @@ library(Rpreles)
 load("data/EddyCovarianceDataBorealSites.RData")
 load("data/ParameterRangesPreles.Rdata")
 
-# Parameter default values directly taken from Rpreles.RMD,compare with ES values.
+# Parameter default values directly taken from Rpreles GitHub repository. Merge with ES values.
 pars_default <- t(data.frame(
   ## SITE AND SOIL RELATED
   soildepth = 413.0, ## 1 soildepth
   ThetaFC = 0.450, ## 2 ThetaFC
   ThetaPWP = 0.118, ## 3 ThetaPWP
   tauDrainage = 3 , ## 4 tauDrainage
-  
   ## GPP_MODEL_PARAMETERS
   beta = 0.748018, ## 5 betaGPP
   tau = 13.23383, ## 6 tauGPP
@@ -60,9 +69,10 @@ pars_default = data.frame(
 
 pars_default
 
-# Run model with this data at stand s1.
+# Run model exemplarly with default parameters at stand s1.
 o1 <- PRELES(PAR = s1$PAR, TAir = s1$TAir, VPD = s1$VPD, Precip = s1$Precip, CO2 = s1$CO2, fAPAR = s1$fAPAR,p = pars_default$Default)
 
+# Plot model predictions and s1 observations.
 par(mfrow=c(3,1))
 plot(o1$GPP, type = "l", col="darkgreen")
 lines(s1$GPPobs, type="l", col="green", lwd=0.5)
@@ -70,5 +80,15 @@ plot(o1$ET, type="l", col="red")
 lines(s1$ETobs, type="l", col="darkred")
 plot(o1$SW, type="l", col="blue") 
 
+# select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
+pars_names <- c("beta", "X0", "alpha", "gamma", "chi")
+pars_influential <- pars_default %>% 
+  filter(Name %in% pars_names)
 
-
+nsamples <- 20
+npars <- nrow(pars_influential)
+# uniformly distributed LHS
+lhs <- randomLHS(nsamples, npars)
+# Generate stratified parameter combinations by mapping lhs to data space.
+pars_lhs <- as.data.frame(t(apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min))))
+colnames(pars_lhs) <- pars_names
