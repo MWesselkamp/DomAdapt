@@ -67,8 +67,6 @@ pars_default = data.frame(
   Min = par$min[1:30],
   Max = par$max[1:30])
 
-pars_default
-
 # Run model exemplarly with default parameters at stand s1.
 o1 <- PRELES(PAR = s1$PAR, TAir = s1$TAir, VPD = s1$VPD, Precip = s1$Precip, CO2 = s1$CO2, fAPAR = s1$fAPAR,p = pars_default$Default)
 
@@ -81,14 +79,24 @@ lines(s1$ETobs, type="l", col="darkred")
 plot(o1$SW, type="l", col="blue") 
 
 # select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
-pars_names <- c("beta", "X0", "alpha", "gamma", "chi")
+pars_names <- c("beta", "X0", "gamma", "alpha", "chi") # so far, these have to be in the same order.
 pars_influential <- pars_default %>% 
   filter(Name %in% pars_names)
 
+# indices of influential parameters.
+inf_ind <- which(pars_default$Name %in% pars_influential$Name)
 nsamples <- 20
 npars <- nrow(pars_influential)
-# uniformly distributed LHS
+
+# generate uniformly distributed LHS
 lhs <- randomLHS(nsamples, npars)
 # Generate stratified parameter combinations by mapping lhs to data space.
-pars_lhs <- as.data.frame(t(apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min))))
-colnames(pars_lhs) <- pars_names
+pars_lhs <- t(apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min)))
+
+# Generate GPP data from stratified parameter combinations.
+
+# replace default parameter values
+pars <- pars_default$Default
+mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
+mat[inf_ind,] <- t(pars_lhs)
+
