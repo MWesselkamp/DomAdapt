@@ -15,6 +15,9 @@ library(lhs)
 library(tidyverse)
 library(dplyr)
 
+# get helper functions
+source("helpers.R")
+
 # Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 #   Climatic input for four boreal sites in Finland.
 #   Default parameter values and the minimum and maximum ranges used for sensitivity analysis.
@@ -100,3 +103,4 @@ pars <- pars_default$Default
 mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
 mat[inf_ind,] <- t(pars_lhs)
 
+GPP <- apply(mat, 2, function(y) get_GPP(params = y))
