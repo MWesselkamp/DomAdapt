@@ -103,4 +103,11 @@ pars <- pars_default$Default
 mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
 mat[inf_ind,] <- t(pars_lhs)
 
-GPP <- apply(mat, 2, function(y) get_GPP(params = y))
+output <- as.data.frame(matrix(unlist(apply(mat, 2, function(y) get_GPP(params = y))), nrow=nsamples*nrow(s1), ncol = 3))
+
+output <- output %>% 
+  mutate(sim = rep(1:nsamples, each = nrow(s1)),
+         DOY = rep(1:nrow(s1), times = nsamples))
+
+ggplot(output) +
+  geom_path(aes(x = DOY, y = V1, group = sim))
