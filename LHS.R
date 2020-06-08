@@ -72,6 +72,8 @@ pars_default = data.frame(
 
 # Run model exemplarly with default parameters at stand s1.
 o1 <- PRELES(PAR = s1$PAR, TAir = s1$TAir, VPD = s1$VPD, Precip = s1$Precip, CO2 = s1$CO2, fAPAR = s1$fAPAR,p = pars_default$Default)
+#reshape to array
+arr <- array(unlist(o1), dim = c(length(o1[[1]]),length(o1),  1))
 
 # Plot model predictions and s1 observations.
 par(mfrow=c(3,1))
@@ -86,10 +88,11 @@ pars_names <- c("beta", "X0", "gamma", "alpha", "chi") # so far, these have to b
 pars_influential <- pars_default %>% 
   filter(Name %in% pars_names)
 
-# indices of influential parameters.
-inf_ind <- which(pars_default$Name %in% pars_influential$Name)
-nsamples <- 20
-npars <- nrow(pars_influential)
+# Create useful variables.
+inf_ind <- which(pars_default$Name %in% pars_influential$Name) # indices of influential parameters.
+nsamples <- 20 # number of stratified samples
+npars <- nrow(pars_influential) # number of influential parameters
+nout <- 3 # number of output variables.
 
 # generate uniformly distributed LHS
 lhs <- randomLHS(nsamples, npars)
@@ -103,11 +106,10 @@ pars <- pars_default$Default
 mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
 mat[inf_ind,] <- t(pars_lhs)
 
-output <- as.data.frame(matrix(unlist(apply(mat, 2, function(y) get_GPP(params = y))), nrow=nsamples*nrow(s1), ncol = 3))
+output <- apply(mat, 2, function(y) get_GPP(params = y))
+plot_output(output, all = TRUE)
 
-output <- output %>% 
-  mutate(sim = rep(1:nsamples, each = nrow(s1)),
-         DOY = rep(1:nrow(s1), times = nsamples))
+# reshape to array
+output_arr <- array(unlist(output), dim = c(nrow(s1), nout,  nsamples))
+save(output_arr, file="Rdata/output_arr.Rdata")
 
-ggplot(output) +
-  geom_path(aes(x = DOY, y = V1, group = sim))
