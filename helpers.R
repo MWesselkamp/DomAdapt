@@ -3,7 +3,7 @@
 # =================#
 
 # a function that passes the input data (climate and parameters) to the RPreles function.
-get_GPP <- function(clim = s1, params){
+get_output <- function(clim, params){
   
   # the function takes:
   #   Climate data containing the variables PAR, TAir, VPS, Precip, CO2, fAPAR

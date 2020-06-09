@@ -8,12 +8,14 @@ set.seed(123)
 # if not available,install packages
 if(!require(Rpreles)){devtools::install_github('MikkoPeltoniemi/Rpreles')}
 if(!require(lhs)){install.packages("lhs")}
+if(!require(abind)){install.packages("abind")}
 
 # load packages
 library(Rpreles)
 library(lhs)
 library(tidyverse)
 library(dplyr)
+library(abind)
 
 # get helper functions
 source("helpers.R")
@@ -71,9 +73,10 @@ pars_default = data.frame(
   Max = par$max[1:30])
 
 # Run model exemplarly with default parameters at stand s1.
-o1 <- PRELES(PAR = s1$PAR, TAir = s1$TAir, VPD = s1$VPD, Precip = s1$Precip, CO2 = s1$CO2, fAPAR = s1$fAPAR,p = pars_default$Default)
+o1 <- get_output(clim=s1, params=pars_default$Default) # Works
 #reshape to array
 arr <- array(unlist(o1), dim = c(length(o1[[1]]),length(o1),  1))
+
 
 # Plot model predictions and s1 observations.
 par(mfrow=c(3,1))
@@ -93,11 +96,20 @@ inf_ind <- which(pars_default$Name %in% pars_influential$Name) # indices of infl
 nsamples <- 20 # number of stratified samples
 npars <- nrow(pars_influential) # number of influential parameters
 nout <- 3 # number of output variables.
+ndays <- nrow(s1)
 
 # generate uniformly distributed LHS
 lhs <- randomLHS(nsamples, npars)
 # Generate stratified parameter combinations by mapping lhs to data space.
 pars_lhs <- t(apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min)))
+
+# Create input array 
+e <- apply(pars_lhs, 1, function(x) rep(x, times = ndays))
+pars_arr <- array(e, dim = c(npars, ndays, nsamples))
+clim_arr <- array(rep(t(as.matrix(s1)), times=nsamples), dim = c(length(s1), ndays, nsamples))
+
+input_arr <- abind(clim_arr, pars_arr, along = 1)
+save(input_arr, file="Rdata/input_arr.Rdata")
 
 # Generate GPP data from stratified parameter combinations.
 
