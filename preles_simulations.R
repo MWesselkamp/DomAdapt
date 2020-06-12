@@ -81,7 +81,7 @@ get_lhs_output <- function(nsamples = 20, pars_lhs = parsLHS, pars = pars_def, c
   par_names <- dimnames(pars_lhs)[[2]]
   inf_ind <- which(as.character(pars$Name) %in% par_names) # indices of influential parameters.
   
-  pars <- pars_default$Default
+  pars <- pars$Default
   
   mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
   mat[inf_ind,] <- t(pars_lhs)
@@ -94,7 +94,7 @@ get_lhs_output <- function(nsamples = 20, pars_lhs = parsLHS, pars = pars_def, c
   for(i in 1:length(output)){
     
     write.table(matrix(unlist(output[[i]]), nrow = nrow(s1), ncol=var_out, dimnames = list(NULL, var_names)),
-               file = paste0("data/preles_out/sim",i, "_out"), row.names = F)
+               file = paste0("data/preles/sim",i, "_out"), row.names = F)
     
     
   }
@@ -105,14 +105,14 @@ get_lhs_output()
 
 write_input_data <- function(clim, pars_lhs = parsLHS){
   
-  len = nrow(clim)
+  len <-  nrow(clim)
+  pars_names <- dimnames(parsLHS)[[2]]
   
   for(i in 1:nrow(pars_lhs)){
-    write.table(sapply(pars_lhs[i,], function(x) cbind(clim, rep(x, times=len))),
-             file = paste0("data/preles_in/sim",i, "_in"), row.names = F)
+    write.table(cbind(clim, matrix(rep(parsLHS[1,], each=len), ncol = ncol(parsLHS), nrow=len, dimnames = list(NULL, pars_names))),
+             file = paste0("data/preles/sim",i, "_in"), row.names = F)
   }
 }
-
 
 write_input_data(clim=s1)
 
