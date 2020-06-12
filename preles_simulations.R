@@ -15,75 +15,104 @@ library(Rpreles)
 library(lhs)
 library(tidyverse)
 library(dplyr)
-library(abind)
 
 # get helper functions
 source("utils.R")
 
 # Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 #   Climatic input for four boreal sites in Finland.
-#   Default parameter values and the minimum and maximum ranges used for sensitivity analysis.
+load("data/borealsites/EddyCovarianceDataBorealSites.RData")
 
-load("data/EddyCovarianceDataBorealSites.RData")
-load("data/ParameterRangesPreles.Rdata")
 
-# Parameter default values directly taken from Rpreles GitHub repository. Merge with ES values.
-pars_default <- read.csv2("data/parameter_default_values.csv")
+get_default_parameters <- function(){
+  
+  #   Default parameter values and the minimum and maximum ranges used for sensitivity analysis in Masterthesis of Elisa Schneider.
+  load("data/ParameterRangesPreles.Rdata") # par
+  # Parameter default values directly taken from Rpreles GitHub repository. Merge with ES values.
+  pars_default <- read.csv2("data/parameter_default_values.csv")
 
-pars_default <- pars_default %>% 
-  mutate(Min = par$min[1:30],Max = par$max[1:30]) %>% 
-  rename(Name = X, Default = Value)
+  pars_default <- pars_default %>% 
+    mutate(Min = par$min[1:30],Max = par$max[1:30]) %>% 
+    rename(Name = X, Default = Value)
+  
+  return(pars_default)
+}
+
+pars_def <- get_default_parameters()
 
 # Run model exemplarly with default parameters at stand s1.
-o1 <- get_output(clim=s1, params=pars_default$Default) # Works
-#reshape to array
-arr <- array(unlist(o1), dim = c(length(o1[[1]]),length(o1),  1))
-
-
+o1 <- get_preles_output(clim=s1, params=pars_def$Default) # Works
 # Plot model predictions and s1 observations.
-par(mfrow=c(3,1))
-plot(o1$GPP, type = "l", col="darkgreen")
-lines(s1$GPPobs, type="l", col="green", lwd=0.5)
-plot(o1$ET, type="l", col="red")
-lines(s1$ETobs, type="l", col="darkred")
-plot(o1$SW, type="l", col="blue") 
+plot_preles_output(output = o1, nsamples = 1, all = F)
+
 
 # select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
-pars_names <- c("beta", "X0", "gamma", "alpha", "chi") # so far, these have to be in the same order.
-pars_influential <- pars_default %>% 
-  filter(Name %in% pars_names)
+# sample params in Latin Hypercube design
+sample_parameters <- function(pars_default, nsamples, LHS = "random", pars_names = c("beta", "X0", "gamma", "alpha", "chi") ){
+  
+  pars_influential <- pars_default %>% 
+    filter(Name %in% pars_names)
+  
+  # Create useful variable
+  npars <- nrow(pars_influential) # number of influential parameters
+  
+  # generate LHS values
+  if(LHS == "random"){ # uniformly distributed
+  lhs <- randomLHS(nsamples, npars)
+  }
+  
+  # Generate stratified parameter combinations by mapping lhs to data space.
+  pars_lhs <- t(apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min)))
+  
+  dimnames(pars_lhs) <- list(NULL, pars_names)
+  
+  return(pars_lhs)
+  
+}
 
-# Create useful variables.
-inf_ind <- which(pars_default$Name %in% pars_influential$Name) # indices of influential parameters.
-nsamples <- 20 # number of stratified samples
-npars <- nrow(pars_influential) # number of influential parameters
-nout <- 3 # number of output variables.
-ndays <- nrow(s1)
-
-# generate uniformly distributed LHS
-lhs <- randomLHS(nsamples, npars)
-# Generate stratified parameter combinations by mapping lhs to data space.
-pars_lhs <- t(apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min)))
-
-# Create input array 
-e <- apply(pars_lhs, 1, function(x) rep(x, times = ndays))
-pars_arr <- array(e, dim = c(npars, ndays, nsamples))
-clim_arr <- array(rep(t(as.matrix(s1)), times=nsamples), dim = c(length(s1), ndays, nsamples))
-
-input_arr <- abind(clim_arr, pars_arr, along = 1)
-save(input_arr, file="Rdata/input_arr.Rdata")
+parsLHS <- sample_parameters(pars_default = pars_def, nsamples = 20)
 
 # Generate GPP data from stratified parameter combinations.
+get_lhs_output <- function(nsamples = 20, pars_lhs = parsLHS, pars = pars_def, clim = s1){
+  
+  # This function generates and saves GPP, EV and SW data from climate and parameter lhs input.
+  
+  # Create useful variable
+  par_names <- dimnames(pars_lhs)[[2]]
+  inf_ind <- which(as.character(pars$Name) %in% par_names) # indices of influential parameters.
+  
+  pars <- pars_default$Default
+  
+  mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
+  mat[inf_ind,] <- t(pars_lhs)
+  
+  output <- apply(mat, 2, function(y) get_preles_output(clim = clim, params = y))
+  
+  var_out = 3
+  var_names = c("GPP", "ET", "SW")
+  
+  for(i in 1:length(output)){
+    
+    write.table(matrix(unlist(output[[i]]), nrow = nrow(s1), ncol=var_out, dimnames = list(NULL, var_names)),
+               file = paste0("data/preles_out/sim",i, "_out"), row.names = F)
+    
+    
+  }
+  
+}
 
-# replace default parameter values
-pars <- pars_default$Default
-mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
-mat[inf_ind,] <- t(pars_lhs)
+get_lhs_output()
 
-output <- apply(mat, 2, function(y) get_GPP(params = y))
-plot_output(output, all = TRUE)
+write_input_data <- function(clim, pars_lhs = parsLHS){
+  
+  len = nrow(clim)
+  
+  for(i in 1:nrow(pars_lhs)){
+    write.table(sapply(pars_lhs[i,], function(x) cbind(clim, rep(x, times=len))),
+             file = paste0("data/preles_in/sim",i, "_in"), row.names = F)
+  }
+}
 
-# reshape to array
-output_arr <- array(unlist(output), dim = c(nrow(s1), nout,  nsamples))
-save(output_arr, file="Rdata/output_arr.Rdata")
+
+write_input_data(clim=s1)
 
