@@ -18,7 +18,7 @@ library(dplyr)
 library(abind)
 
 # get helper functions
-source("helpers.R")
+source("utils.R")
 
 # Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 #   Climatic input for four boreal sites in Finland.
