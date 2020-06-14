@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-Dies ist eine temporäre Skriptdatei.
+This script reads in and processes data that have been generated
+and preprocessed in Rstudio.
+a) observed input (@profound database) and corresponding simulated output.
 """
 
 import os
@@ -25,6 +25,5 @@ for filename in filenames:
     path_in = os.path.join(data_dir, f"{filename}_in")
     path_out = os.path.join(data_dir, f"{filename}_out")
     data[f"{filename}"]['y'] = pd.read_csv(path_out)
-    # Doesn't work! Fix data in R.
     data[f"{filename}"]['X'] = pd.read_csv(path_in)
 
