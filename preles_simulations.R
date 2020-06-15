@@ -21,13 +21,17 @@ source("utils.R")
 
 # Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 #   Climatic input for four boreal sites in Finland.
-load("data/borealsites/EddyCovarianceDataBorealSites.RData")
+load("Rdata/borealsites/EddyCovarianceDataBorealSites.RData")
+load("Rdata/profound/profound_input.RData")
 
+# choose the data set to use (X or s1-4)
+climate_data <- X # profound input
+samples <- 10000
 
 get_default_parameters <- function(){
   
   #   Default parameter values and the minimum and maximum ranges used for sensitivity analysis in Masterthesis of Elisa Schneider.
-  load("data/ParameterRangesPreles.Rdata") # par
+  load("Rdata/ParameterRangesPreles.Rdata") # par
   # Parameter default values directly taken from Rpreles GitHub repository. Merge with ES values.
   pars_default <- read.csv2("data/parameter_default_values.csv")
 
@@ -38,17 +42,10 @@ get_default_parameters <- function(){
   return(pars_default)
 }
 
-pars_def <- get_default_parameters()
-
-# Run model exemplarly with default parameters at stand s1.
-o1 <- get_preles_output(clim=s1, params=pars_def$Default) # Works
-# Plot model predictions and s1 observations.
-plot_preles_output(output = o1, nsamples = 1, all = F)
-
 
 # select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
 # sample params in Latin Hypercube design
-sample_parameters <- function(pars_default, nsamples, LHS = "random", pars_names = c("beta", "X0", "gamma", "alpha", "chi") ){
+sample_parameters <- function(pars_default, nsamples = samples, LHS = "random", pars_names = c("beta", "X0", "gamma", "alpha", "chi") ){
   
   pars_influential <- pars_default %>% 
     filter(Name %in% pars_names)
@@ -70,10 +67,8 @@ sample_parameters <- function(pars_default, nsamples, LHS = "random", pars_names
   
 }
 
-parsLHS <- sample_parameters(pars_default = pars_def, nsamples = 20)
-
 # Generate GPP data from stratified parameter combinations.
-get_lhs_output <- function(nsamples = 20, pars_lhs = parsLHS, pars = pars_def, clim = s1){
+get_lhs_output <- function(nsamples = samples, pars_lhs = parsLHS, pars = pars_def, clim=climate_data, vars=c("GPP", "SW")){
   
   # This function generates and saves GPP, EV and SW data from climate and parameter lhs input.
   
@@ -86,24 +81,23 @@ get_lhs_output <- function(nsamples = 20, pars_lhs = parsLHS, pars = pars_def, c
   mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
   mat[inf_ind,] <- t(pars_lhs)
   
-  output <- apply(mat, 2, function(y) get_preles_output(clim = clim, params = y))
+  output <- apply(mat, 2, function(y) get_preles_output(clim = clim, params = y, return_cols = vars))
   
-  var_out = 3
-  var_names = c("GPP", "ET", "SW")
+  var_out = length(vars)
   
   for(i in 1:length(output)){
     
-    write.table(matrix(unlist(output[[i]]), nrow = nrow(s1), ncol=var_out, dimnames = list(NULL, var_names)),
+    write.table(matrix(unlist(output[[i]]), nrow = nrow(clim), ncol=var_out, dimnames = list(NULL, vars)),
                file = paste0("data/preles/sim",i, "_out"), row.names = F)
     
     
   }
   
+  return(output)
+  
 }
 
-get_lhs_output()
-
-write_input_data <- function(clim, pars_lhs = parsLHS){
+write_input_data <- function(clim=climate_data, pars_lhs = parsLHS){
   
   len <-  nrow(clim)
   pars_names <- dimnames(parsLHS)[[2]]
@@ -113,6 +107,4 @@ write_input_data <- function(clim, pars_lhs = parsLHS){
              file = paste0("data/preles/sim",i, "_in"), row.names = F)
   }
 }
-
-write_input_data(clim=s1)
 

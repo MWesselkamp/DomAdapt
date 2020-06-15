@@ -1,6 +1,7 @@
 library(tidyverse)
 library(dplyr)
 library(ProfoundData)
+library(zoo)
 
 # Download PROFOUND sqlite database to specified location and connect to database:
 #   downloadDatabase(location = "data")
@@ -64,17 +65,17 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
     meteo <- getData("METEOROLOGICAL", site = site, period = period)
     VPD <- meteo %>% 
       group_by(lubridate::date(date)) %>%
-      summarise(VPD = mean(vpdFMDS_hPa)/100) %>% # convert from hPA to Pa
+      summarise(VPD = mean(vpdFMDS_hPa)/10) %>% # convert from hPA to kPa
       select(VPD)
   }
   
   #CO2
   # CO2 on a yearly basis.
+  # NOTE: historical (and low) CO2 values result in negative GPP!!
   CO2_isimip <- getData("CO2_ISIMIP", site=site, period = period)
   CO2_isimip <- CO2_isimip[CO2_isimip$year %in% unique(clim_local$year),]
   CO2_isimip <- do.call(rbind, lapply(split(CO2_isimip, as.factor(CO2_isimip$year)), function(x) x[sample(nrow(x), 1),]))
   CO2 <- merge(CO2_isimip, clim_local, by = "year")$co2_ppm
-  print(length(CO2))
 
   # fAPAR (thanks to Elias Schneider)
   # assumes the same fAPAR values throughout a period of 8 days.
@@ -82,15 +83,17 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
   helper_d <- as.character(as.Date(modis$date[1])-5) # why 5?
   d <- c(helper_d,modis$date)[1:nrow(modis)]
   nd <- abs(round(as.numeric(difftime(d, modis$date))))
-  fAPAR <- rep(modis$fpar_percent, times=nd)
-  print(length(fAPAR))
+  # approximate missing values with na.approx from package zoo.
+  fAPAR <- na.approx(rep(modis$fpar_percent, times=nd))
 
   df <- data.frame(PAR=PAR, TAir=TAir, VPD=VPD, Precip=PRECIP, CO2=CO2, fAPAR=fAPAR, date = clim_local$date , DOY=clim_local$day)
   
   return(df)
 }
 
-X <- get_profound_input(period=period, site=site)
+X <- get_profound_input(period=period, site=site, VPDcalc = F)
+save(X, file="Rdata/profound/profound_input.Rdata")
+write.csv2(X, file="data/profound/profound_input", row.names = FALSE)
 
 #==================#
 # Output variables #
@@ -130,3 +133,5 @@ get_profound_output <- function(period, site, vars = c("GPP")){
 }
 
 y <- get_profound_output(period=period, site=site, vars=c("GPP", "SW"))
+save(y, file="Rdata/profound/profound_output.Rdata")
+write.csv2(y, file="data/profound/profound_output", row.names = FALSE)
