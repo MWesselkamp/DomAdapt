@@ -18,13 +18,13 @@ def get_data(data_dir = 'data\preles\exp'):
     filenames = [f'sim{i}' for i in range(1,filesnum+1)]
 
     for filename in filenames:
-        data[filename] = {}
+        data[filename] = [0,0]
         path_in = os.path.join(data_dir, f"{filename}_in")
         path_out = os.path.join(data_dir, f"{filename}_out")
-        data[f"{filename}"]['y'] = pd.read_csv(path_out, sep=";").to_numpy()
-        data[f"{filename}"]['X'] = pd.read_csv(path_in, sep=";").drop(columns=['date']).to_numpy()
+        data[f"{filename}"][0] = pd.read_csv(path_in, sep=";").drop(columns=['date']).to_numpy()
+        data[f"{filename}"][1] = pd.read_csv(path_out, sep=";").to_numpy()
         
-    return data
+    return data, filenames
 
 def merge_XY(data):
     """

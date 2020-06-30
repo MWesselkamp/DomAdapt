@@ -114,3 +114,4 @@ write_input_data <- function(clim=climate_data, pars_lhs = parsLHS){
   }
 }
 
+rm(climate_data)
