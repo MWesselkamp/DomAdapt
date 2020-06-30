@@ -6,8 +6,10 @@
 # As well as the range of functions we are going to use below.
 source("preles_simulations.R")
 
-# get the default value for the 30 Preles parameters.
-pars_def <- get_default_parameters()
+# get the values for the 30 Preles parameters:
+#   default values or calibrated parameters?
+pars_def <- get_parameters(default = TRUE)
+pars_calib <- get_parameters(default= FALSE)
 
 # sample a selection of these parameters (here: 5) in a latin hypercube design
 parsLHS <- sample_parameters(pars_default = pars_def, pars_names = c("beta", "X0", "gamma", "alpha", "chi"))
@@ -16,7 +18,7 @@ parsLHS <- sample_parameters(pars_default = pars_def, pars_names = c("beta", "X0
 # In the same step, write the output to files (in data/profound) for use in Python. 
 # Save the output for visualization in R.
 output <- get_lhs_output()
-save(output, file="Rdata/profound/output.Rdata")
+save(output, file="Rdata/profound/exp/output.Rdata")
 
 # write the input data (cliamte+parsLHS) to files for use in Pyhton.
 write_input_data()

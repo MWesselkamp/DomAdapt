@@ -1,6 +1,8 @@
 #===============#
 # Profound data #
 #===============#
+# get functions and variables
+source("preles_simulations.R")
 
 X <- read.csv2("data/profound/profound_input")
 y <- read.csv2("data/profound/profound_output")
@@ -18,8 +20,8 @@ for(i in 1:6){
 climate_data <- X
 climate_data$CO2 <- s1$CO2
 
-# Plot preles output for climate data X and default parameter values.
-o1 <- get_preles_output(clim=climate_data, params=pars_def$Default, return_cols = c("GPP", "SW")) # Works
+# Plot preles output for climate data X and calibrated parameter values.
+o1 <- get_preles_output(clim=climate_data, params=pars_calib$Default, return_cols = c("GPP", "SW")) # Works
 # Plot model predictions and s1 observations.
 plot_preles_output(output = o1, nsamples = 1, all = F)
 

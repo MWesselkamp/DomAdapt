@@ -26,20 +26,26 @@ load("Rdata/profound/profound_input.RData")
 
 # choose the data set to use (X or s1-4)
 climate_data <- X # profound input
-samples <- 10000
+samples <- 100
+data_dir <- "data/preles/exp/"
 
-get_default_parameters <- function(){
+get_parameters <- function(default=TRUE){
   
-  #   Default parameter values and the minimum and maximum ranges used for sensitivity analysis in Masterthesis of Elisa Schneider.
-  load("Rdata/ParameterRangesPreles.Rdata") # par
+  if(default){
+    #   Default parameter values and the minimum and maximum ranges used for sensitivity analysis in Masterthesis of Elisa Schneider.
+    load("Rdata/ParameterRangesPreles.Rdata")# par
+  }else{
+    # calibrated paramters (Elisa Schneider)
+    load("Rdata/OptimizedParametersPreles.Rdata")
+  }
   # Parameter default values directly taken from Rpreles GitHub repository. Merge with ES values.
-  pars_default <- read.csv2("data/parameter_default_values.csv")
+  pars <- read.csv2("data/parameter_default_values.csv")
 
-  pars_default <- pars_default %>% 
+  pars <- pars %>% 
     mutate(Min = par$min[1:30],Max = par$max[1:30]) %>% 
     rename(Name = X, Default = Value)
   
-  return(pars_default)
+  return(pars)
 }
 
 
@@ -88,7 +94,7 @@ get_lhs_output <- function(nsamples = samples, pars_lhs = parsLHS, pars = pars_d
   for(i in 1:length(output)){
     
     write.table(matrix(unlist(output[[i]]), nrow = nrow(clim), ncol=var_out, dimnames = list(NULL, vars)),
-               file = paste0("data/preles/sim",i, "_out"), row.names = F)
+               file = paste0(data_dir, "sim",i, "_out"), row.names = F, sep=";")
     
     
   }
@@ -104,7 +110,7 @@ write_input_data <- function(clim=climate_data, pars_lhs = parsLHS){
   
   for(i in 1:nrow(pars_lhs)){
     write.table(cbind(clim, matrix(rep(parsLHS[1,], each=len), ncol = ncol(parsLHS), nrow=len, dimnames = list(NULL, pars_names))),
-             file = paste0("data/preles/sim",i, "_in"), row.names = F)
+             file = paste0(data_dir, "sim",i, "_in"), row.names = F, sep=";")
   }
 }
 
