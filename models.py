@@ -25,7 +25,7 @@ class ConvNet(nn.Module):
  
         # fc for fully connected layer.
         # Flatten the tensor when coming from convolutional to linear layer
-        self.fc1 = nn.Linear(in_features = 8640, out_features = H)
+        self.fc1 = nn.Linear(in_features = 96, out_features = H)
         self.fc2 = nn.Linear(in_features = H, out_features = D_out)
     
     def forward(self, x):
@@ -35,10 +35,10 @@ class ConvNet(nn.Module):
         out = F.max_pool1d(F.sigmoid(out), kernel_size=2)
         
         # flatten tensor before passing to linear layer,
-        out = out.view(size=(-1,8640))
+        out = out.view(size=(-1,96))
         # Add two dense layers
         out = torch.sigmoid(self.fc1(out))
         out = torch.sigmoid(self.fc2(out))
         
         return out
-    
+     

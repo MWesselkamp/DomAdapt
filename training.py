@@ -11,17 +11,20 @@ import torch.optim as optim
 
 import numpy as np
 
-import utils
 import models
+import preprocessing
+
+#%% Load data
+X, Y = preprocessing.get_data()
+
+#x = torch.tensor(np.transpose(sims['sim1'][0])).type(dtype=torch.float)
+#y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
+
+#%% Normalize features
+X = preprocessing.normalize_features(X)
 
 
-sims,filenames = utils.get_data()
-x = torch.tensor(np.transpose(sims['sim1'][0])).type(dtype=torch.float)
-y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
-
-x = x.unsqueeze(0)
-
-#%% Training
+#%% Set up Training
 
 D_in, D_out, N, H = 12, 2, 730, 25
 
@@ -29,27 +32,58 @@ model = models.ConvNet(D_in, H, D_out)
 
 # loss function and an optimizer
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr = 1e-3)
+optimizer = optim.Adam(model.parameters(), lr = 1e-5)
+
+window_size=20
+
+#%% Restructure data to smaller batches
+X, Y = preprocessing.to_batches(X,Y, size= window_size)
+
+#%% Training
+counter = 0
 
 for epoch in range(2):
     
     running_loss = 0.0
     
-    for filename in filenames:
+    for i in range(len(X)):
         
-        inputs, labels = sims[filename]
+        inputs, labels = X[i], Y[i]
+        len_dat = inputs.shape[0]
         
-        x = torch.tensor(np.transpose(inputs)).type(dtype=torch.float).unsqueeze(0)
-        y = torch.tensor(np.transpose(labels)).type(dtype=torch.float)
+        #inputs = np.dstack([inputs[(i-window_size):i] for i in range(window_size, inputs.shape[0]-1)])
+        #labels = np.dstack([labels[i+1] for i in range(window_size, len_dat-1)])
         
-        optimizer.zero_grad()
+        for i in range(0,inputs.shape[2]):
+            
+            counter += 1
+            
+            x = torch.tensor(np.transpose(inputs[:,:,i])).type(dtype=torch.float).unsqueeze(0)
+            y = torch.tensor(np.transpose(labels[:,:,i])).type(dtype=torch.float)
         
-        outputs = model(x)
-        loss = criterion(outputs, y)
+            optimizer.zero_grad()
         
-        loss.backward()
-        optimizer.step()
+            outputs = model(x)
+            loss = criterion(outputs, y)
         
-        running_loss += loss.item()
+            loss.backward()
+            optimizer.step()
         
-        print(running_loss)
+            running_loss += loss.item()
+            
+            print(loss.item())
+        
+
+#%% Testing the model against data
+       
+        
+ # Accuracy:
+
+# Mean Absolute Error
+
+# Mean Squared Error
+
+# r²
+   
+        
+        
