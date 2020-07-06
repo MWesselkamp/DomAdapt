@@ -30,9 +30,9 @@ class ConvNet(nn.Module):
     
     def forward(self, x):
         out = self.conv1(x) # layer operation
-        out = F.max_pool1d(F.sigmoid(out), kernel_size=2) # transformation operation
+        out = F.max_pool1d(torch.sigmoid(out), kernel_size=2) # transformation operation
         out = self.conv2(out)
-        out = F.max_pool1d(F.sigmoid(out), kernel_size=2)
+        out = F.max_pool1d(torch.sigmoid(out), kernel_size=2)
         
         # flatten tensor before passing to linear layer,
         out = out.view(size=(-1,96))
@@ -41,4 +41,3 @@ class ConvNet(nn.Module):
         out = torch.sigmoid(self.fc2(out))
         
         return out
-     

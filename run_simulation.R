@@ -14,10 +14,10 @@ pars_calib <- get_parameters(default= FALSE)
 # sample a selection of these parameters (here: 5) in a latin hypercube design
 parsLHS <- sample_parameters(pars_default = pars_calib, nsamples= 10000, pars_names = c("beta", "X0", "gamma", "alpha", "chi"))
 
-
-# Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
-#   Climatic input for four boreal sites in Finland.
+# Load data 
+#   Climatic input for four boreal sites in Finland descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 load("Rdata/borealsites/EddyCovarianceDataBorealSites.RData")
+#   Climatic input extracted from the Profound data base.
 load("Rdata/profound/profound_input.RData")
 
 # choose the data set to use (X or s1-4)

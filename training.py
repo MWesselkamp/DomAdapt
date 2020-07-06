@@ -122,13 +122,20 @@ training_loss_all = np.sum(training_loss, axis=1)/training_loss.shape[1]
 validation_loss_all = np.sum(validation_loss, axis=1)/validation_loss.shape[1]
 
 plt.plot(range(709),training_loss[:,0], linewidth=0.7, label="Training loss")
-plt.plot(range(709), validation_loss[:],linewidth=0.7, label="Validation loss")
+plt.plot(range(709), validation_loss_all[:],linewidth=0.7, label="Validation loss")
 plt.xlabel("Day of Year")
 plt.ylabel("Mean squared error")
 plt.legend()
-#plt.suptitle("Training on example data")
 plt.title("Training on example data. \nNetwork: Two 1d-conv layers, two dense layers. \nData: 10000 samples")
-plt.show()
 
-       
-        
+
+#%% Plot predictions
+for param in model.parameters():
+    param.requires_grad = False
+
+Y_preds = np.zeros((X_test[0].shape[2],2))
+for i in range(batches):
+    x = torch.tensor(np.transpose(X_test[0][:,:,i]), requires_grad=False)
+    Y_preds[i] = model(x.unsqueeze(0).type(dtype=torch.float)).numpy()
+
+
