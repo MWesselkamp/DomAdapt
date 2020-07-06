@@ -19,16 +19,6 @@ library(dplyr)
 # get helper functions
 source("utils.R")
 
-# Load data descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
-#   Climatic input for four boreal sites in Finland.
-load("Rdata/borealsites/EddyCovarianceDataBorealSites.RData")
-load("Rdata/profound/profound_input.RData")
-
-# choose the data set to use (X or s1-4)
-climate_data <- X # profound input
-samples <- 100
-data_dir <- "data/preles/exp/"
-
 get_parameters <- function(default=TRUE){
   
   if(default){
@@ -51,7 +41,7 @@ get_parameters <- function(default=TRUE){
 
 # select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
 # sample params in Latin Hypercube design
-sample_parameters <- function(pars_default, nsamples = samples, LHS = "random", pars_names = c("beta", "X0", "gamma", "alpha", "chi") ){
+sample_parameters <- function(pars_default, nsamples, LHS = "random", pars_names = c("beta", "X0", "gamma", "alpha", "chi") ){
   
   pars_influential <- pars_default %>% 
     filter(Name %in% pars_names)
@@ -74,13 +64,14 @@ sample_parameters <- function(pars_default, nsamples = samples, LHS = "random", 
 }
 
 # Generate GPP data from stratified parameter combinations.
-get_lhs_output <- function(nsamples = samples, pars_lhs = parsLHS, pars = pars_def, clim=climate_data, vars=c("GPP", "SW")){
+get_lhs_output <- function(pars, data_dir, pars_lhs = parsLHS, clim=climate_data, vars=c("GPP", "SW")){
   
   # This function generates and saves GPP, EV and SW data from climate and parameter lhs input.
   
   # Create useful variable
   par_names <- dimnames(pars_lhs)[[2]]
   inf_ind <- which(as.character(pars$Name) %in% par_names) # indices of influential parameters.
+  nsamples = nrow(parsLHS)
   
   pars <- pars$Default
   
@@ -103,7 +94,7 @@ get_lhs_output <- function(nsamples = samples, pars_lhs = parsLHS, pars = pars_d
   
 }
 
-write_input_data <- function(clim=climate_data, pars_lhs = parsLHS){
+write_input_data <- function(data_dir, clim=climate_data, pars_lhs = parsLHS){
   
   len <-  nrow(clim)
   pars_names <- dimnames(parsLHS)[[2]]
@@ -113,5 +104,3 @@ write_input_data <- function(clim=climate_data, pars_lhs = parsLHS){
              file = paste0(data_dir, "sim",i, "_in"), row.names = F, sep=";")
   }
 }
-
-rm(climate_data)

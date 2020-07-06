@@ -17,7 +17,7 @@ from math import floor
 
 import utils
 
-def get_data(data_dir = 'data\preles\exp'):
+def get_data(data_dir = 'data\preles\exp', no_date = True):
 
     filesnum = int(len([name for name in os.listdir(data_dir)])/2)
     filenames = [f'sim{i}' for i in range(1,filesnum+1)]
@@ -29,7 +29,10 @@ def get_data(data_dir = 'data\preles\exp'):
         filename = filenames[i]
         path_in = os.path.join(data_dir, f"{filename}_in")
         path_out = os.path.join(data_dir, f"{filename}_out")
-        X[i] = pd.read_csv(path_in, sep=";").drop(columns=['date']).to_numpy()
+        if (no_date):
+            X[i] = pd.read_csv(path_in, sep=";").to_numpy()
+        else:
+            X[i] = pd.read_csv(path_in, sep=";").drop(columns=['date']).to_numpy()
         Y[i] = pd.read_csv(path_out, sep=";").to_numpy()
         
     return X, Y#, filenames

@@ -4,6 +4,10 @@ Created on Tue Jun 30 15:19:35 2020
 
 @author: marie
 """
+#%% Set working directory
+import os
+os.getcwd()
+os.chdir('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt')
 
 import torch
 import torch.nn as nn
@@ -16,7 +20,7 @@ import models
 import preprocessing
 
 #%% Load data
-X, Y = preprocessing.get_data()
+X, Y = preprocessing.get_data(data_dir = 'data\preles\pars_calibrated', no_date = True)
 
 #x = torch.tensor(np.transpose(sims['sim1'][0])).type(dtype=torch.float)
 #y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
@@ -26,7 +30,7 @@ X = preprocessing.normalize_features(X)
 
 #%% Set up Training
 # Layer dimensions and model
-D_in, D_out, N, H = 12, 2, 730, 25
+D_in, D_out, N, H = 12, 2, 730, 50
 model = models.ConvNet(D_in, H, D_out)
 
 # loss function and an optimizer
@@ -34,6 +38,9 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr = 1e-5)
 
 #%% Restructure data to smaller batches
+# In this step, the labels are lagged by one day, 
+#   such that the prediction of each batch will correspond to the next following day
+# The window size defines the batch size, that is the number of days to be considered for prediction
 window_size = 20
 X, Y = preprocessing.to_batches(X,Y, size = window_size)
 
@@ -75,8 +82,12 @@ for epoch in range(epochs):
             running_loss += loss.item()
             training_loss[i, j, epoch] = loss.item()
             
-            print(running_loss)
+            #print(running_loss)
         
+
+#%% Save the model
+PATH = './Pydata/simple_conv_net.pth'
+torch.save(model.state_dict(), PATH)
 
 #%% Testing the model against data
 
@@ -105,7 +116,19 @@ with torch.no_grad():
 # r²
 
 #%% Plot trainings- and validation loss.
+%matplotlib qt5
 
-plt.plot(training_loss[:,0,0])
-plt.plot(validation_loss[:,0])        
+training_loss_all = np.sum(training_loss, axis=1)/training_loss.shape[1]
+validation_loss_all = np.sum(validation_loss, axis=1)/validation_loss.shape[1]
+
+plt.plot(range(709),training_loss[:,0], linewidth=0.7, label="Training loss")
+plt.plot(range(709), validation_loss[:],linewidth=0.7, label="Validation loss")
+plt.xlabel("Day of Year")
+plt.ylabel("Mean squared error")
+plt.legend()
+#plt.suptitle("Training on example data")
+plt.title("Training on example data. \nNetwork: Two 1d-conv layers, two dense layers. \nData: 10000 samples")
+plt.show()
+
+       
         
