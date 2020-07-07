@@ -19,6 +19,7 @@ library(dplyr)
 # get helper functions
 source("utils.R")
 
+
 get_parameters <- function(default=TRUE){
   
   if(default){
@@ -63,44 +64,53 @@ sample_parameters <- function(pars_default, nsamples, LHS = "random", pars_names
   
 }
 
+
+# a function that passes the input data (climate and parameters) to the RPreles function.
+get_preles_output <- function(clim, params, return_cols){
+  
+  # the function takes:
+  #   Climate data containing the variables PAR, TAir, VPS, Precip, CO2, fAPAR
+  # it eturns:
+  #   Preles output, containing variables GPP, ET, SW.
+  
+  output <- PRELES(TAir = clim[,1], PAR = clim[,2], VPD = clim[,3], Precip = clim[,4], fAPAR = clim[,5], CO2 = clim[,6],  p = params, returncols = return_cols)
+  
+  return(output)
+  
+}
+
 # Generate GPP data from stratified parameter combinations.
-get_lhs_output <- function(pars, data_dir, pars_lhs = parsLHS, clim=climate_data, vars=c("GPP", "SW")){
+get_simulations <- function(pars, clim_data, data_dir, pars_lhs = parsLHS, vars=c("GPP", "SW")){
   
   # This function generates and saves GPP, EV and SW data from climate and parameter lhs input.
   
   # Create useful variable
   par_names <- dimnames(pars_lhs)[[2]]
   inf_ind <- which(as.character(pars$Name) %in% par_names) # indices of influential parameters.
-  nsamples = nrow(parsLHS)
+  nsamples = dim(clim_data)[1]
+  days = dim(clim_data)[2]
+  var_out = length(vars)
   
   pars <- pars$Default
   
+  outputs = vector(mode="list", length=nsamples*nsamples)
   mat <- matrix(pars, nrow = length(pars), ncol = nsamples)
   mat[inf_ind,] <- t(pars_lhs)
   
-  output <- apply(mat, 2, function(y) get_preles_output(clim = clim, params = y, return_cols = vars))
-  
-  var_out = length(vars)
-  
-  for(i in 1:length(output)){
-    
-    write.table(matrix(unlist(output[[i]]), nrow = nrow(clim), ncol=var_out, dimnames = list(NULL, vars)),
-               file = paste0(data_dir, "sim",i, "_out"), row.names = F, sep=";")
-    
-    
+  for(i in 1:nsamples){
+    clim <- clim_data[i,,]
+    for (j in 1:nsamples) {
+      pars <- mat[,j]
+      
+      output <- get_preles_output(clim = clim, params = pars, return_cols = vars)
+      
+      # write output (GPP, SW)
+      write.table(matrix(unlist(output), nrow = days, ncol=var_out, dimnames = list(NULL, vars)),
+                  file = paste0(data_dir, "sim",i,"_",j, "_out"), row.names = F, sep=";")
+      # write input (Climate data + Parameters)
+      write.table(cbind(clim, matrix(rep(pars[inf_ind], each=days), ncol = ncol(parsLHS), nrow=days, dimnames = list(NULL, par_names))),
+                  file = paste0(data_dir, "sim",i,"_",j, "_in"), row.names = F, sep=";")
+    }
   }
-  
-  return(output)
-  
-}
-
-write_input_data <- function(data_dir, clim=climate_data, pars_lhs = parsLHS){
-  
-  len <-  nrow(clim)
-  pars_names <- dimnames(parsLHS)[[2]]
-  
-  for(i in 1:nrow(pars_lhs)){
-    write.table(cbind(clim, matrix(rep(parsLHS[1,], each=len), ncol = ncol(parsLHS), nrow=len, dimnames = list(NULL, pars_names))),
-             file = paste0(data_dir, "sim",i, "_in"), row.names = F, sep=";")
-  }
+  #return(outputs)
 }

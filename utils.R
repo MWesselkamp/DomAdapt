@@ -2,19 +2,6 @@
 # Helper functions #
 # =================#
 
-# a function that passes the input data (climate and parameters) to the RPreles function.
-get_preles_output <- function(clim, params, return_cols){
-  
-  # the function takes:
-  #   Climate data containing the variables PAR, TAir, VPS, Precip, CO2, fAPAR
-  # it eturns:
-  #   Preles output, containing variables GPP, ET, SW.
-  
-  output <- PRELES(PAR = clim$PAR, TAir = clim$TAir, VPD = clim$VPD, Precip = clim$Precip, CO2 = clim$CO2, fAPAR = clim$fAPAR, p = params, returncols = return_cols)
-  
-  return(output)
-  
-}
 
 # function that plots the output data returned by Rpreles.
 plot_preles_output <- function(output, nsamples, vars = c("GPP", "SW"), all=FALSE){
