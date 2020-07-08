@@ -17,7 +17,22 @@ from math import floor
 
 import utils
 
-def get_data(data_dir = 'data\preles\exp', no_date = True):
+#%%
+def get_profound_data(data_dir = 'data\profound', ignore_env=True):
+    
+    filenames = [name for name in os.listdir(data_dir)]
+    
+    path_in = os.path.join(data_dir, filenames[0])
+    path_out = os.path.join(data_dir, filenames[1])
+    X = pd.read_csv(path_in, sep=";")
+    if(ignore_env):
+        X = X.drop(columns=['date', 'site']).to_numpy()
+    Y = pd.read_csv(path_out, sep=";").to_numpy()
+    
+    return X, Y
+    
+#%%
+def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):
 
     filesnum = int(len([name for name in os.listdir(data_dir)])/2)
     filenames = [f'sim{i}' for i in range(1,filesnum+1)]
@@ -29,19 +44,21 @@ def get_data(data_dir = 'data\preles\exp', no_date = True):
         filename = filenames[i]
         path_in = os.path.join(data_dir, f"{filename}_in")
         path_out = os.path.join(data_dir, f"{filename}_out")
-        if (no_date):
-            X[i] = pd.read_csv(path_in, sep=";").to_numpy()
-        else:
-            X[i] = pd.read_csv(path_in, sep=";").drop(columns=['date']).to_numpy()
+        X[i] = pd.read_csv(path_in, sep=";")
+        if(ignore_env):
+            X[i] = X[i].drop(columns=['date']).to_numpy()
         Y[i] = pd.read_csv(path_out, sep=";").to_numpy()
         
     return X, Y#, filenames
 
 
-
 #%% Normalize Features
 def normalize_features(X):
-    X = [utils.minmax_scaler(data) for data in X]
+    
+    if (X.ndim > 2):
+        X = [utils.minmax_scaler(data) for data in X]
+    else:
+        X = utils.minmax_scaler(X)
     
     return X
 

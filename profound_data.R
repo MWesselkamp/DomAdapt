@@ -6,7 +6,7 @@ library(zoo)
 # Download PROFOUND sqlite database to specified location and connect to database:
 #   downloadDatabase(location = "data")
 #   unzip("data/ProfoundData.zip")
-#   vignette("ProfoundData")
+vignette("ProfoundData")
 setDB("ProfoundData.sqlite")
 getDB()
 
@@ -14,10 +14,10 @@ getDB()
 overview <- browseData()
 # Use only stands with all data sets available and pick a site. 
 # Hyytiala
-site <- overview$site[!unlist(apply(overview, 1,  function(x) any(0 %in% x)))][3]
+sites <- overview$site[!unlist(apply(overview, 1,  function(x) any(0 %in% x)))]
 
 # Define a period (see Elias Schneider)
-period = c("2005-01-01", "2006-12-31")
+period = c("2001-01-01", "2008-12-31")
 
 #================#
 # Input variables#
@@ -30,6 +30,22 @@ period = c("2005-01-01", "2006-12-31")
 #   PRECIP: daily rainfall, mm
 #   CO2: air CO2
 #   fAPAR: fractions of absorbed PAR by the canopy, 0-1 unitless
+#VPD
+VPD_fun <- function(temperature, rel_hum){
+  
+  # this function takes the temperature in celsius degree and the relative humidity in percent and returns the vapor pressure deficit.
+  
+  # convert temperature from degree celsius to rankine
+  temperature <- temperature*9/5+491.67
+  
+  # compute the saturation pressure (https://en.wikipedia.org/wiki/Vapour-pressure_deficit)
+  vp_sat <- exp(-1.044*10^4/temperature-11.29-2.7*10^(-2)*temperature+1.289*10^(-5)*temperature^2-2.478*10^(-9)*temperature^3 + 6.456*log(temperature))
+  
+  # compute vapor pressure deficit
+  VPD <- vp_sat*(1-rel_hum/100)
+  
+  return(VPD)
+}
 
 get_profound_input <- function(period, site, VPDcalc="manual"){
 
@@ -41,23 +57,6 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
   #Transform units - Radiation: PAR https://en.wikipedia.org/wiki/Photosynthetically_active_radiation (Thanks to Elisa Schneider)
   joule2mol <- function(rad_Jcm2day) {((rad_Jcm2day* (2.2*(10^(-7))) / (299792458 * (6.626070150 * (10 ^(-34)))))/(6.02*(10^23))) / 0.0001}
   PAR <- joule2mol(clim_local$rad_Jcm2day)
-  
-  #VPD
-  VPD_fun <- function(temperature, rel_hum){
-  
-    # this function takes the temperature in celsius degree and the relative humidity in percent and returns the vapor pressure deficit.
-  
-   # convert temperature from degree celsius to rankine
-    temperature <- temperature*9/5+491.67
-  
-    # compute the saturation pressure (https://en.wikipedia.org/wiki/Vapour-pressure_deficit)
-    vp_sat <- exp(-1.044*10^4/temperature-11.29-2.7*10^(-2)*temperature+1.289*10^(-5)*temperature^2-2.478*10^(-9)*temperature^3 + 6.456*log(temperature))
-   
-    # compute vapor pressure deficit
-    VPD <- vp_sat*(1-rel_hum/100)
-   
-    return(VPD)
-  }
 
   if(VPDcalc=="manual"){
     VPD <- VPD_fun(temperature = TAir, rel_hum = clim_local$relhum_percent)
@@ -80,20 +79,24 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
   # fAPAR (thanks to Elias Schneider)
   # assumes the same fAPAR values throughout a period of 8 days.
   modis <- getData(dataset = "MODIS", site = site, period = period)
-  helper_d <- as.character(as.Date(modis$date[1])-5) # why 5?
-  d <- c(helper_d,modis$date)[1:nrow(modis)]
-  nd <- abs(round(as.numeric(difftime(d, modis$date))))
+  schaltjahre <- clim_local %>% group_by(year) %>% summarise(len = length(day)) %>% select(len) %>% mutate(len = ifelse(len==366, 6, 5))
+  d <- as.numeric(difftime(c(as.Date(modis$date[-1]), as.Date(modis$date[length(modis$date)])+schaltjahre$len[nrow(schaltjahre)]), as.Date(modis$date))) # why 5?
   # approximate missing values with na.approx from package zoo.
-  fAPAR <- na.approx(rep(modis$fpar_percent, times=nd))
+  fAPAR <- na.approx(rep(modis$fpar_percent, times=d))
 
-  df <- data.frame(PAR=PAR, TAir=TAir, VPD=VPD, Precip=PRECIP, CO2=CO2, fAPAR=fAPAR, date = clim_local$date , DOY=clim_local$day)
+  df <- data.frame(PAR=PAR, TAir=TAir, VPD=VPD, Precip=PRECIP, CO2=CO2, fAPAR=fAPAR, date = as.character(clim_local$date) , DOY=clim_local$day, site=as.character(site))
   
   return(df)
 }
 
-X <- get_profound_input(period=period, site=site, VPDcalc = F)
-save(X, file="Rdata/profound/profound_input.Rdata")
-write.csv2(X, file="data/profound/profound_input", row.names = FALSE)
+X <- get_profound_input(period=period, site=sites[1], VPDcalc = F)
+
+for(i in 2:length(sites)){
+  X <- rbind(X, get_profound_input(period=period, site=sites[i], VPDcalc = F))
+}
+
+save(X, file="Rdata/profound/profound_in.Rdata")
+write.table(X, file="data/profound/profound_in", sep = ";", row.names = FALSE)
 
 #==================#
 # Output variables #
@@ -132,6 +135,10 @@ get_profound_output <- function(period, site, vars = c("GPP")){
 
 }
 
-y <- get_profound_output(period=period, site=site, vars=c("GPP", "SW"))
-save(y, file="Rdata/profound/profound_output.Rdata")
-write.csv2(y, file="data/profound/profound_output", row.names = FALSE)
+y <- get_profound_output(period=period, site=sites[1], vars=c("GPP"))
+for(i in 2:length(sites)){
+  y <- rbind(y, get_profound_output(period=period, site=sites[i], vars=c("GPP")))
+}
+
+save(y, file="Rdata/profound/profound_out.Rdata")
+write.table(y, file="data/profound/profound_out", sep = ";",row.names = FALSE)

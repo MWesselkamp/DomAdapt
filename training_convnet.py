@@ -20,7 +20,7 @@ import models
 import preprocessing
 
 #%% Load data
-X, Y = preprocessing.get_data(data_dir = 'data\preles\pars_calibrated', no_date = True)
+X, Y = preprocessing.get_simulations(data_dir = 'data\preles\pars_calibrated', ignore_env = True)
 
 #x = torch.tensor(np.transpose(sims['sim1'][0])).type(dtype=torch.float)
 #y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
@@ -112,7 +112,7 @@ with torch.no_grad():
                 
  # Accuracy:
 # Mean Absolute Error
-# Mean Squared Error
+ # Mean Squared Error
 # r²
 
 #%% Plot trainings- and validation loss.
