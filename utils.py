@@ -38,3 +38,10 @@ def minmax_scaler(data):
     data_norm = scaler.fit_transform(data)
     return data_norm
 
+def percentage_error(targets, predictions, y_range):
+    
+    #p = (targets!=0).ravel()
+    #targets, predictions = targets[p], predictions[p]
+    pe = np.mean(np.abs((targets-predictions))/y_range)*100
+    
+    return pe
