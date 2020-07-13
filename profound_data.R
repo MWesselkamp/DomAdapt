@@ -47,6 +47,7 @@ VPD_fun <- function(temperature, rel_hum){
   return(VPD)
 }
 
+
 get_profound_input <- function(period, site, VPDcalc="manual"){
 
   clim_local <- getData("CLIMATE_LOCAL", site=site, period = period)
@@ -71,10 +72,13 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
   #CO2
   # CO2 on a yearly basis.
   # NOTE: historical (and low) CO2 values result in negative GPP!!
-  CO2_isimip <- getData("CO2_ISIMIP", site=site, period = period)
-  CO2_isimip <- CO2_isimip[CO2_isimip$year %in% unique(clim_local$year),]
-  CO2_isimip <- do.call(rbind, lapply(split(CO2_isimip, as.factor(CO2_isimip$year)), function(x) x[sample(nrow(x), 1),]))
-  CO2 <- merge(CO2_isimip, clim_local, by = "year")$co2_ppm
+  #CO2_isimip <- getData("CO2_ISIMIP", site=site, period = period)
+  #CO2_isimip <- CO2_isimip[CO2_isimip$year %in% unique(clim_local$year),]
+  #CO2_isimip <- do.call(rbind, lapply(split(CO2_isimip, as.factor(CO2_isimip$year)), function(x) x[sample(nrow(x), 1),]))
+  #CO2 <- merge(CO2_isimip, clim_local, by = "year")$co2_ppm
+  
+  # Make CO2 constant.
+  CO2 <- rep(380, times=nrow(clim_local))
 
   # fAPAR (thanks to Elias Schneider)
   # assumes the same fAPAR values throughout a period of 8 days.
@@ -89,7 +93,7 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
   return(df)
 }
 
-X <- get_profound_input(period=period, site=sites[1], VPDcalc = F)
+X <- get_profound_input(period=period, site=sites[1], VPDcalc = "manual")
 
 for(i in 2:length(sites)){
   X <- rbind(X, get_profound_input(period=period, site=sites[i], VPDcalc = F))
@@ -114,7 +118,7 @@ get_profound_output <- function(period, site, vars = c("GPP")){
   flux <-  getData("FLUX", site=site, period = period)
   GPP <- flux %>% 
     group_by(lubridate::date(date)) %>% 
-    summarise(GPP = mean(gppDtCutRef_umolCO2m2s1)) %>% 
+    summarise(GPP = mean(gppDtVutRef_umolCO2m2s1)) %>% 
     select(GPP)
   df <- data.frame(GPP=GPP)
 

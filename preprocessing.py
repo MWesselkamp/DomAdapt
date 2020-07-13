@@ -18,12 +18,16 @@ from math import floor
 import utils
 
 #%%
-def get_profound_data(data_dir = 'data\profound', ignore_env=True):
+def get_profound_data(data_dir = 'data\profound', ignore_env=True, preles=True):
     
     filenames = [name for name in os.listdir(data_dir)]
     
-    path_in = os.path.join(data_dir, filenames[0])
-    path_out = os.path.join(data_dir, filenames[1])
+    path_in = os.path.join(data_dir, filenames[1])
+    if(preles):
+        path_out = os.path.join(data_dir, filenames[0])
+    else:
+        path_out = os.path.join(data_dir, filenames[2])
+    
     X = pd.read_csv(path_in, sep=";")
     if(ignore_env):
         X = X.drop(columns=['date', 'site']).to_numpy()
