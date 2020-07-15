@@ -25,22 +25,24 @@ X = preprocessing.normalize_features(X)
 #%% Plot the data
 plt.plot(Y)
 # Use only GPP
-Y = Y[:,0]
+Y = Y[:,0].reshape(-1,1)
 
 #%% Divide into training and test
-splits = 4
+splits = 5
 kf = KFold(n_splits=splits, shuffle = True)
 kf.get_n_splits(X)
 
 #%% Train the Algorithm
-regressor = RandomForestRegressor(n_estimators=50, max_depth  = 6, criterion = "mse")
+regressor = RandomForestRegressor(n_estimators=1000, max_depth  = 5, criterion = "mse")
 
-fig, axs = plt.subplots(4)
+fig, axs = plt.subplots(splits)
 mse = np.zeros((splits))
 mpe = np.zeros((splits))
 
 i = 0
 for train_index, test_index in kf.split(X):
+    
+    print("TRAIN:", train_index, "TEST:", test_index)
     
     X_train, X_test = X[train_index], X[test_index]
     y_train, y_test = Y[train_index], Y[test_index]
@@ -61,6 +63,6 @@ for train_index, test_index in kf.split(X):
 print('Mean Percentage Error:', np.mean(mpe))
 print('Mean Squared Error:', np.mean(mse))
 
-fig.suptitle("Profound input and PREles GPP simulations")
+fig.suptitle(f"Profound input and PREles GPP simulations. \nRandomized 5-fold CV. \n MPE = {np.round(np.mean(mpe), 4)} \n MSE = {np.round(np.mean(mse), 4)} ")
 handles, labels = axs[1].get_legend_handles_labels()
 fig.legend(handles, labels, loc='center right')

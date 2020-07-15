@@ -3,11 +3,26 @@
 Created on Tue Jun 30 15:19:35 2020
 
 @author: marie
-"""
+
+This file can be used to create and display event files for tensorboard.
+
+To run file with tensorboard:
+    
+1. Open Anaconda Prompt
+2. Activate tensorenv
+3. run: python [directory]/[file]: python OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\[file]
+4. after sucessful execution, run: tensorboard --logdir OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\tensorboard_eventfiles
+
+If not used for tensorboard, uncomment the following to change working directory:
 #%% Set working directory
 import os
 os.getcwd()
 os.chdir('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt')
+
+"""
+
+import tensorflow as tf
+from torch.utils.tensorboard import SummaryWriter
 
 import torch
 import torch.nn as nn
@@ -16,6 +31,7 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import datetime
 
 import models
 import preprocessing
@@ -24,7 +40,7 @@ import utils
 from sklearn.model_selection import train_test_split
 
 #%% Load data
-X, Y = preprocessing.get_profound_data(data_dir = 'data\profound', ignore_env = True, preles=True)
+X, Y = preprocessing.get_profound_data(data_dir = 'OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound', ignore_env = True, preles=True)
 
 #x = torch.tensor(np.transpose(sims['sim1'][0])).type(dtype=torch.float)
 #y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
@@ -54,8 +70,21 @@ validation_loss = np.zeros((epochs,1))
 
 X_test = torch.tensor(X_test).type(dtype=torch.float)
 #y_test = torch.tensor(y_test).type(dtype=torch.float)
-
 yrange = np.ptp(y_test, axis=0)
+
+
+#%%
+## TensorBoard setup
+
+# Everything that should be displayed is encapsulated as a tf.summary object
+# Define the SummaryWriter, the key object for writing information to tensorboard
+print("Setting up tensorboard")
+
+# Sets up a timestamped log directory. By doing so, tensorboard treats each log as an individual run.
+logdir = r'C:\Users\marie\OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\tensorboard_eventfiles\linnet' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+writer = SummaryWriter(logdir)
+
+#%% Training
 
 for i in range(epochs):
         
@@ -83,22 +112,22 @@ for i in range(epochs):
         preds = model(X_test)
         validation_loss[i:] = utils.percentage_error(y_test, preds.detach().numpy().astype("float64") , y_range = yrange)
 
-        
+    # Writing to tensorboard
+        writer.add_scalars("Train", {"train":training_loss[i,:], "val":validation_loss[i,:]}, i)
+        writer.flush()
 
 
 #%% Save the model
-PATH = './Pydata/simple_lin_net.pth'
-torch.save(model.state_dict(), PATH)
+#PATH = './Pydata/simple_lin_net.pth'
+#torch.save(model.state_dict(), PATH)
 
 #%% Testing the model against data
 
-
-
 #%% Plot trainings- and validation loss.
-%matplotlib qt5
+#%matplotlib qt5
 
-plt.plot(training_loss[:,0])
-plt.plot(validation_loss[:,0])
+#plt.plot(training_loss[:,0])
+#plt.plot(validation_loss[:,0])
 
 #%% Plot predictions
 

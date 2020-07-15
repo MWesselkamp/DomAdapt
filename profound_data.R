@@ -14,7 +14,7 @@ getDB()
 overview <- browseData()
 # Use only stands with all data sets available and pick a site. 
 # Hyytiala
-sites <- overview$site[!unlist(apply(overview, 1,  function(x) any(0 %in% x)))]
+sites <- overview$site[!unlist(apply(overview[,c("CLIMATE_LOCAL", "FLUX", "METEOROLOGICAL", "MODIS", "SOILTS")], 1,  function(x) any(0 %in% x)))]
 
 # Define a period (see Elias Schneider)
 period = c("2001-01-01", "2008-12-31")
@@ -30,6 +30,11 @@ period = c("2001-01-01", "2008-12-31")
 #   PRECIP: daily rainfall, mm
 #   CO2: air CO2
 #   fAPAR: fractions of absorbed PAR by the canopy, 0-1 unitless
+
+# We will need the data sets:
+#   CLIMATE_LOCAL, FLUX, METEOROLOGICAL, MODIS ( SOIL_TS)
+#   
+
 #VPD
 VPD_fun <- function(temperature, rel_hum){
   

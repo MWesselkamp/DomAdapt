@@ -20,7 +20,7 @@ parsLHS <- sample_parameters(pars_default = pars_calib, nsamples = nsamples, par
 #   Climatic input for four boreal sites in Finland descending from the Master Thesis of Elias Schneider (based on Minunno et al. (2016)):
 load("Rdata/borealsites/EddyCovarianceDataBorealSites.RData")
 #   Climatic input extracted from the Profound data base.
-load("Rdata/profound/profound_input.RData")
+load("Rdata/profound/profound_in.RData")
 
 # choose the data set to use (X or s1-4)
 X <- X[,-7] # profound input
