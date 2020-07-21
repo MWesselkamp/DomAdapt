@@ -2,6 +2,7 @@ library(tidyverse)
 library(dplyr)
 library(ProfoundData)
 library(zoo)
+library(lubridate)
 
 # Download PROFOUND sqlite database to specified location and connect to database:
 #   downloadDatabase(location = "data")
@@ -12,7 +13,7 @@ getDB()
 
 # Explore the database
 overview <- browseData()
-# Use only stands with all data sets available and pick a site. 
+# Use only stands with all required data sets available and pick a site. 
 # Hyytiala
 sites <- overview$site[!unlist(apply(overview[,c("CLIMATE_LOCAL", "FLUX", "METEOROLOGICAL", "MODIS", "SOILTS")], 1,  function(x) any(0 %in% x)))]
 
@@ -69,7 +70,7 @@ get_profound_input <- function(period, site, VPDcalc="manual"){
   }else{
     meteo <- getData("METEOROLOGICAL", site = site, period = period)
     VPD <- meteo %>% 
-      group_by(lubridate::date(date)) %>%
+      group_by(date(date)) %>%
       summarise(VPD = mean(vpdFMDS_hPa)/10) %>% # convert from hPA to kPa
       select(VPD)
   }
@@ -104,8 +105,6 @@ for(i in 2:length(sites)){
   X <- rbind(X, get_profound_input(period=period, site=sites[i], VPDcalc = F))
 }
 
-save(X, file="Rdata/profound/profound_in.Rdata")
-write.table(X, file="data/profound/profound_in", sep = ";", row.names = FALSE)
 
 #==================#
 # Output variables #
@@ -123,8 +122,8 @@ get_profound_output <- function(period, site, vars = c("GPP")){
   flux <-  getData("FLUX", site=site, period = period)
   GPP <- flux %>% 
     group_by(lubridate::date(date)) %>% 
-    summarise(GPP = mean(gppDtVutRef_umolCO2m2s1)) %>% 
-    select(GPP)
+    summarise(GPP = mean(gppDtVutRef_umolCO2m2s1), year = unique(year)) %>% 
+    select(GPP, year)
   df <- data.frame(GPP=GPP)
 
   
@@ -133,7 +132,7 @@ get_profound_output <- function(period, site, vars = c("GPP")){
     soil_ts <-  getData("SOILTS", site=site, period = period)
     #   (or use porosity_percent from SOIL data?)
     SW <- soil_ts %>% 
-      group_by(lubridate::date(date)) %>% 
+      group_by(date(date)) %>% 
       summarise(SW = mean(swcFMDS1_degC)) %>% 
       select(SW)
     df$SW <- SW
@@ -149,5 +148,25 @@ for(i in 2:length(sites)){
   y <- rbind(y, get_profound_output(period=period, site=sites[i], vars=c("GPP")))
 }
 
+#===========================#
+# Detect missing GPP values #
+#===========================#
+
+# filter years where GPP measurements are not available
+# (hyytiala 2007 and le_bray 2002)
+GPPavg = y %>% 
+  group_by(site = X$site, year = year(date(X$date))) %>% 
+  summarise(avg = mean(GPP)) %>% 
+  filter(avg == 0)
+
+# remove selection from X and y.
+rem = which(((year(date(X$date)) %in% GPPavg$year) & (X$site %in% GPPavg$site)))
+X = X[-rem,]
+y = y[-rem,]
+
+
 save(y, file="Rdata/profound/profound_out.Rdata")
 write.table(y, file="data/profound/profound_out", sep = ";",row.names = FALSE)
+
+save(X, file="Rdata/profound/profound_in.Rdata")
+write.table(X, file="data/profound/profound_in", sep = ";", row.names = FALSE)

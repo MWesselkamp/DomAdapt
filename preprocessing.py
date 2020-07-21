@@ -18,15 +18,15 @@ from math import floor
 import utils
 
 #%%
-def get_profound_data(data_dir = 'data\profound', ignore_env=True, preles=True):
+def get_profound_data(data_dir = r'data\profound', ignore_env=True, preles=True):
     
-    filenames = [name for name in os.listdir(data_dir)]
+    filename = r"profound"
     
-    path_in = os.path.join(data_dir, filenames[1])
+    path_in = os.path.join(data_dir, f"{filename}_in")
     if(preles):
-        path_out = os.path.join(data_dir, filenames[0])
+        path_out = os.path.join(data_dir, 'preles_out')
     else:
-        path_out = os.path.join(data_dir, filenames[2])
+        path_out = os.path.join(data_dir, f"{filename}_out")
     
     X = pd.read_csv(path_in, sep=";")
     if(ignore_env):
@@ -35,6 +35,25 @@ def get_profound_data(data_dir = 'data\profound', ignore_env=True, preles=True):
     
     return X, Y
     
+
+#%%
+def get_borealsites_data(data_dir = r'data\borealsites', ignore_env=True, preles=True):
+    
+    filename = r"boreal_sites"
+    
+    path_in = os.path.join(data_dir, f"{filename}_in")
+    if(preles):
+        path_out = os.path.join(data_dir, 'preles_out')
+    else:
+        path_out = os.path.join(data_dir, f"{filename}_out")
+    
+    X = pd.read_csv(path_in, sep=";")
+    if(ignore_env):
+        X = X.drop(columns=['site']).to_numpy()
+    Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).to_numpy()
+    
+    return X, Y
+
 #%%
 def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):
 
