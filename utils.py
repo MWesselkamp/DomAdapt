@@ -51,3 +51,4 @@ def nash_sutcliffe(targets, predictions):
     nash = 1-np.sum(np.square(predictions-targets) / np.square(targets - np.mean(targets)))
     
     return nash
+

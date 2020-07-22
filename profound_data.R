@@ -122,8 +122,8 @@ get_profound_output <- function(period, site, vars = c("GPP")){
   flux <-  getData("FLUX", site=site, period = period)
   GPP <- flux %>% 
     group_by(lubridate::date(date)) %>% 
-    summarise(GPP = mean(gppDtVutRef_umolCO2m2s1), year = unique(year)) %>% 
-    select(GPP, year)
+    summarise(GPP = mean(gppDtVutRef_umolCO2m2s1)) %>% 
+    select(GPP)
   df <- data.frame(GPP=GPP)
 
   
@@ -147,23 +147,6 @@ y <- get_profound_output(period=period, site=sites[1], vars=c("GPP"))
 for(i in 2:length(sites)){
   y <- rbind(y, get_profound_output(period=period, site=sites[i], vars=c("GPP")))
 }
-
-#===========================#
-# Detect missing GPP values #
-#===========================#
-
-# filter years where GPP measurements are not available
-# (hyytiala 2007 and le_bray 2002)
-GPPavg = y %>% 
-  group_by(site = X$site, year = year(date(X$date))) %>% 
-  summarise(avg = mean(GPP)) %>% 
-  filter(avg == 0)
-
-# remove selection from X and y.
-rem = which(((year(date(X$date)) %in% GPPavg$year) & (X$site %in% GPPavg$site)))
-X = X[-rem,]
-y = y[-rem,]
-
 
 save(y, file="Rdata/profound/profound_out.Rdata")
 write.table(y, file="data/profound/profound_out", sep = ";",row.names = FALSE)

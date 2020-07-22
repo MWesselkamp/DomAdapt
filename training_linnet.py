@@ -34,39 +34,31 @@ import preprocessing
 import utils
 
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 
-import tensorflow as tf
-from torch.utils.tensorboard import SummaryWriter
 #%% Load data
-
-X_profound, Y_profound = preprocessing.get_profound_data(data_dir = r'data\profound', ignore_env = True, preles=False)
-X_borealsites, Y_borealsites = preprocessing.get_borealsites_data(data_dir = r'data\borealsites', ignore_env = True, preles=False)
-
-# Merge profound and preles data into one large data set.
-X = np.concatenate((X_profound, X_borealsites), axis=0)
-Y = np.concatenate((Y_profound, Y_borealsites), axis=0)
-
+X, Y= preprocessing.get_profound_data(dataset="trainval", data_dir = r'data\profound', to_numpy = True, simulation=False)
 X = preprocessing.normalize_features(X)
-
 
 #%% Set up Training
 # Layer dimensions and model
-D_in, D_out, N, H = 7, 1, 200, 100
+D_in, D_out, N, H = 7, 1, 150, 200
 model = models.LinNet(D_in, H, D_out)
 
 # loss function and an optimizer
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr = 1e-2)
-epochs = 3000
-history = 3
+optimizer = optim.Adam(model.parameters(), lr = 1e-1)
+epochs = 200
+history = 1
 
 #%% Split data into test and training samples
-X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, shuffle=True)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, shuffle=False)
 
-#%% Training
 # log trainings loss
-training_loss = np.zeros((epochs,1))
-validation_loss = np.zeros((epochs,1))
+training_loss_rmse = np.zeros((epochs,1))
+validation_loss_rmse = np.zeros((epochs,1))
+training_loss_mae = np.zeros((epochs,1))
+validation_loss_mae = np.zeros((epochs,1))
 
 X_test = torch.tensor(X_test).type(dtype=torch.float)
 #y_test = torch.tensor(y_test).type(dtype=torch.float)
@@ -74,21 +66,29 @@ yrange = np.ptp(y_test, axis=0)
 
 
 #%%
+tensorboard = False
+
 ## TensorBoard setup
+if (tensorboard):
+    
+    import tensorflow as tf
+    from torch.utils.tensorboard import SummaryWriter
+    # Everything that should be displayed is encapsulated as a tf.summary object
+    # Define the SummaryWriter, the key object for writing information to tensorboard
+    print("Setting up tensorboard")
 
-# Everything that should be displayed is encapsulated as a tf.summary object
-# Define the SummaryWriter, the key object for writing information to tensorboard
-print("Setting up tensorboard")
-
-# Sets up a timestamped log directory. By doing so, tensorboard treats each log as an individual run.
-logdir = r'C:\Users\marie\OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\tensorboard_eventfiles\linnet' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-writer = SummaryWriter(logdir)
+    # Sets up a timestamped log directory. By doing so, tensorboard treats each log as an individual run.
+    logdir = r'C:\Users\marie\OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\tensorboard_eventfiles\linnet' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    writer = SummaryWriter(logdir)
 
 #%% Training
 
 for i in range(epochs):
         
     # Training
+    # Subset data set to small batch in each epoch.
+    # If hisotry > 0, batches are extended by the specified lags.
+    
         subset = [i for i in random.sample(range(X_train.shape[0]), N) if i > history]
         subset_h = [item for sublist in [list(range(i-history,i)) for i in subset] for item in sublist]
         
@@ -103,15 +103,16 @@ for i in range(epochs):
         
         loss = criterion(output, y)
         #training_loss[i,:] = loss.item()
-        training_loss[i:] = utils.percentage_error(y.detach().numpy().astype("float64"), output.detach().numpy().astype("float64") , y_range = yrange)
+        training_loss_rmse[i:] = np.sqrt(metrics.mean_squared_error(y.detach().numpy().astype("float64"), output.detach().numpy().astype("float64")))
+        training_loss_mae[i:] = metrics.mean_absolute_error(y.detach().numpy().astype("float64"), output.detach().numpy().astype("float64"))
         
         loss.backward()
         optimizer.step()
     
-    # Validation
+    # Evaluate current model
         preds = model(X_test)
-        validation_loss[i:] = utils.percentage_error(y_test, preds.detach().numpy().astype("float64") , y_range = yrange)
-
+        validation_loss_rmse[i:] = np.sqrt(metrics.mean_squared_error(y_test, preds.detach().numpy().astype("float64")))
+        validation_loss_mae[i:] = metrics.mean_absolute_error(y_test, preds.detach().numpy().astype("float64"))
     # Writing to tensorboard
        # writer.add_scalars("Train", {"train":training_loss[i,:], "val":validation_loss[i,:]}, i)
        # writer.flush()
@@ -123,15 +124,35 @@ for i in range(epochs):
 
 #%% Testing the model against data
 
-#%% Plot trainings- and validation loss.
+#%% Plot trainings- and validation loss: RSME
 %matplotlib qt5
 
-plt.plot(training_loss[:,0], label="training loss")
-plt.plot(validation_loss[:,0], label="validation loss")
+plt.plot(training_loss_rmse[:,0], label="training loss")
+plt.plot(validation_loss_rmse[:,0], label="validation loss")
 plt.legend()
 plt.xlabel("Epochs")
-plt.ylabel("Mean Percentage Error")
-plt.suptitle(f"3-layer fully connected network / history {history} days\n Full sample size = {X.shape[0]} \n Batch size = {N*(history+1)}; Hidden size = 100 \n")
-#%% Plot predictions
+plt.ylabel("Root Mean Squared Error")
+plt.suptitle(f"3-layer fully connected network / history {history} days\n Full sample size = {X.shape[0]} \n Batch size = {N*(history+1)}; Hidden size = {H} \n")
 
+#%% Plot trainings- and validation loss: MAE
+plt.plot(training_loss_mae[:,0], label="training loss")
+plt.plot(validation_loss_mae[:,0], label="validation loss")
+plt.legend()
+plt.xlabel("Epochs")
+plt.ylabel("Mean Absolute Error")
+plt.suptitle(f"3-layer fully connected network / history {history} days\n Full sample size = {X.shape[0]} \n Batch size = {N*(history+1)}; Hidden size = {H} \n")
 
+#%% Plot model predictions to boreal sites data.
+
+X_borealsites, Y_borealsites = preprocessing.get_borealsites_data(data_dir = r'data\borealsites', to_numpy = True, preles=False)
+X = torch.tensor(preprocessing.normalize_features(X_borealsites)).type(dtype=torch.float)
+predictions = model(X)
+result = predictions.data.numpy()
+
+plt.plot(result, label = "predictions")
+plt.plot(Y_borealsites, label = "observations")
+plt.plot(Y_borealsites-result, label="error")
+plt.suptitle(f"Network predictions / history {history} days")
+plt.legend()
+plt.xlabel("Time")
+plt.ylabel("Growth Primary Production")

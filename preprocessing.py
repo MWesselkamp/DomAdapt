@@ -18,26 +18,52 @@ from math import floor
 import utils
 
 #%%
-def get_profound_data(data_dir = r'data\profound', ignore_env=True, preles=True):
+def get_profound_data(dataset, data_dir = r'data\profound', to_numpy=True, simulation=False):
     
-    filename = r"profound"
+    """
     
-    path_in = os.path.join(data_dir, f"{filename}_in")
-    if(preles):
-        path_out = os.path.join(data_dir, 'preles_out')
+    Args:
+        to_numpy (boolean): Default to true. If false, data is returned as Pandas data frame.
+        simulation (boolean): Default to false, will return the observed GPP (and SW) values. 
+                            If true, the simulations from preles will be returned.
+        dataset (char vector): Must take one of the values "full", "test" or "trainval" and specifies, 
+                            if the full dataset should be loaded ("full"), or the split version where "trainval" contains 
+                            all stands but the "test" stand.
+    
+    Returns:
+        X, Y (array/dataframe)
+    """
+    
+    if simulation:
+        filename = r"preles"
     else:
+        filename = r"profound"
+    
+    if(dataset=="full"):
+        path_in = os.path.join(data_dir, f"profound_in")
         path_out = os.path.join(data_dir, f"{filename}_out")
+    elif(dataset=="test") :
+        path_in = os.path.join(data_dir, f"profound_in_test")
+        path_out = os.path.join(data_dir, f"{filename}_out_test")
+    elif(dataset=="trainval"):
+        path_in = os.path.join(data_dir, f"profound_in_trainval")
+        path_out = os.path.join(data_dir, f"{filename}_out_trainval")
+    else:
+        raise ValueError("Don't know dataset.")
     
     X = pd.read_csv(path_in, sep=";")
-    if(ignore_env):
+    if(to_numpy):
         X = X.drop(columns=['date', 'site']).to_numpy()
-    Y = pd.read_csv(path_out, sep=";").to_numpy()
+        Y = pd.read_csv(path_out, sep=";").to_numpy()
+    else:
+        X = X.drop(columns=['date'])
+        Y = pd.read_csv(path_out, sep=";")
     
     return X, Y
     
 
 #%%
-def get_borealsites_data(data_dir = r'data\borealsites', ignore_env=True, preles=True):
+def get_borealsites_data(data_dir = r'data\borealsites', to_numpy=True, preles=True):
     
     filename = r"boreal_sites"
     
@@ -48,10 +74,12 @@ def get_borealsites_data(data_dir = r'data\borealsites', ignore_env=True, preles
         path_out = os.path.join(data_dir, f"{filename}_out")
     
     X = pd.read_csv(path_in, sep=";")
-    if(ignore_env):
+    if(to_numpy):
         X = X.drop(columns=['site']).to_numpy()
-    Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).to_numpy()
-    
+        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).to_numpy()
+    else:
+        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET'])
+        
     return X, Y
 
 #%%

@@ -1,28 +1,31 @@
 #===============#
-# Profound data #
+# Plot data #
 #===============#
-# get functions and variables
-source("preles_simulations.R")
+library(ggplot2)
 
-X <- read.csv2("data/profound/profound_input")
-y <- read.csv2("data/profound/profound_output")
-load("Rdata/borealsites/EddyCovarianceDataBorealSites.RData")
-
-# Plot: Profound vs. Boreal sites
-par(mfrow=c(2,3), xpd=F)
-for(i in 1:6){
-  plot(X[,i], type="l", col="blue", main = colnames(X[i]), ylab = "Value", xlab = "Day of year")
-  lines(s1[,i], type="l", col="red")
-  legend(x = "top",legend=c("BorealSites", "Profound"), col = c("red", "blue"), lty=1, lwd=1, horiz = T, xpd=T)
-
+# Plot the climatic measurements or the state variables of stands.
+plot_climate = function(vars, data){
+  
+  n_sites = length(unique(X$site))
+  data$Time = rep(1:(nrow(data)/n_sites), times = n_sites)
+  
+  for (i in 1:length(vars)){
+    
+    var = vars[i]
+    
+    p = ggplot(data) + 
+      geom_line(aes(x= Time, y=data[,c(var)], group=site, colour="Observations")) +
+      facet_wrap(.~site, scales = "free")  +
+      scale_color_manual(name="", values=c("blue")) +
+      ylab(var) +
+      theme_bw() +
+      theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "none")
+    
+    png(paste0("plots/data_",var, ".png"), width = 900, height=700)
+    print(p)
+    dev.off()
+  }
+  
 }
-
-climate_data <- X
-climate_data$CO2 <- s1$CO2
-
-# Plot preles output for climate data X and calibrated parameter values.
-o1 <- get_preles_output(clim=climate_data, params=pars_calib$Default, return_cols = c("GPP", "SW")) # Works
-# Plot model predictions and s1 observations.
-plot_preles_output(output = o1, nsamples = 1, all = F)
 
 
