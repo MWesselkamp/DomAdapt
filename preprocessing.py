@@ -72,14 +72,20 @@ def get_borealsites_data(data_dir = r'data\borealsites', to_numpy=True, preles=T
         path_out = os.path.join(data_dir, 'preles_out')
     else:
         path_out = os.path.join(data_dir, f"{filename}_out")
-    
+        
     X = pd.read_csv(path_in, sep=";")
+    # Remove nows with na values
+    rows_with_nan = pd.isnull(X).any(1).nonzero()[0]
+    X = X.drop(rows_with_nan)
+    
     if(to_numpy):
         X = X.drop(columns=['site']).to_numpy()
-        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).to_numpy()
+        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).drop(rows_with_nan).to_numpy()
     else:
-        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET'])
+        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).drop(rows_with_nan)
         
+    # Remove nows with na values
+
     return X, Y
 
 #%%
