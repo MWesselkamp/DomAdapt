@@ -49,13 +49,11 @@ class LinNet(nn.Module):
         super(LinNet, self).__init__()
         
         self.fc1 = nn.Linear(in_features = D_in, out_features = H)
-        self.fc2 = nn.Linear(in_features = H, out_features = H)
-        self.fc3 = nn.Linear(in_features = H, out_features = D_out)
+        self.fc2 = nn.Linear(in_features = H, out_features = D_out)
         
     def forward(self, x):
         out = F.relu(self.fc1(x))
-        out = F.relu(self.fc2(out))
-        out = self.fc3(out)
+        out = self.fc2(out)
         
         return out
     

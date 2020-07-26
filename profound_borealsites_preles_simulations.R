@@ -13,9 +13,12 @@ library(ggplot2)
 source("preles_simulations.R")
 
 load("Rdata/profound/profound_in.Rdata") # X
+load("Rdata/profound/profound_in_test.Rdata") # X_test
+load("Rdata/profound/profound_in_trainval.Rdata") # X
 load("Rdata/profound/profound_out.Rdata") # y
 
 params = get_parameters(default = FALSE)
+#X <- X_test
 
 output <- PRELES(TAir = X$TAir, PAR = X$PAR, VPD = X$VPD, Precip = X$Precip, fAPAR = X$fAPAR, CO2 = X$CO2,  p = params$Default, returncols = c("GPP", "SW", "ET"))
 
@@ -31,8 +34,8 @@ ggplot(X_full) +
   scale_color_manual(name="", values=c("black", "red"))
 
 y_preles = as.data.frame(do.call(cbind, output))
-save(y_preles, file="Rdata/profound/preles_out.Rdata")
-write.table(y_preles, file="data/profound/preles_out", sep = ";",row.names = FALSE)
+save(y_preles, file="Rdata/profound/preles_out_trainval.Rdata")
+write.table(y_preles, file="data/profound/preles_out_trainval", sep = ";",row.names = FALSE)
 
 #====================#
 ## Boreal Sites data #
@@ -40,6 +43,9 @@ write.table(y_preles, file="data/profound/preles_out", sep = ";",row.names = FAL
 
 load("Rdata/borealsites/boreal_sites_in.Rdata") # X
 load("Rdata/borealsites/boreal_sites_out.Rdata") # y
+
+# approximate VPD for getting tht output. These rows will be removed in Python again.
+boreal_sites_in$VPD <- zoo::na.approx(boreal_sites_in$VPD)
 
 output <- PRELES(TAir = boreal_sites_in$TAir, PAR = boreal_sites_in$PAR, VPD = boreal_sites_in$VPD, Precip = boreal_sites_in$Precip, fAPAR = boreal_sites_in$fAPAR, CO2 = boreal_sites_in$CO2,  p = params$Default, returncols = c("GPP", "SW", "ET"))
 

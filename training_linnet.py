@@ -42,12 +42,12 @@ X = preprocessing.normalize_features(X)
 
 #%% Set up Training
 # Layer dimensions and model
-D_in, D_out, N, H = 7, 1, 150, 200
+D_in, D_out, N, H = 6, 1, 150, 200
 model = models.LinNet(D_in, H, D_out)
 
 # loss function and an optimizer
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr = 1e-1)
+optimizer = optim.Adam(model.parameters(), lr = 1e-2)
 epochs = 200
 history = 1
 

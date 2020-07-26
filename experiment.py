@@ -12,16 +12,17 @@ import torch.optim as optim
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 
-def train_model(model, hparams, X, Y):
+def train_model(model, hparams, X, Y, minibatches = True):
     
     batchsize = hparams["batchsize"]
-    epochs = hparams["epochs"]
+    batches = hparams["batches"]
     history = hparams["history"]
     optimizer = hparams["optimizer"]
     criterion = hparams["criterion"]
+    learningrate = hparams["learningrate"]
     
     if optimizer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr = 1e-1)
+        optimizer = optim.Adam(model.parameters(), lr = learningrate)
     else: 
         raise ValueError("Don't know optimizer")
         
@@ -36,20 +37,24 @@ def train_model(model, hparams, X, Y):
     X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, shuffle=False)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
     
-    for i in range(epochs):
+    for batch in range(batches):
         
     # Training
     # Subset data set to small batch in each epoch.
     # If hisotry > 0, batches are extended by the specified lags.
     
-        subset = [i for i in random.sample(range(X_train.shape[0]), batchsize) if i > history]
-        subset_h = [item for sublist in [list(range(i-history,i)) for i in subset] for item in sublist]
+        if minibatches:
+            subset = [j for j in random.sample(range(X_train.shape[0]), batchsize) if j > history]
+            subset_h = [item for sublist in [list(range(j-history,j)) for j in subset] for item in sublist]
+            x = np.concatenate((X_train[subset], X_train[subset_h]), axis=0)
+            y = np.concatenate((y_train[subset], y_train[subset_h]), axis=0)
+        else:
+            hparams["batchsize"] = X_train.shape[0]
+            x = X_train
+            y = y_train
         
-        X_batch = np.concatenate((X_train[subset], X_train[subset_h]), axis=0)
-        y_batch = np.concatenate((y_train[subset], y_train[subset_h]), axis=0)
-        
-        x = torch.tensor(X_batch).type(dtype=torch.float)
-        y = torch.tensor(y_batch).type(dtype=torch.float)
+        x = torch.tensor(x).type(dtype=torch.float)
+        y = torch.tensor(y).type(dtype=torch.float)
         
         optimizer.zero_grad()
         output = model(x)

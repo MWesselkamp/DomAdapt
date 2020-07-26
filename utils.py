@@ -26,7 +26,7 @@ def merge_XY(data):
 
 def minmax_scaler(data):
     """
-    This function scales all features in an array between -1 and 1. 
+    This function scales all features in an array between mean and standard deviation. 
     
     Args:
         data(np.array): two dimensional array containing model features.
@@ -34,9 +34,20 @@ def minmax_scaler(data):
     Returns:
         data_norm(np.array): two dimensional array of scaled model features.
     """
-    scaler = MinMaxScaler(feature_range = (-1,1))
-    data_norm = scaler.fit_transform(data)
+    #scaler = MinMaxScaler(feature_range = (-1,1))
+    data_norm = (data - np.mean(data, axis=0))/np.std(data, axis=0)
+    
     return data_norm
+
+
+def encode_doy(doy):
+    """Encode the day of the year on a circle.
+    
+    Thanks to: Philipp Jund.
+    
+    """
+    doy_norm = doy / 365 * 2 * np.pi
+    return np.sin(doy_norm), np.cos(doy_norm)
 
 def percentage_error(targets, predictions, y_range):
     

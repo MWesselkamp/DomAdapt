@@ -52,11 +52,12 @@ def get_profound_data(dataset, data_dir = r'data\profound', to_numpy=True, simul
         raise ValueError("Don't know dataset.")
     
     X = pd.read_csv(path_in, sep=";")
+    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
     if(to_numpy):
-        X = X.drop(columns=['date', 'site']).to_numpy()
+        X = X.drop(columns=['CO2', 'date', 'site', 'DOY']).to_numpy()
         Y = pd.read_csv(path_out, sep=";").to_numpy()
     else:
-        X = X.drop(columns=['date'])
+        X = X.drop(columns=['date', 'DOY'])
         Y = pd.read_csv(path_out, sep=";")
     
     return X, Y
@@ -74,14 +75,17 @@ def get_borealsites_data(data_dir = r'data\borealsites', to_numpy=True, preles=T
         path_out = os.path.join(data_dir, f"{filename}_out")
         
     X = pd.read_csv(path_in, sep=";")
+    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
+    
     # Remove nows with na values
     rows_with_nan = pd.isnull(X).any(1).nonzero()[0]
     X = X.drop(rows_with_nan)
     
     if(to_numpy):
-        X = X.drop(columns=['site']).to_numpy()
+        X = X.drop(columns=['site', 'CO2', 'DOY']).to_numpy()
         Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).drop(rows_with_nan).to_numpy()
     else:
+        X = X.drop(columns=['DOY'])
         Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).drop(rows_with_nan)
         
     # Remove nows with na values
