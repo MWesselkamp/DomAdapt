@@ -6,18 +6,19 @@
 library(Rpreles)
 library(ggplot2)
 
+source("preles_simulations.R")
+
+params = get_parameters(default = FALSE)
+
+
 #================#
 ## Profound data #
 #================#
-
-source("preles_simulations.R")
 
 load("Rdata/profound/profound_in.Rdata") # X
 load("Rdata/profound/profound_in_test.Rdata") # X_test
 load("Rdata/profound/profound_in_trainval.Rdata") # X
 load("Rdata/profound/profound_out.Rdata") # y
-
-params = get_parameters(default = FALSE)
 #X <- X_test
 
 output <- PRELES(TAir = X$TAir, PAR = X$PAR, VPD = X$VPD, Precip = X$Precip, fAPAR = X$fAPAR, CO2 = X$CO2,  p = params$Default, returncols = c("GPP", "SW", "ET"))
@@ -52,3 +53,28 @@ output <- PRELES(TAir = boreal_sites_in$TAir, PAR = boreal_sites_in$PAR, VPD = b
 y <- as.data.frame(do.call(cbind, output))
 save(y, file="Rdata/borealsites/preles_out.Rdata")
 write.table(y, file="data/borealsites/preles_out", sep = ";",row.names = FALSE)
+
+
+
+#==========================#
+# Test for autocorrelation #
+#==========================#
+
+# Use of Borealsites data.
+load("Rdata/borealsites/EddyCovarianceDataBorealSites.RData")
+
+output <- PRELES(TAir = s1$TAir, PAR = s1$PAR, VPD = s1$VPD, Precip = s1$Precip, fAPAR = s1$fAPAR, CO2 = s1$CO2,  p = params$Default, returncols = c("GPP", "SW", "ET"))
+
+# 1. Fit a random forest to GPP simulations, dependent on borealsites data.
+
+require(randomForest)
+require(mgcv)
+
+par(mfrow=c(1,2))
+rf2 <- randomForest(output[[1]] ~ PAR + TAir + VPD + Precip + CO2 + fAPAR + DOY, data = s1)
+rf_acf2 <- acf((rf2$predicted-output[[1]])^2, main="AC of RF Residuals (Boreal sites S1 ) \n DOY included")
+
+rf <- randomForest(output[[1]] ~ PAR + TAir + VPD + Precip + CO2 + fAPAR + DOY, data = s1)
+rf_acf <- pacf((rf$predicted-output[[1]])^2, main="PAC of RF Residuals (Boreal sites S1 ) \n DOY included")
+
+

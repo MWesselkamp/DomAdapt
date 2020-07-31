@@ -4,13 +4,13 @@ Created on Wed Jul  8 14:22:10 2020
 
 @author: marie
 """
-#%% Set working directory
-import os
-os.getcwd()
-os.chdir('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt')
 
-import preprocessing
-#import utils
+import os
+import os.path
+
+from utils import minmax_scaler
+from utils import minmax_rescaler
+
 from sklearn.model_selection import KFold
 from sklearn.ensemble import RandomForestRegressor
 from sklearn import metrics
@@ -23,12 +23,12 @@ import numpy as np
 
 def random_forest_CV(X, Y, splits, shuffled):
     
-    X = preprocessing.normalize_features(X)
+    X, Y = minmax_scaler(X), minmax_scaler(Y)
     
     # Divide into training and test
     kf = KFold(n_splits=splits, shuffle = shuffled)
     kf.get_n_splits(X)
-    regressor = RandomForestRegressor(n_estimators=1000, max_depth  = 5, criterion = "mse")
+    regressor = RandomForestRegressor(n_estimators=200, max_depth  = 6, criterion = "mse")
 
     rmse_train = np.zeros((splits))
     mae_train = np.zeros((splits))
@@ -58,14 +58,7 @@ def random_forest_CV(X, Y, splits, shuffled):
         mae_test[i] = metrics.mean_absolute_error(y_test, y_pred_test)
         rmse_train[i] = np.sqrt(metrics.mean_squared_error(y_train, y_pred_train))
         mae_train[i] = metrics.mean_absolute_error(y_train, y_pred_train)
-        #yrange = np.ptp(y_train, axis=0)
-        #mpe[i] = utils.percentage_error(y_test, y_pred, y_range=yrange)
-
-        #print('Root Mean Squared Error Test:', rmse_test[i])
-        #print('Mean Absolute Error Test:', mae_test[i])
-        #print('Root Mean Squared Error Training:', rmse_train[i])
-        #print('Mean Absolute Error Training:', mae_train[i])
-
+        
         i+= 1
     
     #print('Mean Percentage Error:', np.mean(mpe))
@@ -75,35 +68,16 @@ def random_forest_CV(X, Y, splits, shuffled):
     print('Mean Absolute Error Test:', np.mean(mae_test))
 
 #%%
-def random_forest_fit(X_train, X_test, y_train, y_test, df = True):
+def plot_rf_fit(Y_train, Y_test, fitted, figure = "", data_dir = r"plots\data_quality_evaluation\fits_rf"):
     
-    regressor = RandomForestRegressor(n_estimators=1000, max_depth  = 5, criterion = "mse")
+    Y_train = minmax_rescaler(Y_train, mu = fitted['Y_mean'], sigma = fitted['Y_std'])
+    Y_test = minmax_rescaler(Y_test, mu = fitted['Y_mean'], sigma = fitted['Y_std'])
     
-    if df:
-        regressor.fit(X_train, y_train.ravel())
-    else:
-        regressor.fit(X_train, y_train)
-    
-    y_pred_test = regressor.predict(X_test)
-    y_pred_train = regressor.predict(X_train)
-    
-    # Evaluate the algorithm
-    rmse_test = np.sqrt(metrics.mean_squared_error(y_test, y_pred_test))
-    mae_test = metrics.mean_absolute_error(y_test, y_pred_test)
-    rmse_train = np.sqrt(metrics.mean_squared_error(y_train, y_pred_train))
-    mae_train = metrics.mean_absolute_error(y_train, y_pred_train)
-    print('Root Mean Squared Error Training:', rmse_train)
-    print('Root Mean Squared Error Test:', rmse_test)
-    print('Mean Absolute Error Training:', mae_train)
-    print('Mean Absolute Error Test:', mae_test)
-    
-    return y_pred_test, y_pred_train, [rmse_train, rmse_test, mae_train, mae_test]
-
-#%%
-def plot_rf_fit(Y_train, Y_test, data):
+    y_pred_train = minmax_rescaler(fitted['y_pred_train'], mu = fitted['Y_mean'], sigma = fitted['Y_std'])
+    y_pred_test = minmax_rescaler(fitted['y_pred_test'], mu = fitted['Y_mean'], sigma = fitted['Y_std'])
     
     fig, ax = plt.subplots(2, figsize=(10,9))
-    fig.suptitle(f"Random Forest Fit: {data} data \n RMSE Training = {np.round(errors[0], 4)}, RSME Test = {np.round(errors[1], 4)} \n MAE Training = {np.round(errors[2], 4)}, MAE Test = {np.round(errors[3], 4)}")
+    fig.suptitle(f"Random Forest Fit: {fitted['data']} data \n (Grown Trees: 500, Max. Tree Depth: {fitted['tree_depth']}) \n RMSE Training = {np.round(fitted['rmse_train'], 4)}, RSME Validation = {np.round(fitted['rmse_test'], 4)} \n MAE Training = {np.round(fitted['mae_train'], 4)}, MAE Validation = {np.round(fitted['mae_test'], 4)}")
     ax[0].plot(Y_train, color="gray", label="Observations", linewidth=0.8)
     ax[0].plot(y_pred_train, color="darkblue", label="Predictions (train)", linewidth=0.8)
     ax[0].plot(Y_train.flatten() - y_pred_train, color="lightgreen", linewidth=0.6)
@@ -114,104 +88,42 @@ def plot_rf_fit(Y_train, Y_test, data):
         a.set(xlabel="Time [days]", ylabel=r"GPP [g C m$^{-2}$ day$^{-1}$]")
     fig.legend(loc="upper left")
     
-#%% Load data
-X_profound, Y_profound = preprocessing.get_profound_data(dataset="trainval", data_dir = r'data\profound', to_numpy = True, simulation=False)
-X_borealsites, Y_borealsites = preprocessing.get_borealsites_data(data_dir = r'data\borealsites', to_numpy = True, preles=False)
-
-# Merge profound and preles data into one large data set.
-X_both = np.concatenate((X_profound, X_borealsites), axis=0)
-Y_both = np.concatenate((Y_profound, Y_borealsites), axis=0)
-
-#%% Crossvalidation
-# Profound data
-random_forest_CV(X_profound, Y_profound, splits=5, shuffled = False)
-random_forest_CV(X_profound, Y_profound, splits=5, shuffled = True)
-random_forest_CV(X_profound, Y_profound, splits=10, shuffled = False)
-random_forest_CV(X_profound, Y_profound, splits=10, shuffled = True)
-# Boreal sites
-random_forest_CV(X_borealsites, Y_borealsites, splits=5, shuffled = False)
-random_forest_CV(X_borealsites, Y_borealsites, splits=5, shuffled = True)
-random_forest_CV(X_borealsites, Y_borealsites, splits=10, shuffled = False)
-random_forest_CV(X_borealsites, Y_borealsites, splits=10, shuffled = True)
-# Both
-random_forest_CV(X_both, Y_both, splits=5, shuffled = False)
-random_forest_CV(X_both, Y_both, splits=5, shuffled = True)
-random_forest_CV(X_both, Y_both, splits=10, shuffled = False)
-random_forest_CV(X_both, Y_both, splits=10, shuffled = True)
+    plt.savefig(os.path.join(data_dir, f"{fitted['data']}_predictions_{figure}"))
+    plt.close()
 
 
-#%% Fit RF : Profound data
-X_profound, Y_profound = preprocessing.get_profound_data(dataset="trainval", data_dir = r'data\profound', to_numpy = False, simulation=False)
+#%%
+def random_forest_fit(X, Y, data, tree_depth = 5):
+    
+    Y_mean, Y_std = np.mean(Y), np.std(Y)
+    
+    X, Y = minmax_scaler(X), minmax_scaler(Y)
+    
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, shuffle=False)
 
-train = X_profound['site'] != "collelongo"
-test = X_profound['site'] == "collelongo"
-X_train_pro = X_profound[train].drop(columns='site').to_numpy()
-X_test_pro = X_profound[test].drop(columns='site').to_numpy()
-Y_train_pro = Y_profound[train].to_numpy()
-Y_test_pro = Y_profound[test].to_numpy()
+    regressor = RandomForestRegressor(n_estimators=200, max_depth  = tree_depth, criterion = "mse")
+    
+    regressor.fit(X_train, Y_train.ravel())
 
-y_pred_test, y_pred_train, errors = random_forest_fit(X_train_pro, X_test_pro, Y_train_pro, Y_test_pro)
+    y_pred_test = regressor.predict(X_test)
+    y_pred_train = regressor.predict(X_train)
+    
+    # Evaluate the algorithm
 
-#Plot
-plot_rf_fit(Y_train_pro, Y_test_pro, data="Profound")
+    fitted = {"data":data, 
+              "tree_depth":tree_depth, 
+              "y_pred_train":y_pred_train,
+              "y_pred_test":y_pred_test, 
+              "rmse_train":np.sqrt(metrics.mean_squared_error(Y_train, y_pred_train)), 
+              "rmse_test":np.sqrt(metrics.mean_squared_error(Y_test, y_pred_test)), 
+              "mae_train":metrics.mean_absolute_error(Y_train, y_pred_train), 
+              "mae_test":metrics.mean_absolute_error(Y_test, y_pred_test),
+              "Y_mean":Y_mean,
+              "Y_std":Y_std}
+    
+    plot_rf_fit(Y_train, Y_test,fitted)
+    
+    return fitted
 
-#%% Fit RF : Borealsites data
-X_borealsites, Y_borealsites = preprocessing.get_borealsites_data(data_dir = r'data\borealsites', to_numpy = False, preles=False)
+    
 
-train = X_borealsites['site'] != "kalevansuo"
-test = X_borealsites['site'] == "kalevansuo"
-X_train_bor = X_borealsites[train].drop(columns='site').to_numpy()
-X_test_bor = X_borealsites[test].drop(columns='site').to_numpy()
-Y_train_bor = Y_borealsites[train].to_numpy()
-Y_test_bor = Y_borealsites[test].to_numpy()
-
-y_pred_test, y_pred_train, errors = random_forest_fit(X_train_bor, X_test_bor, Y_train_bor, Y_test_bor)
-
-#Plot
-plot_rf_fit(Y_train_bor, Y_test_bor, data="Borealsites")
-
-#%% Fit RF : Both data
-X_train_both = np.concatenate((X_train_pro, X_train_bor), axis=0)
-X_test_both = np.concatenate((X_test_pro, X_test_bor), axis=0)
-Y_train_both = np.concatenate((Y_train_pro, Y_train_bor), axis=0)
-Y_test_both = np.concatenate((Y_test_pro, Y_test_bor), axis=0)
-
-y_pred_test, y_pred_train, errors = random_forest_fit(X_train_both, X_test_both, Y_train_both, Y_test_both)
-
-#Plot
-plot_rf_fit(Y_train_both, Y_test_both, data="Profound+Borealsites")
-
-#%% Fit RF : Profound data / Only Hyytiala
-hyytiala = (X_profound['site'] == "hyytiala")
-X_hyytiala = X_profound[hyytiala].drop(columns='site').to_numpy()
-Y_hyytiala = Y_profound[hyytiala].to_numpy()
-
-X_train_hyytiala_pro, X_test_hyytiala_pro, Y_train_hyytiala_pro, Y_test_hyytiala_pro = train_test_split(X_hyytiala, Y_hyytiala, test_size=0.3, shuffle=True)
-
-y_pred_test, y_pred_train, errors = random_forest_fit(X_train_hyytiala_pro, X_test_hyytiala_pro, Y_train_hyytiala_pro, Y_test_hyytiala_pro, df=False)
-
-#Plot
-plot_rf_fit(Y_train_hyytiala_pro, Y_test_hyytiala_pro, data="Hyytiala Profound")
-
-#%% Fit RF : Borealsites data / Only Hyytiala
-hyytiala = (X_borealsites['site'] == "hyytiala")
-X_hyytiala = X_borealsites[hyytiala].drop(columns='site').to_numpy()
-Y_hyytiala = Y_borealsites[hyytiala].to_numpy()
-
-X_train_hyytiala_bor, X_test_hyytiala_bor, Y_train_hyytiala_bor, Y_test_hyytiala_bor = train_test_split(X_hyytiala, Y_hyytiala, test_size=0.5, shuffle=True)
-
-y_pred_test, y_pred_train, errors = random_forest_fit(X_train_hyytiala_bor, X_test_hyytiala_bor, Y_train_hyytiala_bor, Y_test_hyytiala_bor, df=False)
-
-#Plot
-plot_rf_fit(Y_train_hyytiala_bor, Y_test_hyytiala_bor, data="Hyytiala Borealsites")
-
-#%% Fit RF : Profound and Borealsites data / Only Hyytiala
-X_train_both = np.concatenate((X_train_hyytiala_pro, X_train_hyytiala_bor), axis=0)
-X_test_both = np.concatenate((X_test_hyytiala_pro, X_test_hyytiala_bor), axis=0)
-Y_train_both = np.concatenate((Y_train_hyytiala_pro, Y_train_hyytiala_bor), axis=0)
-Y_test_both = np.concatenate((Y_test_hyytiala_pro, Y_test_hyytiala_bor), axis=0)
-
-y_pred_test, y_pred_train, errors = random_forest_fit(X_train_both, X_test_both, Y_train_both, Y_test_both)
-
-#Plot
-plot_rf_fit(Y_train_both, Y_test_both, data="Hyytiala Profound+Borealsites")

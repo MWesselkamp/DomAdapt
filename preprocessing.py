@@ -17,81 +17,54 @@ from math import floor
 
 import utils
 
-#%%
-def get_profound_data(dataset, data_dir = r'data\profound', to_numpy=True, simulation=False):
-    
-    """
-    
-    Args:
-        to_numpy (boolean): Default to true. If false, data is returned as Pandas data frame.
-        simulation (boolean): Default to false, will return the observed GPP (and SW) values. 
-                            If true, the simulations from preles will be returned.
-        dataset (char vector): Must take one of the values "full", "test" or "trainval" and specifies, 
-                            if the full dataset should be loaded ("full"), or the split version where "trainval" contains 
-                            all stands but the "test" stand.
-    
-    Returns:
-        X, Y (array/dataframe)
-    """
-    
-    if simulation:
-        filename = r"preles"
-    else:
-        filename = r"profound"
-    
-    if(dataset=="full"):
-        path_in = os.path.join(data_dir, f"profound_in")
-        path_out = os.path.join(data_dir, f"{filename}_out")
-    elif(dataset=="test") :
-        path_in = os.path.join(data_dir, f"profound_in_test")
-        path_out = os.path.join(data_dir, f"{filename}_out_test")
-    elif(dataset=="trainval"):
-        path_in = os.path.join(data_dir, f"profound_in_trainval")
-        path_out = os.path.join(data_dir, f"{filename}_out_trainval")
-    else:
-        raise ValueError("Don't know dataset.")
-    
-    X = pd.read_csv(path_in, sep=";")
-    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
-    if(to_numpy):
-        X = X.drop(columns=['CO2', 'date', 'site', 'DOY']).to_numpy()
-        Y = pd.read_csv(path_out, sep=";").to_numpy()
-    else:
-        X = X.drop(columns=['date', 'DOY'])
-        Y = pd.read_csv(path_out, sep=";")
-    
-    return X, Y
-    
 
-#%%
-def get_borealsites_data(data_dir = r'data\borealsites', to_numpy=True, preles=True):
+#%% load data
+
+def load_data(dataset, data_dir = r'data', simulations = None):
     
-    filename = r"boreal_sites"
-    
-    path_in = os.path.join(data_dir, f"{filename}_in")
-    if(preles):
-        path_out = os.path.join(data_dir, 'preles_out')
+    path_in = os.path.join(data_dir, f"{dataset}\{dataset}_in")
+    if (simulations=="preles"):
+        path_out = os.path.join(data_dir, f"{dataset}\{simulations}_out")
     else:
-        path_out = os.path.join(data_dir, f"{filename}_out")
+        path_out = os.path.join(data_dir, f"{dataset}\{dataset}_out")
         
     X = pd.read_csv(path_in, sep=";")
-    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
+    Y = pd.read_csv(path_out, sep=";")
     
     # Remove nows with na values
     rows_with_nan = pd.isnull(X).any(1).nonzero()[0]
     X = X.drop(rows_with_nan)
+    Y = Y.drop(rows_with_nan)
     
-    if(to_numpy):
-        X = X.drop(columns=['site', 'CO2', 'DOY']).to_numpy()
-        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).drop(rows_with_nan).to_numpy()
-    else:
-        X = X.drop(columns=['DOY'])
-        Y = pd.read_csv(path_out, sep=";").drop(columns=['ET']).drop(rows_with_nan)
-        
-    # Remove nows with na values
-
     return X, Y
 
+def get_splits(sites, dataset = "profound", 
+    colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"]):
+    
+    X, Y = load_data(dataset = dataset)
+    
+    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
+
+    if all([site in X["site"].values for site in sites]):
+        row_ind = X['site'].isin(sites)
+        print(f"Returns {sites} from \n", X["site"].unique())
+    else: 
+        print("Not all sites in dataset!")
+    
+    try:
+        X = X[colnames]
+    except:
+        print("Columns are missing!")
+        
+    try:
+        Y= Y.drop(columns=["ET"])
+    except:
+        None
+        
+    X, Y = X.to_numpy(), Y.to_numpy()
+    
+    return X[row_ind], Y[row_ind]
+    
 #%%
 def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):
 
@@ -112,30 +85,3 @@ def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):
         
     return X, Y#, filenames
 
-
-#%% Normalize Features
-def normalize_features(X):
-    
-    if (X.ndim > 2):
-        X = [utils.minmax_scaler(data) for data in X]
-    else:
-        X = utils.minmax_scaler(X)
-    
-    return X
-
-#%% Restructure Data 
-def to_batches(X,Y, size=20):
-    
-    X = [np.dstack([inputs[(i-size):i] for i in range(size, inputs.shape[0]-1)]) for inputs in X]
-    Y = [np.dstack([labels[i+1] for i in range(size, labels.shape[0]-1)]) for labels in Y]
-
-    return X, Y
-
-#%% Split into training and test data.
-def split_data(X, Y, size=0.5):
-    random.seed(42)
-    x, y = shuffle(X, Y)
-    d = floor(len(x)*size)
-    x_train, ytrain = x[:d], y[:d]
-    x_test, y_test = x[d:], y[d:]
-    return x_train, ytrain, x_test, y_test

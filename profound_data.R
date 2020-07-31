@@ -148,6 +148,26 @@ for(i in 2:length(sites)){
   y <- rbind(y, get_profound_output(period=period, site=sites[i], vars=c("GPP")))
 }
 
+#========================#
+# Modify input and output#
+#========================#
+
+# filter years where GPP measurements are not available
+# (hyytiala 2007 and le_bray 2002)
+GPPavg = y %>% 
+  group_by(site = X$site, year = year(date(X$date))) %>% 
+  summarise(avg = mean(GPP)) %>% 
+  filter(avg == 0)
+
+# remove selection from X and y.
+rem = which(((year(date(X$date)) %in% GPPavg$year) & (X$site %in% GPPavg$site)))
+X = X[-rem,]
+y = data.frame(GPP= y[-rem,])
+
+#========================#
+# Save input and output  #
+#========================#
+
 save(y, file="Rdata/profound/profound_out.Rdata")
 write.table(y, file="data/profound/profound_out", sep = ";",row.names = FALSE)
 

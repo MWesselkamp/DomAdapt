@@ -5,8 +5,7 @@ Created on Mon Jun 22 10:35:10 2020
 @author: marie
 """
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-
+import pandas as pd
 
 def merge_XY(data):
     """
@@ -35,10 +34,18 @@ def minmax_scaler(data):
         data_norm(np.array): two dimensional array of scaled model features.
     """
     #scaler = MinMaxScaler(feature_range = (-1,1))
-    data_norm = (data - np.mean(data, axis=0))/np.std(data, axis=0)
+    if (isinstance(data, pd.DataFrame)):
+        data_norm = (data - pd.mean(data))/ pd.std(data)
+    else:
+        data_norm = (data - np.mean(data, axis=0))/np.std(data, axis=0)
     
     return data_norm
 
+def minmax_rescaler(data, mu, sigma):
+    
+    data = data*sigma + mu
+    
+    return(data)
 
 def encode_doy(doy):
     """Encode the day of the year on a circle.
@@ -48,6 +55,7 @@ def encode_doy(doy):
     """
     doy_norm = doy / 365 * 2 * np.pi
     return np.sin(doy_norm), np.cos(doy_norm)
+
 
 def percentage_error(targets, predictions, y_range):
     
