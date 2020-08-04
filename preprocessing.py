@@ -64,7 +64,17 @@ def get_splits(sites, dataset = "profound",
     X, Y = X.to_numpy(), Y.to_numpy()
     
     return X[row_ind], Y[row_ind]
+
+#%% 
+def create_batches(X, Y, batchsize, history):
     
+    subset = [j for j in random.sample(range(X.shape[0]), batchsize) if j > history]
+    subset_h = [item for sublist in [list(range(j-history,j)) for j in subset] for item in sublist]
+    x = np.concatenate((X[subset], X[subset_h]), axis=0)
+    y = np.concatenate((Y[subset], Y[subset_h]), axis=0)
+    
+    return x, y
+
 #%%
 def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):
 

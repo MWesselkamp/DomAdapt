@@ -8,6 +8,25 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+#%%
+
+def MLP(dimensions, activation = nn.ReLU):
+    
+    network = nn.Sequential()
+    
+    for i in range(len(dimensions)-1):
+        
+        network.add_module(f'hidden{i}', nn.Linear(dimensions[i], dimensions[i+1]))
+    
+        if i < len(dimensions)-2:
+            
+            network.add_module(f'activation{i}', activation())
+    
+    return network
+    
+    
+
 #%% 1d-Conv-Net
 
 class ConvNet(nn.Module):
@@ -44,6 +63,7 @@ class ConvNet(nn.Module):
 #%% Fully Connected Linear Net
 
 class LinNet(nn.Module):
+    
     def __init__(self, D_in, H, D_out):
         super(LinNet, self).__init__()
         
