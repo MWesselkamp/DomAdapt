@@ -20,7 +20,7 @@ import utils
 
 #%% load data
 
-def load_data(dataset, data_dir = r'data', simulations = None):
+def load_data(dataset, data_dir = r'OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data', simulations = None):
     
     path_in = os.path.join(data_dir, f"{dataset}\{dataset}_in")
     if (simulations=="preles"):

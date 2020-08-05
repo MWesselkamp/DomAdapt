@@ -6,6 +6,7 @@ Created on Mon Jun 22 10:35:10 2020
 """
 import numpy as np
 import pandas as pd
+import itertools
 
 def merge_XY(data):
     """
@@ -56,6 +57,14 @@ def encode_doy(doy):
     doy_norm = doy / 365 * 2 * np.pi
     return np.sin(doy_norm), np.cos(doy_norm)
 
+def expandgrid(*itrs):
+    """
+    Expand lists to grid.
+    Thanks to:
+        https://stackoverflow.com/questions/12130883/r-expand-grid-function-in-python
+    """
+    product = list(itertools.product(*itrs))
+    return [[x[i] for x in product] for i in range(len(itrs))]
 
 def percentage_error(targets, predictions, y_range):
     

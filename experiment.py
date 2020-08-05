@@ -21,6 +21,10 @@ import preprocessing
 import matplotlib.pyplot as plt
 #from sklearn.model_selection import train_test_split
 
+import random
+import time
+import pandas as pd
+
 #%%
 def train_model_CV(hparams, model_design, X, Y, splits = 6):
     
@@ -130,7 +134,7 @@ def train_model_CV(hparams, model_design, X, Y, splits = 6):
     # Stop early if validation loss isn't decreasing/increasing again
     
 #%%
-def plot_nn_loss(train_loss, val_loss, data, hparams, history, figure = "", data_dir = r"plots\data_quality_evaluation\fits_nn"):
+def plot_nn_loss(train_loss, val_loss, data, hparams, history, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_nn"):
     
     fig, ax = plt.subplots(figsize=(10,6))
     fig.suptitle(f"Fully connected Network: {data} data \n Epochs = {hparams['epochs']}, Shuffled_CV = {hparams['shuffled_CV']}, History = {hparams['history']} \n Hiddensize = {hparams['hiddensize']}, Batchsize = {hparams['batchsize']}, Learning_rate = {hparams['learningrate']}")
@@ -160,7 +164,7 @@ def plot_nn_loss(train_loss, val_loss, data, hparams, history, figure = "", data
     plt.close()
 
 #%% Plot Model Prediction and Prediction Error
-def plot_nn_predictions(predictions, data, history, figure = "", data_dir = r"plots\data_quality_evaluation\fits_nn"):
+def plot_nn_predictions(predictions, data, history, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_nn"):
     
     """
     Plot model predictions.
@@ -178,7 +182,7 @@ def plot_nn_predictions(predictions, data, history, figure = "", data_dir = r"pl
     plt.savefig(os.path.join(data_dir, f"{data}_predictions_{history}{figure}"))
     plt.close()
 
-def plot_prediction_error(predictions, data, history, figure = "", data_dir = r"plots\data_quality_evaluation\fits_nn"):
+def plot_prediction_error(predictions, data, history, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_nn"):
     
     """
     Plot Model Prediction Error (root mean squared error).
@@ -196,3 +200,82 @@ def plot_prediction_error(predictions, data, history, figure = "", data_dir = r"
     plt.savefig(os.path.join(data_dir, f"{data}_rmse_{history}{figure}"))
     plt.close()
     
+
+#%% Random Grid Search:
+    
+def nn_selection(X, Y, hp_list, searchsize):
+    
+    hp_search = []
+    in_features = X.shape[1]
+    out_features = Y.shape[1]
+
+    for i in range(searchsize):
+        
+        search = [random.choice(sublist) for sublist in hp_list]
+
+        # Network training
+        hparams = {"batchsize": search[1], 
+                   "epochs":1000, 
+                   "history":search[3], 
+                   "hiddensize":search[0],
+                   "optimizer":"adam", 
+                   "criterion":"mse", 
+                   "learningrate":search[2],
+                   "shuffled_CV":False}
+
+        model_design = {"dimensions": [in_features, search[0], out_features],
+                        "activation": nn.Sigmoid}
+   
+        start = time.time()
+        running_losses,performance, predictions = train_model_CV(hparams, model_design, X, Y, splits=6)
+        end = time.time()
+    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+        hp_search.append([item for sublist in [[i, (end-start)], search, performance] for item in sublist])
+
+        plot_nn_loss(running_losses["rmse_train"], running_losses["rmse_val"], data="profound", history = hparams["history"], figure = i, hparams = hparams)
+        plot_nn_predictions(predictions, history = hparams["history"], figure = i, data = "Hyytiala profound")
+        plot_prediction_error(predictions, history = hparams["history"], figure = i, data = "Hyytiala profound")
+
+    results = pd.DataFrame(hp_search, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(r'OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_nn\grid_search_results.csv', index = False)
+    
+    print("Best Model Run: \n", results.iloc[results['rmse_val'].idxmin()])    
+    
+    return(results.iloc[results['rmse_val'].idxmin()].to_dict())
+    
+#%% Random Grid search: Paralellized
+    
+def nn_selection_parallel(X, Y, hp_list, searchsize, q):
+    
+    hp_search = []
+    in_features = X.shape[1]
+    out_features = Y.shape[1]
+
+        
+    search = [random.choice(sublist) for sublist in hp_list]
+
+    # Network training
+    hparams = {"batchsize": search[1], 
+               "epochs":1000, 
+               "history":search[3], 
+               "hiddensize":search[0],
+               "optimizer":"adam", 
+               "criterion":"mse", 
+               "learningrate":search[2],
+               "shuffled_CV":False}
+    model_design = {"dimensions": [in_features, search[0], out_features],
+                    "activation": nn.Sigmoid}
+   
+    start = time.time()
+    running_losses,performance, predictions = train_model_CV(hparams, model_design, X, Y, splits=6)
+    end = time.time()
+    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+    hp_search.append([item for sublist in [[searchsize, (end-start)], search, performance] for item in sublist])
+
+    plot_nn_loss(running_losses["rmse_train"], running_losses["rmse_val"], data="profound", history = hparams["history"], figure = searchsize, hparams = hparams)
+    plot_nn_predictions(predictions, history = hparams["history"], figure = searchsize, data = "Hyytiala profound")
+    plot_prediction_error(predictions, history = hparams["history"], figure = searchsize, data = "Hyytiala profound")
+
+    print("Model fitted!")
+    
+    q.put(hp_search)

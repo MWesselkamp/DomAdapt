@@ -21,14 +21,14 @@ import numpy as np
 
 #%% Train the Algorithm
 
-def random_forest_CV(X, Y, splits, shuffled):
+def random_forest_CV(X, Y, splits, shuffled, n_trees, depth):
     
     X, Y = minmax_scaler(X), minmax_scaler(Y)
     
     # Divide into training and test
     kf = KFold(n_splits=splits, shuffle = shuffled)
     kf.get_n_splits(X)
-    regressor = RandomForestRegressor(n_estimators=200, max_depth  = 6, criterion = "mse")
+    regressor = RandomForestRegressor(n_estimators=n_trees, max_depth  = depth, criterion = "mse")
 
     rmse_train = np.zeros((splits))
     mae_train = np.zeros((splits))
@@ -61,14 +61,10 @@ def random_forest_CV(X, Y, splits, shuffled):
         
         i+= 1
     
-    #print('Mean Percentage Error:', np.mean(mpe))
-    print('Root Mean Squared Error Training:', np.mean(rmse_train))
-    print('Root Mean Squared Error Test:', np.mean(rmse_test))
-    print('Mean Absolute Error Training:', np.mean(mae_train))
-    print('Mean Absolute Error Test:', np.mean(mae_test))
+    return([np.mean(rmse_train), np.mean(rmse_test), np.mean(mae_train), np.mean(mae_test)])
 
 #%%
-def plot_rf_fit(Y_train, Y_test, fitted, figure = "", data_dir = r"plots\data_quality_evaluation\fits_rf"):
+def plot_rf_fit(Y_train, Y_test, fitted, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_rf"):
     
     Y_train = minmax_rescaler(Y_train, mu = fitted['Y_mean'], sigma = fitted['Y_std'])
     Y_test = minmax_rescaler(Y_test, mu = fitted['Y_mean'], sigma = fitted['Y_std'])
@@ -77,7 +73,7 @@ def plot_rf_fit(Y_train, Y_test, fitted, figure = "", data_dir = r"plots\data_qu
     y_pred_test = minmax_rescaler(fitted['y_pred_test'], mu = fitted['Y_mean'], sigma = fitted['Y_std'])
     
     fig, ax = plt.subplots(2, figsize=(10,9))
-    fig.suptitle(f"Random Forest Fit: {fitted['data']} data \n (Grown Trees: 500, Max. Tree Depth: {fitted['tree_depth']}) \n RMSE Training = {np.round(fitted['rmse_train'], 4)}, RSME Validation = {np.round(fitted['rmse_test'], 4)} \n MAE Training = {np.round(fitted['mae_train'], 4)}, MAE Validation = {np.round(fitted['mae_test'], 4)}")
+    fig.suptitle(f"Random Forest Fit: {fitted['data']} data \n (Grown Trees: {fitted['n_trees']}, Max. Tree Depth: {fitted['depth']}) \n RMSE Training = {np.round(fitted['rmse_train'], 4)}, RSME Validation = {np.round(fitted['rmse_test'], 4)} \n MAE Training = {np.round(fitted['mae_train'], 4)}, MAE Validation = {np.round(fitted['mae_test'], 4)}")
     ax[0].plot(Y_train, color="gray", label="Observations", linewidth=0.8)
     ax[0].plot(y_pred_train, color="darkblue", label="Predictions (train)", linewidth=0.8)
     ax[0].plot(Y_train.flatten() - y_pred_train, color="lightgreen", linewidth=0.6)
@@ -93,15 +89,15 @@ def plot_rf_fit(Y_train, Y_test, fitted, figure = "", data_dir = r"plots\data_qu
 
 
 #%%
-def random_forest_fit(X, Y, data, tree_depth = 5):
+def random_forest_fit(X, Y, shuffled, n_trees, depth, data):
     
     Y_mean, Y_std = np.mean(Y), np.std(Y)
     
     X, Y = minmax_scaler(X), minmax_scaler(Y)
     
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, shuffle=False)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, shuffle=shuffled)
 
-    regressor = RandomForestRegressor(n_estimators=200, max_depth  = tree_depth, criterion = "mse")
+    regressor = RandomForestRegressor(n_estimators=n_trees, max_depth  = depth, criterion = "mse")
     
     regressor.fit(X_train, Y_train.ravel())
 
@@ -111,7 +107,8 @@ def random_forest_fit(X, Y, data, tree_depth = 5):
     # Evaluate the algorithm
 
     fitted = {"data":data, 
-              "tree_depth":tree_depth, 
+              "depth":depth, 
+              "n_trees":n_trees,
               "y_pred_train":y_pred_train,
               "y_pred_test":y_pred_test, 
               "rmse_train":np.sqrt(metrics.mean_squared_error(Y_train, y_pred_train)), 
