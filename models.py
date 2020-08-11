@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+import utils
 #%%
 
 def MLP(dimensions, activation = nn.ReLU):
@@ -24,8 +24,31 @@ def MLP(dimensions, activation = nn.ReLU):
             network.add_module(f'activation{i}', activation())
     
     return network
+
+#%%
+class Flatten(nn.Module):
     
+    def forward(self, x):
+        # Reshape to Batchsíze
+        return(x.view(x.shape[0], -1))
     
+#%%
+def ConvN(dimensions, dim_channels, kernel_size, length, activation = nn.ReLU):
+    
+    linear_in = utils.num_infeatures(dim_channels, kernel_size, length)
+    
+    network = nn.Sequential()
+    
+    network.add_module("conv1", nn.Conv1d(in_channels = dimensions[0], out_channels = dim_channels[0], kernel_size = kernel_size))
+    network.add_module("activation1", activation())
+    network.add_module("conv2", nn.Conv1d(in_channels = dim_channels[0], out_channels = dim_channels[1], kernel_size = kernel_size))
+    network.add_module("activation2", activation())
+    network.add_module("flatten", Flatten())
+    network.add_module("fc1", nn.Linear(linear_in, dimensions[1]))
+    network.add_module("activation3", activation())
+    network.add_module("fc2",nn.Linear(dimensions[1], dimensions[2]))
+    
+    return network
 
 #%% 1d-Conv-Net
 
@@ -38,23 +61,24 @@ class ConvNet(nn.Module):
         #       output channels = number of filter
         #       input channels 
         
-        self.conv1 = nn.Conv1d(in_channels = D_in, out_channels = 24, kernel_size = 4)
-        self.conv2 = nn.Conv1d(in_channels = 24, out_channels = 48, kernel_size = 4)
- 
+        self.conv1 = nn.Conv1d(in_channels = D_in, out_channels = 12, kernel_size = 2)
+        self.conv2 = nn.Conv1d(in_channels = 12, out_channels = 18, kernel_size = 2)
+        
         # fc for fully connected layer.
         # Flatten the tensor when coming from convolutional to linear layer
-        self.fc1 = nn.Linear(in_features = 96, out_features = H)
+        self.fc1 = nn.Linear(in_features = 324, out_features = H)
         self.fc2 = nn.Linear(in_features = H, out_features = D_out)
     
     def forward(self, x):
         out = self.conv1(x) # layer operation
-        out = F.max_pool1d(F.relu(out), kernel_size=2) # transformation operation
+        out = F.relu(out) # transformation operation
         out = self.conv2(out)
-        out = F.max_pool1d(F.relu(out), kernel_size=2)
+        out = F.relu(out)
         
         # flatten tensor before passing to linear layer,
-        out = out.view(size=(-1,96))
+        out = out.view(out.shape[0], -1)
         # Add two dense layers
+        
         out = F.relu(self.fc1(out))
         out = self.fc2(out)
         

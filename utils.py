@@ -7,6 +7,7 @@ Created on Mon Jun 22 10:35:10 2020
 import numpy as np
 import pandas as pd
 import itertools
+import torch
 
 def merge_XY(data):
     """
@@ -65,6 +66,28 @@ def expandgrid(*itrs):
     """
     product = list(itertools.product(*itrs))
     return [[x[i] for x in product] for i in range(len(itrs))]
+
+def num_infeatures(dim_channels, kernel_size, length):
+    
+    """
+    Computes the number of input features for linear layer after 1d convolution. (No padding!)
+    """
+    
+    linear_in = dim_channels[-1]*(length-len(dim_channels)*(kernel_size-1))
+    
+    return(linear_in)
+
+def reshaping(X, L):
+    
+    """
+    Reshapes 2d Torch-Tensor to 3d Torch-Tensor with Minibatches of sequence length L.
+    
+    """
+    x = torch.empty(size=(X.shape[0]-L, X.shape[1], L))
+    lst = [X[(i-L):i].transpose(0,1) for i in range(L, X.shape[0])]
+    for i in range(len(lst)):
+        x[i] = lst[i]
+    return x
 
 def percentage_error(targets, predictions, y_range):
     
