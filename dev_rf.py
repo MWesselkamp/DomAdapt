@@ -22,7 +22,7 @@ import pandas as pd
 
 #%% Train the Algorithm
 
-def random_forest_CV(X, Y, splits, shuffled, n_trees, depth):
+def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, selected = False):
     
     Y_mean, Y_std = np.mean(Y), np.std(Y)
     X, Y = minmax_scaler(X), minmax_scaler(Y)
@@ -34,8 +34,8 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth):
 
     rmse_train = np.zeros((splits))
     mae_train = np.zeros((splits))
-    rmse_test = np.zeros((splits))
-    mae_test = np.zeros((splits))
+    rmse_val = np.zeros((splits))
+    mae_val = np.zeros((splits))
 
     y_preds = []
     y_trains = []
@@ -53,8 +53,8 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth):
     
 
         # Evaluate the algorithm
-        rmse_test[i] = np.sqrt(metrics.mean_squared_error(y_test, y_pred_test))
-        mae_test[i] = metrics.mean_absolute_error(y_test, y_pred_test)
+        rmse_val[i] = np.sqrt(metrics.mean_squared_error(y_test, y_pred_test))
+        mae_val[i] = metrics.mean_absolute_error(y_test, y_pred_test)
         rmse_train[i] = np.sqrt(metrics.mean_squared_error(y_train, y_pred_train))
         mae_train[i] = metrics.mean_absolute_error(y_train, y_pred_train)
         
@@ -70,7 +70,12 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth):
         
         i+= 1
     
-    return(y_preds, y_tests, [np.mean(rmse_train), np.mean(rmse_test), np.mean(mae_train), np.mean(mae_test)])
+    if selected:
+        losses = {"rmse_train":rmse_train, "rmse_val":rmse_val, "mae_train":mae_train, "mae_val":mae_val}
+    else:
+        losses = [np.mean(rmse_train), np.mean(rmse_val), np.mean(mae_train), np.mean(mae_val)]
+        
+    return(y_preds, y_tests, losses)
 
 #%% Model selection
 def rf_selection(X, Y, p_list):
@@ -86,8 +91,7 @@ def rf_selection(X, Y, p_list):
         p_search.append([item for sublist in [[i], search, errors] for item in sublist])
 
     results = pd.DataFrame(p_search, columns=["run", "cv_splits", "shuffled", "n_trees", "depth", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(r'OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_rf\grid_search_results.csv', index = False)
-    
+        
     print("Best Model Run: \n", results.iloc[results['rmse_val'].idxmin()])
     
     return results.iloc[results['rmse_val'].idxmin()].to_dict() 
@@ -106,6 +110,25 @@ def rf_selection_parallel(X, Y, p_list, searchsize, q, p_search=[]):
     
     q.put(p_search)
 
+#%%
+def plot_rf_cv(y_preds, y_tests, rfp, data_dir, figure = "selected", save=True):
+    
+    fig, ax = plt.subplots(len(y_preds), figsize=(10,9))
+    fig.suptitle(f"Random Forest Fit \n (Grown Trees: {rfp['n_trees']}, Max. Tree Depth: {rfp['depth']})")
+    for i in range(len(y_preds)):
+        ax[i].plot(y_preds[i], color="gray", label="Observations", linewidth=0.8)
+        ax[i].plot(y_tests[i].flatten(), color="darkblue", label="Predictions", linewidth=0.8)
+        ax[i].plot(y_tests[i].flatten() - y_preds[i], color="lightgreen", label="Absolute Error", linewidth=0.6)
+   # for a in ax.flat:
+   #     a.set(xlabel="Time [days]", ylabel=r"GPP [g C m$^{-2}$ day$^{-1}$]")
+        
+    handles, labels = ax[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper right')
+    
+    if save:
+        plt.savefig(os.path.join(data_dir, f"plots\data_quality_evaluation\fits_rf\_predictions_{figure}"))
+        plt.close()
+    
 #%%
 def plot_rf_fit(fitted, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_rf"):
     

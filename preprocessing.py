@@ -9,39 +9,36 @@ Created on Tue Jun 30 10:55:08 2020
 import os
 import os.path
 import pandas as pd
-import numpy as np
-
-import random
-from sklearn.utils import shuffle
-from math import floor
 
 import utils
 
 
 #%% load data
 
-def load_data(dataset, data_dir = r'OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data', simulations = None):
+def load_data(dataset, data_dir, simulations = None):
     
-    path_in = os.path.join(data_dir, f"{dataset}\{dataset}_in")
+    path_in = os.path.join(data_dir, f"{dataset}_in")
     if (simulations=="preles"):
-        path_out = os.path.join(data_dir, f"{dataset}\{simulations}_out")
+        path_out = os.path.join(data_dir, f"{simulations}_out")
     else:
-        path_out = os.path.join(data_dir, f"{dataset}\{dataset}_out")
+        path_out = os.path.join(data_dir, f"{dataset}_out")
         
     X = pd.read_csv(path_in, sep=";")
     Y = pd.read_csv(path_out, sep=";")
     
     # Remove nows with na values
-    rows_with_nan = pd.isnull(X).any(1).nonzero()[0]
+    rows_with_nan = pd.isnull(X).any(1).to_numpy().nonzero()[0]
     X = X.drop(rows_with_nan)
     Y = Y.drop(rows_with_nan)
     
     return X, Y
 
-def get_splits(sites, dataset = "profound", 
-    colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"]):
+def get_splits(sites, datadir, dataset = "profound", 
+    colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"],
+    to_numpy = True):
     
-    X, Y = load_data(dataset = dataset)
+    datadir = os.path.join(datadir, f"{dataset}")
+    X, Y = load_data(dataset = dataset, data_dir = datadir)
     
     X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
 
@@ -60,20 +57,13 @@ def get_splits(sites, dataset = "profound",
         Y= Y.drop(columns=["ET"])
     except:
         None
-        
-    X, Y = X.to_numpy(), Y.to_numpy()
+    
+    if to_numpy:
+        X, Y = X.to_numpy(), Y.to_numpy()
     
     return X[row_ind], Y[row_ind]
 
-#%% 
-def create_batches(X, Y, batchsize, history):
-    
-    subset = [j for j in random.sample(range(X.shape[0]), batchsize) if j > history]
-    subset_h = [item for sublist in [list(range(j-history,j)) for j in subset] for item in sublist]
-    x = np.concatenate((X[subset], X[subset_h]), axis=0)
-    y = np.concatenate((Y[subset], Y[subset_h]), axis=0)
-    
-    return x, y
+
 
 #%%
 def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):

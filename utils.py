@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import itertools
 import torch
+import random
 
 def merge_XY(data):
     """
@@ -58,22 +59,39 @@ def encode_doy(doy):
     doy_norm = doy / 365 * 2 * np.pi
     return np.sin(doy_norm), np.cos(doy_norm)
 
+#%% 
+def create_batches(X, Y, batchsize, history):
+    
+    """
+    Creates Mini-batches from training data set.
+    Used in: dev_mlp.train_model_CV
+    """
+    
+    subset = [j for j in random.sample(range(X.shape[0]), batchsize) if j > history]
+    subset_h = [item for sublist in [list(range(j-history,j)) for j in subset] for item in sublist]
+    x = np.concatenate((X[subset], X[subset_h]), axis=0)
+    y = np.concatenate((Y[subset], Y[subset_h]), axis=0)
+    
+    return x, y
+
 def expandgrid(*itrs):
     """
     Expand lists to grid.
     Thanks to:
         https://stackoverflow.com/questions/12130883/r-expand-grid-function-in-python
+    Used in: ms_parallel_[any]
     """
     product = list(itertools.product(*itrs))
     return [[x[i] for x in product] for i in range(len(itrs))]
 
-def num_infeatures(dim_channels, kernel_size, length):
+def num_infeatures(dim_channels, kernel_size, length, stride=1):
     
     """
     Computes the number of input features for linear layer after 1d convolution. (No padding!)
+    Used in: models.ConvN
     """
     
-    linear_in = dim_channels[-1]*(length-len(dim_channels)*(kernel_size-1))
+    linear_in = dim_channels[-1]*(length-len(dim_channels)*(kernel_size-stride))
     
     return(linear_in)
 
@@ -81,6 +99,7 @@ def reshaping(X, L):
     
     """
     Reshapes 2d Torch-Tensor to 3d Torch-Tensor with Minibatches of sequence length L.
+    Used in: dev_convnet.train_model_CV
     
     """
     x = torch.empty(size=(X.shape[0]-L, X.shape[1], L))

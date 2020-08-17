@@ -10,45 +10,38 @@ import models
 from sklearn import metrics
 from sklearn.model_selection import KFold
 
-import preprocessing
+import os.path
 import utils
 import random
 import numpy as np
+import pandas as pd
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-import matplotlib.pyplot as plt
 import visualizations
-
-#%% Load Data
-X, Y = preprocessing.get_splits(sites = ["hyytiala"], dataset = "profound")
+import time
 
 #%%
 
-D_in, D_out = 7, 1
-N, H, L = 1,100, 20
-#%%
-dimensions = [7, 100, 1]
-dim_channels = [15, 30]
-kernel_size=2
-
-#%%
-
-def train_model_CV(X, Y, hparams, splits):
+def train_model_CV(hparams, model_design, X, Y, splits):
     # z-score data
     Y_mean, Y_std = np.mean(Y), np.std(Y)
     X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
 
     batchsize = hparams["batchsize"]
     epochs = hparams["epochs"]
-    #history = hparams["history"]
+    L = hparams["history"]
     #opti = hparams["optimizer"]
     #crit = hparams["criterion"]
     learningrate = hparams["learningrate"]
     shuffled_CV = hparams["shuffled_CV"]
-
+    
+    dimensions = model_design["dimensions"]
+    dim_channels = model_design["dim_channels"]
+    kernel_size = model_design["kernel_size"]
+    
     rmse_train = np.zeros((splits, epochs))
     rmse_val = np.zeros((splits, epochs))
     mae_train = np.zeros((splits, epochs))
@@ -74,7 +67,7 @@ def train_model_CV(X, Y, hparams, splits):
         Y_train = torch.tensor(Y_train).type(dtype=torch.float)
         
         model = models.ConvN(dimensions, dim_channels, kernel_size, L, activation = nn.Sigmoid)
-        optimizer = optim.Adam(model.parameters(), lr = learningrate)
+        optimizer = optim.Adam(model.parameters(), lr = learningrate, weight_decay=0.001)
         criterion = nn.MSELoss()
             
         for epoch in range(epochs):
@@ -83,7 +76,7 @@ def train_model_CV(X, Y, hparams, splits):
             y = torch.empty(size=(batchsize,Y_train.shape[1]))
     
             for i in range(batchsize):
-                subset = [range((j-L),j) for j in random.sample(range(L,X_train.shape[0]-1), N)]
+                subset = [range((j-L),j) for j in random.sample(range(L,X_train.shape[0]-1), 1)]
                 x[i], y[i] = X_train[subset].transpose(0,1), Y_train[np.max(subset)+1]
 
             # Training
@@ -105,16 +98,16 @@ def train_model_CV(X, Y, hparams, splits):
                 pred_test = model(utils.reshaping(X_test, L))
                 rmse_train[split, epoch] = np.sqrt(criterion(pred_train[:-1], Y_train[L+1:]))
                 rmse_val[split, epoch] = np.sqrt(criterion(pred_test[:-1], Y_test[L+1:]))
-                #mae_train[i, epoch] = metrics.mean_absolute_error(Y_train[L+1:], pred_train[:-1])
-                #mae_val[i, epoch] = metrics.mean_absolute_error(Y_test[L+1:], pred_test[:-1])
+                mae_train[split, epoch] = metrics.mean_absolute_error(Y_train[L+1:], pred_train[:-1])
+                mae_val[split, epoch] = metrics.mean_absolute_error(Y_test[L+1:], pred_test[:-1])
             
         with torch.no_grad():
             preds_train = model(utils.reshaping(X_train, L))
             preds_test = model(utils.reshaping(X_test, L))
             performance.append([np.sqrt(criterion(preds_train[:-1], Y_train[L+1:]).numpy()),
-                                np.sqrt(criterion(preds_test[:-1], Y_test[L+1:]).numpy())])
-                            #metrics.mean_absolute_error(Y_train, preds_train.numpy()),
-                            #metrics.mean_absolute_error(Y_test, preds_test.numpy())])
+                                np.sqrt(criterion(preds_test[:-1], Y_test[L+1:]).numpy()),
+                                metrics.mean_absolute_error(Y_train[L+1:], preds_train[:-1]),
+                                metrics.mean_absolute_error(Y_test[L+1:], preds_test[:-1])])
       
         y_test, preds_test = utils.minmax_rescaler(Y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
         y_tests.append(y_test[L:])
@@ -123,39 +116,111 @@ def train_model_CV(X, Y, hparams, splits):
         split += 1
             
     running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
-    performance = np.mean(np.array(performance), axis=0)
     
     return(running_losses, performance, y_tests, y_preds)
 
 #%%
-hparams = {"batchsize": 20, 
-           "epochs":50, 
-           "history":L, 
-           "hiddensize":H,
+def conv_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q, hp_search = []):
+    
+    in_features = X.shape[1]
+    out_features = Y.shape[1]
+        
+    search = [random.choice(sublist) for sublist in hp_list]
+
+    # Network training
+    hparams = {"batchsize": int(search[1]), 
+           "epochs":epochs, 
+           "history":int(search[3]), 
+           "hiddensize":int(search[0]),
            "optimizer":"adam", 
            "criterion":"mse", 
-           "learningrate":0.05,
-            "shuffled_CV":False}
+           "learningrate":search[2],
+           "shuffled_CV":False}
+    model_design = {"dimensions":[in_features, int(search[0]), out_features],
+                    "activation":nn.Sigmoid,
+                    "dim_channels":search[4],
+                    "kernel_size":search[5]}
+   
+    start = time.time()
+    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits=splits)
+    end = time.time()
+    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+    performance = np.mean(np.array(performance), axis=0)
+    hp_search.append([item for sublist in [[searchsize, (end-start)], search, performance] for item in sublist])
 
-running_losses, performance, y_tests, y_preds = train_model_CV(X, Y, hparams, splits=6)
+    print("Model fitted!")
+    
+    #predictions = [[i,j] for i,j in zip(y_tests_nn, y_preds_nn)]
+    
+    visualizations.plot_nn_loss(running_losses["rmse_train"], 
+                                running_losses["rmse_val"], 
+                                hparams = hparams, 
+                                datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
+                                figure = searchsize, model="convnet")
+    visualizations.plot_nn_predictions(y_tests_nn, 
+                                       y_preds_nn, 
+                                       history = hparams["history"], 
+                                       datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
+                                       figure = searchsize, model="convnet")
+    #visualizations.plot_prediction_error(predictions, 
+    #                                     history = hparams["history"], 
+    #                                     datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"),
+    #                                     figure = searchsize, model="convnet")
 
-
-visualizations.plot_nn_loss(running_losses["rmse_train"], running_losses["rmse_val"], hparams, figure="conv1")
-visualizations.plot_nn_predictions(y_tests, y_preds, L , figure="conv1", model="convnet")
-
+    q.put(hp_search)
+    
 #%%
-for i in range(5):
-    plt.plot(y_preds[i])
+def conv_selected(X, Y, hp_list, epochs, splits, searchsize, datadir):
     
-    
-#%%
-fig, ax = plt.subplots(len(y_tests), figsize=(10,10))
-fig.suptitle(f"Network Predictions")
+    hp_search = []
+    in_features = X.shape[1]
+    out_features = Y.shape[1]
 
-for i in range(len(y_tests)):
-    ax[i].plot(y_tests[i], color="grey", label="targets", linewidth=0.9, alpha=0.6)
-    ax[i].plot(y_preds[i], color="darkblue", label="nn predictions", linewidth=0.9, alpha=0.6)
-    ax[i].plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
+    for i in range(searchsize):
+        
+        #search = [random.choice(sublist) for sublist in hp_list]
+
+        # Network training
+         # Network training
+        hparams = {"batchsize": int(hp_list[1]), 
+                   "epochs":epochs, 
+                   "history":int(hp_list[3]), 
+                   "hiddensize":int(hp_list[0]),
+                   "optimizer":"adam", 
+                   "criterion":"mse", 
+                   "learningrate":hp_list[2],
+                   "shuffled_CV":False}
+        model_design = {"dimensions":[in_features, int(hp_list[0]), out_features],
+                        "activation":nn.Sigmoid,
+                        "dim_channels":hp_list[4],
+                        "kernel_size":hp_list[5]}
+   
+        start = time.time()
+        running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits=splits)
+        end = time.time()
+        # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+        performance = np.mean(np.array(performance), axis=0)
+        hp_search.append([item for sublist in [[i, (end-start)], hp_list, performance] for item in sublist])
+        print(hp_search)
+
+        #plot_nn_loss(running_losses["rmse_train"], running_losses["rmse_val"], data="profound", history = hparams["history"], figure = i, hparams = hparams)
+        #plot_nn_predictions(predictions, history = hparams["history"], figure = i, data = "Hyytiala profound")
+        #plot_prediction_error(predictions, history = hparams["history"], figure = i, data = "Hyytiala profound")
     
-handles, labels = ax[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='upper right')
+    results = pd.DataFrame(hp_search, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history", "channels", "kernelsize", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+        
+    print("Best Model Run: \n", results.iloc[results['rmse_val'].idxmin()])    
+    
+    visualizations.plot_nn_loss(running_losses["rmse_train"], 
+                                running_losses["rmse_val"], 
+                                hparams = hparams,
+                                datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"),
+                                figure = "selected", model="convnet")
+    
+    visualizations.plot_nn_predictions(y_tests, 
+                                       y_preds, 
+                                       history = hparams["history"], 
+                                       datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
+                                       figure = "selected", model="convnet")
+    
+    return(running_losses, y_tests, y_preds)
