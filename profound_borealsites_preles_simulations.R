@@ -16,8 +16,6 @@ params = get_parameters(default = FALSE)
 #================#
 
 load("Rdata/profound/profound_in.Rdata") # X
-load("Rdata/profound/profound_in_test.Rdata") # X_test
-load("Rdata/profound/profound_in_trainval.Rdata") # X
 load("Rdata/profound/profound_out.Rdata") # y
 #X <- X_test
 
@@ -35,8 +33,8 @@ ggplot(X_full) +
   scale_color_manual(name="", values=c("black", "red"))
 
 y_preles = as.data.frame(do.call(cbind, output))
-save(y_preles, file="Rdata/profound/preles_out_trainval.Rdata")
-write.table(y_preles, file="data/profound/preles_out_trainval", sep = ";",row.names = FALSE)
+save(y_preles, file="Rdata/profound/preles_out.Rdata")
+write.table(y_preles, file="data/profound/preles_out", sep = ";",row.names = FALSE)
 
 #====================#
 ## Boreal Sites data #
