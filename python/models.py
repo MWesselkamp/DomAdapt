@@ -72,9 +72,12 @@ class LSTM(nn.Module):
         return (torch.zeros(self.n_layers,batchsize, self.n_hidden),
                             torch.zeros(self.n_layers,batchsize, self.n_hidden))
 
-    def forward(self, x, hidden_cell):
+    def forward(self, x):
+        
+        hidden_cell = self.init_hidden(x.shape[1])
         
         out, hidden_cell = self.lstm(x, hidden_cell)
+        out = self.activation(out)
         out = self.fc1(out[-1,:,:])
         out = self.activation(out)
         out = self.fc2(out)

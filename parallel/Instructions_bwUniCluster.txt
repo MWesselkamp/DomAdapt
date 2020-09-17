@@ -1,0 +1,30 @@
+# Login to BwUniCluster 2.0 on  MobaXterm
+host name: "", login: fr_mw263
+install and launch OTP-Generator on different device
+
+# Prepare environment
+install miniconda
+setup pytorch environment / install required packages
+
+# Submission of Batchjobs
+save batchjob to .sh file
+
+# convert to Unix
+dos2unix batch_jobs/"batchjob"
+
+# submit
+($ sbatch -p "queue" "batchjob")
+# debugging
+$ sbatch -p dev_multiple batch_jobs/"batchjob"
+# larger computations (high time limit)
+$ sbatch -p multiple batch_jobs/"batchjob"
+
+# check on job state:
+$ scontrol show job
+
+# Cancel slurm jobs
+$ scancel [-i] <job-id>
+$ scancel -t <job_state_name> ("PENDING")
+
+HELP:
+https://wiki.bwhpc.de/e/BwUniCluster_2.0_Batch_Queues

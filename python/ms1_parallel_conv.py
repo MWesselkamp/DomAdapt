@@ -19,22 +19,23 @@ import multiprocessing as mp
 import itertools
 #%% Load Data
 datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"
-X, Y = preprocessing.get_splits(sites = ["hyytiala"], 
+X, Y = preprocessing.get_splits(sites = ["le_bray"], 
                                 datadir = os.path.join(datadir, "data"), 
-                                dataset = "profound")
+                                dataset = "profound", 
+                                simulations = None)
 
 #%% Grid search of hparams
-hiddensize = [64, 128, 256]
-batchsize = [8, 64, 128]
+hiddensize = [16, 64, 128, 256, 512]
+batchsize = [16, 64, 128, 256, 512]
 learningrate = [1e-3, 5e-3, 1e-2, 5e-2]
-history = [10, 20, 30]
+history = [2,5,10,20]
 channels = [[7,14], [10,20], [14,28]]
-kernelsize = [2,3]
+kernelsize = [2,3,4]
 
 hp_list = [hiddensize, batchsize, learningrate, history, channels, kernelsize]
-epochs = 300
-splits=6
-searchsize = 20
+epochs = 7000
+splits = 6
+searchsize = 50
 
 #%% multiprocessed model selection with searching random hparam combinations from above.
 
@@ -56,8 +57,6 @@ if __name__ == '__main__':
         ret = itertools.chain(*q.get())
         rets.append(list(ret))
         p.join()
-        
-    print('ConvNet fitting took {} seconds'.format(time.time() - starttime))
     
     results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history", "channels", "kernelsize", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn\convnet\grid_search_results.csv"), index = False)
+    results.to_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn\convnet\grid_search_results_cnn1.csv"), index = False)

@@ -1,0 +1,17 @@
+# Login to Nemo on  MobaXterm
+host name: login1.nemo.uni-freiburg.de , login: fr_mw263
+
+# Prepare environment
+module load devel/conda/latest
+conda create --name "env" python=3.6.9
+conda activate nnets
+conda install < scikit-learn, numpy, pandas >
+pip install torch
+
+# set up batch_job
+
+# set up parallel computing .py file.
+Important:
+- remove visualisations (they don't work yet).
+- make sure file paths are correct.
+

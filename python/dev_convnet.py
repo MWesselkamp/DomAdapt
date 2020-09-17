@@ -32,7 +32,7 @@ def train_model_CV(hparams, model_design, X, Y, splits):
 
     batchsize = hparams["batchsize"]
     epochs = hparams["epochs"]
-    L = hparams["history"]
+    seqlen = hparams["history"]
 
     #opti = hparams["optimizer"]
     #crit = hparams["criterion"] 
@@ -64,7 +64,7 @@ def train_model_CV(hparams, model_design, X, Y, splits):
         model = models.ConvN(model_design["dimensions"], 
                              model_design["dim_channels"], 
                              model_design["kernel_size"],
-                             L, 
+                             seqlen, 
                              model_design["activation"])
         
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
@@ -72,7 +72,7 @@ def train_model_CV(hparams, model_design, X, Y, splits):
             
         for epoch in range(epochs):
     
-            x, y = utils.create_inout_sequences(X_train, Y_train, batchsize, L, model="cnn")
+            x, y = utils.create_inout_sequences(X_train, Y_train, batchsize, seqlen, model="cnn")
 
             # Training
             model.train()
@@ -89,23 +89,23 @@ def train_model_CV(hparams, model_design, X, Y, splits):
             model.eval()
             
             with torch.no_grad():
-                pred_train = model(utils.reshaping(X_train, L, model="cnn"))
-                pred_test = model(utils.reshaping(X_test, L, model="cnn"))
-                rmse_train[split, epoch] = np.sqrt(criterion(pred_train, Y_train[L+1:]))
-                rmse_val[split, epoch] = np.sqrt(criterion(pred_test, Y_test[L+1:]))
-                mae_train[split, epoch] = metrics.mean_absolute_error(Y_train[L+1:], pred_train)
-                mae_val[split, epoch] = metrics.mean_absolute_error(Y_test[L+1:], pred_test)
+                pred_train = model(utils.reshaping(X_train, seqlen, model="cnn"))
+                pred_test = model(utils.reshaping(X_test, seqlen, model="cnn"))
+                rmse_train[split, epoch] = np.sqrt(criterion(pred_train, Y_train[seqlen+1:]))
+                rmse_val[split, epoch] = np.sqrt(criterion(pred_test, Y_test[seqlen+1:]))
+                mae_train[split, epoch] = metrics.mean_absolute_error(Y_train[seqlen+1:], pred_train)
+                mae_val[split, epoch] = metrics.mean_absolute_error(Y_test[seqlen+1:], pred_test)
             
         with torch.no_grad():
-            preds_train = model(utils.reshaping(X_train, L, model="cnn"))
-            preds_test = model(utils.reshaping(X_test, L, model="cnn"))
-            performance.append([np.sqrt(criterion(preds_train, Y_train[L+1:]).numpy()),
-                                np.sqrt(criterion(preds_test, Y_test[L+1:]).numpy()),
-                                metrics.mean_absolute_error(Y_train[L+1:], preds_train),
-                                metrics.mean_absolute_error(Y_test[L+1:], preds_test)])
+            preds_train = model(utils.reshaping(X_train, seqlen, model="cnn"))
+            preds_test = model(utils.reshaping(X_test, seqlen, model="cnn"))
+            performance.append([np.sqrt(criterion(preds_train, Y_train[seqlen+1:]).numpy()),
+                                np.sqrt(criterion(preds_test, Y_test[seqlen+1:]).numpy()),
+                                metrics.mean_absolute_error(Y_train[seqlen+1:], preds_train),
+                                metrics.mean_absolute_error(Y_test[seqlen+1:], preds_test)])
       
         y_test, preds_test = utils.minmax_rescaler(Y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
-        y_tests.append(y_test[L:])
+        y_tests.append(y_test[seqlen+1:])
         y_preds.append(preds_test)
         
         split += 1
