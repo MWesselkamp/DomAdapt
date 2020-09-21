@@ -26,6 +26,7 @@ import models
 #%% Load Data
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ["hyytiala"],
+                                years = [2001, 2002, 2003, 2004, 2005, 2006, 2007],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound")
 
@@ -37,7 +38,7 @@ X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
 
 
 #%% Prep data
-D_in, D_out, N, H = X.shape[1], Y.shape[1], 20, 10
+D_in, D_out, N, H = X.shape[1], Y.shape[1], 50, 10
 subset = random.sample(range(X.shape[0]), N)
 X_batch, y_batch = X[subset], Y[subset]
         
@@ -78,7 +79,7 @@ def create_inout_sequences(x, y, batchsize, seqlen, model):
 batchsize=16
 seqlen=10
 
-x, y = create_inout_sequences(x, y, batchsize, seqlen, "lstm")
+x, y = utils.create_inout_sequences(x, y, batchsize, seqlen, "lstm")
 
 
 x.shape
@@ -87,24 +88,25 @@ y.shape
 
 #%%Layers
 nlayers = 1
-D_in = 9
+D_in = 7
 H = 32
 D_out = 1
 
-hidden_cell = hidden
-lstm = nn.LSTM(D_in, H)
 
+lstm = nn.LSTM(D_in, H, batch_first=False)
+hidden_cell = (torch.zeros(1,batchsize, H),
+               torch.zeros(1,batchsize, H))
 out, hidden_cell = lstm(x, hidden_cell)
 
 out.shape
 out[-1,:,:].shape
 
-fc1 = nn.Linear(H, D_out)
-
-out = fc1(out[-1,:,:])
+fc1 = nn.Linear(H, H)
+out = nn.ReLU(out)
+out = fc1(out)
 out.shape
 
 
-net = models.LSTM(7, 10, 1, 5)
+net = models.LSTM(7, H, 1, seqlen, nn.ReLU)
 
 out = net(x)

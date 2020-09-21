@@ -17,8 +17,9 @@ import time
 from dev_convnet import conv_selection_parallel
 import multiprocessing as mp
 import itertools
+import torch.nn as nn
 #%% Load Data
-datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"
+datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ["le_bray"], 
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound", 
@@ -28,14 +29,15 @@ X, Y = preprocessing.get_splits(sites = ["le_bray"],
 hiddensize = [16, 64, 128, 256, 512]
 batchsize = [16, 64, 128, 256, 512]
 learningrate = [1e-3, 5e-3, 1e-2, 5e-2]
-history = [2,5,10,20]
+history = [5,10,15,20]
 channels = [[7,14], [10,20], [14,28]]
 kernelsize = [2,3,4]
+activation = [nn.Sigmoid, nn.ReLU]
 
-hp_list = [hiddensize, batchsize, learningrate, history, channels, kernelsize]
-epochs = 7000
+hp_list = [hiddensize, batchsize, learningrate, history, channels, kernelsize, activation]
+epochs = 20
 splits = 6
-searchsize = 50
+searchsize = 20
 
 #%% multiprocessed model selection with searching random hparam combinations from above.
 
@@ -58,5 +60,5 @@ if __name__ == '__main__':
         rets.append(list(ret))
         p.join()
     
-    results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history", "channels", "kernelsize", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn\convnet\grid_search_results_cnn1.csv"), index = False)
+    results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history", "channels", "kernelsize", "activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_nn\convnet\grid_search_results_cnn1.csv"), index = False)

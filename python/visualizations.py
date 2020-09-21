@@ -97,13 +97,13 @@ def plot_validation_errors(results, model, train_val = False, annotate = False):
     
     """
     if model == "RandomForest":
-        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_rf"
+        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\plots\data_quality_evaluation\fits_rf"
     elif model == "mlp":
-        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_nn\mlp"
+        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\plots\data_quality_evaluation\fits_nn\mlp"
     elif model == "convnet":
-        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation\fits_nn\convnet"
+        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\plots\data_quality_evaluation\fits_nn\convnet"
     else:
-        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\plots\data_quality_evaluation"
+        data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\plots\data_quality_evaluation"
 
     fig, ax = plt.subplots()
     
@@ -111,12 +111,12 @@ def plot_validation_errors(results, model, train_val = False, annotate = False):
     if train_val:
         x = "rmse_val"
         y = "rmse_train"
-        fig.suptitle(f"Hyperparameter Optimization (6-fold CV) \n RSME Errors ")
+        fig.suptitle(f"Hyperparameter Optimization \n Training vs. Validation Error")
         data_dir = os.path.join(data_dir, f"_valtrain_errors_")
     else:
         x = "rmse_val"
         y = "mae_val"
-        fig.suptitle(f"Hyperparameter Optimization (6-fold CV) \n Validation Errors ")
+        fig.suptitle(f"Hyperparameter Optimization\n Validation Errors")
         data_dir = os.path.join(data_dir, f"_val_errors_")
         
     if isinstance(model, list):

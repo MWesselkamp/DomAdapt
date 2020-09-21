@@ -34,6 +34,7 @@ def train_model_CV(hparams, model_design, X, Y, splits):
     epochs = hparams["epochs"]
     seqlen = hparams["history"]
     dimensions = model_design["dimensions"]
+    activation = model_design["activation"]
 
     #opti = hparams["optimizer"]
     #crit = hparams["criterion"]
@@ -62,7 +63,7 @@ def train_model_CV(hparams, model_design, X, Y, splits):
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         Y_train = torch.tensor(Y_train).type(dtype=torch.float)
         
-        model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen)
+        model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen, activation)
         
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
         criterion = nn.MSELoss()
@@ -133,32 +134,19 @@ def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, 
            "criterion":"mse", 
            "learningrate":search[2]}
     model_design = {"dimensions":[in_features, int(search[0]), out_features],
-                    "activation":nn.Sigmoid}
-   
+                    "activation":search[4]}
+    
+    #try: 
     start = time.time()
     running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits=splits)
     end = time.time()
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
     performance = np.mean(np.array(performance), axis=0)
     hp_search.append([item for sublist in [[searchsize, (end-start)], search, performance] for item in sublist])
-
     print("Model fitted!")
-    
-    #predictions = [[i,j] for i,j in zip(y_tests_nn, y_preds_nn)]
-    
-    visualizations.plot_nn_loss(running_losses["rmse_train"], 
-                                running_losses["rmse_val"], 
-                                hparams = hparams, 
-                                datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
-                                figure = searchsize, model="convnet")
-    visualizations.plot_nn_predictions(y_tests_nn, 
-                                       y_preds_nn, 
-                                       history = hparams["history"], 
-                                       datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
-                                       figure = searchsize, model="convnet")
-    #visualizations.plot_prediction_error(predictions, 
-    #                                     history = hparams["history"], 
-    #                                     datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"),
-    #                                     figure = searchsize, model="convnet")
+    #except:
+    #    print("Search:", search)
+    #    print("HP search invalid!")
+
 
     q.put(hp_search)

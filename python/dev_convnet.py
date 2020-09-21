@@ -131,37 +131,27 @@ def conv_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, 
            "criterion":"mse", 
            "learningrate":search[2]}
     model_design = {"dimensions":[in_features, int(search[0]), out_features],
-                    "activation":nn.Sigmoid,
+                    "activation":search[6],
                     "dim_channels":search[4],
                     "kernel_size":search[5]}
-   
-    start = time.time()
-    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits=splits)
-    end = time.time()
-    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
-    performance = np.mean(np.array(performance), axis=0)
-    hp_search.append([item for sublist in [[searchsize, (end-start)], search, performance] for item in sublist])
+    
+    try:
+        start = time.time()
+        running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits=splits)
+        end = time.time()
+        # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+        performance = np.mean(np.array(performance), axis=0)
+        hp_search.append([item for sublist in [[searchsize, (end-start)], search, performance] for item in sublist])
+    
+    except:
+        print("Invalid HP search.")
 
     print("Model fitted!")
     
     #predictions = [[i,j] for i,j in zip(y_tests_nn, y_preds_nn)]
-    
-    visualizations.plot_nn_loss(running_losses["rmse_train"], 
-                                running_losses["rmse_val"], 
-                                hparams = hparams, 
-                                datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
-                                figure = searchsize, model="convnet")
-    visualizations.plot_nn_predictions(y_tests_nn, 
-                                       y_preds_nn, 
-                                       history = hparams["history"], 
-                                       datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"), 
-                                       figure = searchsize, model="convnet")
-    #visualizations.plot_prediction_error(predictions, 
-    #                                     history = hparams["history"], 
-    #                                     datadir = os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn"),
-    #                                     figure = searchsize, model="convnet")
 
     q.put(hp_search)
+    
     
 #%%
 def conv_selected(X, Y, hp_list, epochs, splits, searchsize, datadir):

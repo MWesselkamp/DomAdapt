@@ -54,7 +54,7 @@ def ConvN(dimensions, dim_channels, kernel_size, length, activation = nn.ReLU):
 #%% LSTM
 class LSTM(nn.Module):
     
-    def __init__(self, D_in, n_hidden, D_out, seq_len, n_layers = 1):
+    def __init__(self, D_in, n_hidden, D_out, seq_len, activation, n_layers = 1):
         super().__init__()
         
         self.n_hidden = n_hidden
@@ -65,7 +65,7 @@ class LSTM(nn.Module):
 
         self.fc1 = nn.Linear(self.n_hidden, self.n_hidden)
         self.fc2 = nn.Linear(self.n_hidden, D_out)
-        self.activation = nn.Sigmoid()
+        self.activation = activation
         
     def init_hidden(self, batchsize):
         

@@ -7,7 +7,7 @@ Created on Tue Jun 30 15:19:35 2020
 #%% Set working directory
 import os
 os.getcwd()
-os.chdir('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt')
+os.chdir('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
 
 import torch
 import torch.nn as nn
@@ -18,24 +18,40 @@ import matplotlib.pyplot as plt
 
 import models
 import preprocessing
+import utils
 
 #%% Load data
-X, Y = preprocessing.get_simulations(data_dir = 'data\preles\pars_calibrated', ignore_env = True)
-
-#x = torch.tensor(np.transpose(sims['sim1'][0])).type(dtype=torch.float)
-#y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
+datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+X, Y = preprocessing.get_splits(sites = ['le_bray'],
+                                datadir = os.path.join(datadir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
 
 #%% Normalize features
 X = preprocessing.normalize_features(X)
 
 #%% Set up Training
 # Layer dimensions and model
-D_in, D_out, N, H = 12, 2, 730, 50
-model = models.ConvNet(D_in, H, D_out)
+hiddensize = 128
+dimensions = [X.shape[1],hiddensize,Y.shape[1]]
+dim_channels = [14,28]
+kernel_size = 4
+seqlen = 10
+batchsize = 16
+
+model = models.ConvN(dimensions, dim_channels, kernel_size, seqlen)
 
 # loss function and an optimizer
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr = 1e-5)
+
+X = torch.tensor(X).type(dtype=torch.float)
+Y = torch.tensor(Y).type(dtype=torch.float)
+x, y = utils.create_inout_sequences(X, Y, batchsize, seqlen, model="cnn")
+x.shape
+
+output = model(x)
+output.shape
 
 #%% Restructure data to smaller batches
 # In this step, the labels are lagged by one day, 

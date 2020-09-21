@@ -22,15 +22,18 @@ import visualizations
 
 #%% Load Data: Profound in and out.
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-X, Y = preprocessing.get_splits(sites = ['le_bray'],
+X, Y = preprocessing.get_splits(sites = ['collelongo','le_bray'],
+                                years = [2001,2002,2003,2004,2005,2006, 2007],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound",
-                                simulations = "preles")
+                                simulations = None,
+                                colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR","DOY_sin", "DOY_cos"],
+                                to_numpy = False)
 
 #%% Grid search of hparams
-rets_mlp = pd.read_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn\mlp\grid_search_results.csv"))
-rets_convnet = pd.read_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn\convnet\grid_search_results.csv"))
-rets_rf = pd.read_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_rf\grid_search_results.csv"))
+rets_mlp = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_nn\grid_search_results_mlp1.csv"))
+rets_convnet = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_nn\grid_search_results_cnn1.csv"))
+rets_rf = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_rf\grid_search_results_rf1.csv"))
 
 #%%
 visualizations.plot_validation_errors([rets_rf, rets_mlp, rets_convnet], ["RandomForest", "mlp", "convnet"], train_val = False)

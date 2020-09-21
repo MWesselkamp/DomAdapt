@@ -34,7 +34,7 @@ def load_data(dataset, data_dir, simulations):
     
     return X, Y
 
-def get_splits(sites, datadir, dataset = "profound", simulations = None,
+def get_splits(sites, years, datadir, dataset = "profound", simulations = None,
     colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"],
     to_numpy = True):
     
@@ -42,28 +42,33 @@ def get_splits(sites, datadir, dataset = "profound", simulations = None,
     
     X, Y = load_data(dataset = dataset, data_dir = datadir, simulations = simulations)
     
-    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
+    X["date"] = X["date"].str[:4].astype(int) # get years as integers
+    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"]) # encode day of year as sinus and cosinus
 
     if all([site in X["site"].values for site in sites]):
         row_ind = X['site'].isin(sites)
         print(f"Returns {sites} from \n", X["site"].unique())
+        X, Y = X[row_ind], Y[row_ind]
     else: 
         print("Not all sites in dataset!")
+        
+    try:
+        row_ind = X["date"].isin(years)
+        print(f"Returns valid years from {years} in \n", X["date"].unique())
+        X, Y = X[row_ind], Y[row_ind]
+    except: 
+        print(" years specification invalid. Returns all years.")
     
     try:
         X = X[colnames]
     except:
         print("Columns are missing!")
     
-    if simulations != None:    
-        
+    if simulations != None:        
         X["ET"] = Y["ET"]
         X["SW"] = Y["SW"]
-        
         Y= Y.drop(columns=["ET", "SW"])
-
     else:
-        
         try:
             Y= Y.drop(columns=["ET"])
         except:
@@ -72,7 +77,7 @@ def get_splits(sites, datadir, dataset = "profound", simulations = None,
     if to_numpy:
         X, Y = X.to_numpy(), Y.to_numpy()
     
-    return X[row_ind], Y[row_ind]
+    return X, Y
 
 
 

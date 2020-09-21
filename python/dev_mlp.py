@@ -24,7 +24,7 @@ import pandas as pd
 import os.path
 
 #%%
-def train_model_CV(hparams, model_design, X, Y, splits = 6):
+def train_model_CV(hparams, model_design, X, Y, splits = 6, test_set = None):
     
     epochs = hparams["epochs"]
     
