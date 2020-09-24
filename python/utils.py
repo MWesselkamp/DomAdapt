@@ -39,6 +39,8 @@ def minmax_scaler(data):
     #scaler = MinMaxScaler(feature_range = (-1,1))
     if (isinstance(data, pd.DataFrame)):
         data_norm = (data - pd.mean(data))/ pd.std(data)
+    elif (torch.is_tensor(data)):
+        data_norm = (data - torch.mean(data)) / torch.std(data)
     else:
         data_norm = (data - np.mean(data, axis=0))/np.std(data, axis=0)
     
@@ -106,7 +108,7 @@ def reshaping(X, seqlen, model):
     Used in: dev_convnet.train_model_CV
     
     """
-    batchsize = X.shape[0]-1-seqlen
+    batchsize = X.shape[0]-seqlen
     
     if model=="lstm":
         x_out = torch.empty((seqlen, batchsize, X.shape[1]))

@@ -23,21 +23,21 @@ datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ["le_bray"], 
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound", 
-                                simulations = None)
+                                simulations = "preles")
 
 #%% Grid search of hparams
 hiddensize = [16, 64, 128, 256, 512]
 batchsize = [16, 64, 128, 256, 512]
-learningrate = [1e-4, 1e-3, 5e-3, 1e-2, 5e-2]
+learningrate = [1e-3, 5e-3, 1e-2, 5e-2]
 history = [5,10,15,20]
 channels = [[7,14], [10,20], [14,28]]
 kernelsize = [2,3,4]
 activation = [nn.Sigmoid, nn.ReLU]
 
 hp_list = [hiddensize, batchsize, learningrate, history, channels, kernelsize, activation]
-epochs = 20
+epochs = 7000
 splits = 6
-searchsize = 20
+searchsize = 50
 
 #%% multiprocessed model selection with searching random hparam combinations from above.
 

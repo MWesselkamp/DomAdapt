@@ -15,9 +15,11 @@ import time
 from dev_mlp import mlp_selection_parallel
 import multiprocessing as mp
 import itertools
+import torch.nn as nn
 #%% Load Data
-datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"
+datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ["le_bray"], 
+                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
@@ -25,10 +27,13 @@ X, Y = preprocessing.get_splits(sites = ["le_bray"],
 #%% Grid search of hparams
 hiddensize = [16, 64, 128, 256, 512]
 batchsize = [16, 64, 128, 256, 512]
-learningrate = [1e-3, 5e-3, 1e-2, 5e-2]
+learningrate = [1e-4, 1e-3, 5e-3, 1e-2, 5e-2]
 history = [0,1,2]
-hp_list = [hiddensize, batchsize, learningrate, history]
-epochs = 7000
+activation = [nn.Sigmoid, nn.ReLU]
+n_layers = [1,2,3]
+
+hp_list = [hiddensize, batchsize, learningrate, history, activation, n_layers]
+epochs = 4000
 splits=6
 searchsize = 50
 
@@ -53,5 +58,5 @@ if __name__ == '__main__':
         rets.append(list(ret))
         p.join()
     
-    results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_nn\mlp\grid_search_results_mlp1.csv"), index = False)
+    results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "nlayers", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_nn\mlp\grid_search_results_mlp_ex.csv"), index = False)

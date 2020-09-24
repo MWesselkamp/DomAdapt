@@ -22,7 +22,7 @@ import random
 import preprocessing
 import utils
 import models
-
+import torch.nn.functional as F
 #%% Load Data
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ["hyytiala"],
@@ -38,7 +38,7 @@ X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
 
 
 #%% Prep data
-D_in, D_out, N, H = X.shape[1], Y.shape[1], 50, 10
+N = 50
 subset = random.sample(range(X.shape[0]), N)
 X_batch, y_batch = X[subset], Y[subset]
         
@@ -102,7 +102,8 @@ out.shape
 out[-1,:,:].shape
 
 fc1 = nn.Linear(H, H)
-out = nn.ReLU(out)
+
+out = torch.sigmoid(out)
 out = fc1(out)
 out.shape
 

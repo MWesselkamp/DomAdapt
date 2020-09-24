@@ -8,7 +8,7 @@
 #MOAB -l nodes=3:ppn=20
 #
 # Estimated wallclock time for job
-#MOAB -l walltime=00:20:00:00
+#MOAB -l walltime=01:06:00:00
 #
 # Write standard output and errors in same file
 #MOAB -j oe 

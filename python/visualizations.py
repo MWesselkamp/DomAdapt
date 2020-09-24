@@ -88,7 +88,7 @@ def plot_prediction_error(predictions, history, datadir, figure = "", model="con
         plt.close()
     
 #%%
-def plot_validation_errors(results, model, train_val = False, annotate = False):
+def hparams_optimization_errors(results, model = "all", train_val = False, annotate = False):
     """
     Scatterplot (_valtrain_erros).
     
@@ -120,7 +120,8 @@ def plot_validation_errors(results, model, train_val = False, annotate = False):
         data_dir = os.path.join(data_dir, f"_val_errors_")
         
     if isinstance(model, list):
-        colors = ["blue", "green", "orange"]
+        colors = ["blue", "green", "yellow", "orange"]
+        #markers = ["o", "o", "*", "*"]
         for i in range(len(results)):
             ax.scatter(results[i][x], results[i][y], color=colors[i], label=model[i])
     else:
@@ -133,8 +134,8 @@ def plot_validation_errors(results, model, train_val = False, annotate = False):
     plt.legend()
     plt.xlabel(x)
     plt.ylabel(y)
-    plt.savefig(data_dir)
-    plt.close()
+    #plt.savefig(data_dir)
+    #plt.close()
     
 #%%
 def plot_errors_selmod(errors, running_losses_mlp, running_losses_conv, datadir, error = "rmse_val", save=True):

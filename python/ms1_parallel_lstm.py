@@ -15,7 +15,8 @@ import time
 from dev_lstm import lstm_selection_parallel
 import multiprocessing as mp
 import itertools
-import torch.nn as nn
+import torch
+import torch.nn.functional as F
 #%% Load Data
 datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ["le_bray"], 
@@ -27,14 +28,14 @@ X, Y = preprocessing.get_splits(sites = ["le_bray"],
 #%% Grid search of hparams
 hiddensize = [16, 64, 128, 256, 512]
 batchsize = [16, 64, 128, 256, 512]
-learningrate = [1e-3, 5e-3, 1e-2, 5e-2]
+learningrate = [1e-4, 1e-3, 5e-3, 1e-2, 5e-2]
 history = [5,10,15,20]
-activation = [nn.Sigmoid, nn.ReLU]
+activation = [torch.sigmoid, F.relu]
 hp_list = [hiddensize, batchsize, learningrate, history, activation]
 
-epochs = 20
+epochs = 7000
 splits=6
-searchsize = 3
+searchsize = 50
 
 #%% multiprocessed model selection with searching random hparam combinations from above.
 
@@ -58,4 +59,4 @@ if __name__ == '__main__':
         p.join()
     
     results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_nn\mlp\grid_search_results_lstm1.csv"), index = False)
+    results.to_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_nn\grid_search_results_lstm1.csv"), index = False)

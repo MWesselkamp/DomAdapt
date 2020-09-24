@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import utils
 #%%
 
-def MLP(dimensions, activation = nn.ReLU):
+def MLP(dimensions, activation):
     
     network = nn.Sequential()
     
