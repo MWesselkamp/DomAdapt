@@ -23,11 +23,15 @@ import os.path
 
 from ast import literal_eval
 #%%
-def train_model_CV(hparams, model_design, X, Y, splits = 6, eval_set = None):
+def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
+                   save, finetuning, feature_extraction):
+    
+    """
+    
+    
+    """
     
     epochs = hparams["epochs"]
-    criterion = hparams["criterion"]
-    optimizer = hparams["optimizer"]
     
     kf = KFold(n_splits=splits, shuffle = False)
     kf.get_n_splits(X)
@@ -42,7 +46,8 @@ def train_model_CV(hparams, model_design, X, Y, splits = 6, eval_set = None):
     X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
     
     if not eval_set is None:
-        Yt_mean, Yt_std = np.mean(eval_set)
+        print("Test set used for model evaluation")
+        Yt_mean, Yt_std = np.mean(eval_set), np.std(eval_set)
         Yt = utils.minmax_scaler(eval_set)
         yt_tests = []
         
@@ -57,16 +62,31 @@ def train_model_CV(hparams, model_design, X, Y, splits = 6, eval_set = None):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = Y[train_index], Y[test_index]
         
-        model = models.MLP(model_design["dimensions"], model_design["activation"])
-        
         X_test = torch.tensor(X_test).type(dtype=torch.float)
         y_test = torch.tensor(y_test).type(dtype=torch.float)
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         y_train = torch.tensor(y_train).type(dtype=torch.float)
         
         if not eval_set is None:
-            yt_train, yt_test = Yt[train_index], Yt[test_index]
-            yt_train, yt_test = torch.tensor(yt_train).type(dtype=torch.float), torch.tensor(yt_test).type(dtype=torch.float)
+            yt_test = Yt[test_index]
+            yt_test = torch.tensor(yt_test).type(dtype=torch.float)
+            
+        if finetuning:
+            print("Loading pretrained Model.")
+            #model = models.MLP(model_design["dimensions"], model_design["activation"])
+            #model = nn.DataParallel(model)
+            #model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
+            model = torch.load(os.path.join(data_dir, f"model{i}.pth"))
+            model.eval()
+            if feature_extraction:
+                print("Extracting features.")
+                for param in model.parameters():
+                    param.requires_grad = False
+        else:
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+            
+        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
+        criterion = nn.MSELoss()
         
         for epoch in range(epochs):
             
@@ -96,14 +116,14 @@ def train_model_CV(hparams, model_design, X, Y, splits = 6, eval_set = None):
                 pred_train = model(X_train)
                 pred_test = model(X_test)
                 if eval_set is None:
-                    rmse_train[i, epoch] = np.sqrt(np.mean(np.square(y_train-pred_train).numpy()))
-                    rmse_val[i, epoch] = np.sqrt(np.mean(np.square(y_test-pred_test).numpy()))
+                    rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
+                    rmse_val[i, epoch] = utils.rmse(y_test, pred_test)
                     mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
                     mae_val[i, epoch] = metrics.mean_absolute_error(y_test, pred_test)  
                 else:
-                    rmse_train[i, epoch] = np.sqrt(np.mean(np.square(yt_train-pred_train).numpy()))
-                    rmse_val[i, epoch] = np.sqrt(np.mean(np.square(yt_test-pred_test).numpy()))
-                    mae_train[i, epoch] = metrics.mean_absolute_error(yt_train, pred_train)
+                    rmse_train[i, epoch] = np.sqrt(np.mean(np.square(y_train-pred_train).numpy()))
+                    rmse_val[i, epoch] = utils.rmse(yt_test, pred_test)
+                    mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
                     mae_val[i, epoch] = metrics.mean_absolute_error(yt_test, pred_test)
                     
          
@@ -112,15 +132,19 @@ def train_model_CV(hparams, model_design, X, Y, splits = 6, eval_set = None):
             preds_train = model(X_train)
             preds_test = model(X_test)
             if eval_set is None:
-                performance.append([np.sqrt(np.mean(np.square(y_train-preds_train).numpy())),
-                                    np.sqrt(np.mean(np.square(y_test-pred_test).numpy())),
+                performance.append([utils.rmse(y_train, preds_train),
+                                    utils.rmse(y_test, preds_test),
                                     metrics.mean_absolute_error(y_train, preds_train.numpy()),
                                     metrics.mean_absolute_error(y_test, preds_test.numpy())])
             else:
-                performance.append([np.sqrt(np.mean(np.square(yt_train-preds_train).numpy())),
-                                    np.sqrt(np.mean(np.square(yt_test-pred_test).numpy())),
-                                    metrics.mean_absolute_error(yt_train, preds_train.numpy()),
+                performance.append([utils.rmse(y_train, preds_train),
+                                    utils.rmse(yt_test, preds_test),
+                                    metrics.mean_absolute_error(y_train, preds_train.numpy()),
                                     metrics.mean_absolute_error(yt_test, preds_test.numpy())])
+    
+        if save:
+            #torch.save(model.state_dict(), os.path.join(data_dir, f"model{i}.pth"))
+            torch.save(model, os.path.join(data_dir, f"model{i}.pth"))
         
         # rescale before returning predictions
         y_test, preds_test = utils.minmax_rescaler(y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
@@ -138,9 +162,7 @@ def train_model_CV(hparams, model_design, X, Y, splits = 6, eval_set = None):
     if eval_set is None:
         return(running_losses, performance, y_tests, y_preds)
     else:
-        return(running_losses, performance, y_tests, y_preds, yt_tests)
-        
-    # Stop early if validation loss isn't decreasing/increasing again
+        return(running_losses, performance, yt_tests, y_preds)
     
 
 #%% Random Grid search: Paralellized
@@ -160,8 +182,6 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q
                "epochs":epochs, 
                "history":search[3], 
                "hiddensize":dimensions[1:-1],
-               "optimizer":"adam", 
-               "criterion":"mse", 
                "learningrate":search[2]}
     model_design = {"dimensions": dimensions,
                     "activation": search[4]}
@@ -179,7 +199,25 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q
     
 #%% Random Grid Search:
     
-def selected(X, Y, model_params, epochs, splits,  datadir):
+def selected(X, Y, model_params, epochs, splits, data_dir = None, 
+             save = False, eval_set = None, finetuning=False, feature_extraction=False):
+    
+    """
+    Takes the best found model parameters and trains a MLP with it.
+    
+    Args:
+        X, Y (numpy array): Feature and Target data. \n
+        model_params (dict): dictionary containing all required model parameters. \n
+        epochs (int): epochs to train the model. \n
+        splits (int): How many splits will be used in the CV. \n
+        eval_set (numpy array): if provided, used for model evaluation. Default to None.
+        
+    Returns:
+        running_losses: epoch-wise training and validation errors (rmse and mae) per split.\n
+        y_tests: Target test set on which the model was evaluated on per split.\n
+        y_preds: Network predictions per split.\n
+        performance (pd.DataFrame): Data frame of model parameters and final training and validation errors.\n
+    """
     
     hidden_dims = literal_eval(model_params["hiddensize"])
     
@@ -192,15 +230,16 @@ def selected(X, Y, model_params, epochs, splits,  datadir):
                "epochs":epochs, 
                "history": int(model_params["history"]), 
                "hiddensize":hidden_dims,
-               "optimizer":"adam", 
-               "criterion":"mse", 
                "learningrate":model_params["learningrate"]}
 
     model_design = {"dimensions": dimensions,
                     "activation": eval(model_params["activation"][8:-2])}
    
     start = time.time()
-    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits=splits)
+    if not data_dir is None:
+        data_dir = os.path.join(data_dir, f"mlp")
+    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
+                                                                  save, finetuning, feature_extraction)
     end = time.time()
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
     performance = np.mean(np.array(performance), axis=0)
@@ -209,6 +248,7 @@ def selected(X, Y, model_params, epochs, splits,  datadir):
             model_params["hiddensize"], model_params["batchsize"], model_params["learningrate"], model_params["history"], model_params["activation"], 
             performance[0], performance[1], performance[2], performance[3]]
 
-    results = pd.DataFrame(rets, columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history", "activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results = pd.DataFrame([rets], 
+                           columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history", "activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
     
     return(running_losses, y_tests, y_preds, results)

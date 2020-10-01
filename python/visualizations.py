@@ -9,12 +9,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #%%
-def plot_nn_loss(train_loss, val_loss, hparams, datadir, figure = "", model = "convnet", save=True):
-    
-    data_dir = os.path.join(datadir, model)
+def plot_nn_loss(train_loss, val_loss, hparams, model):
+
     
     fig, ax = plt.subplots(figsize=(10,6))
-    fig.suptitle(f"{model} \n Epochs = {hparams['epochs']}, History = {hparams['history']} \n Hiddensize = {hparams['hiddensize']}, Batchsize = {hparams['batchsize']}, Learning_rate = {hparams['learningrate']}")
+    #fig.suptitle(f"{model} \n Epochs = {hparams['epochs']}, History = {hparams['history']} \n Hiddensize = {hparams['hiddensize']}, Batchsize = {hparams['batchsize']}, Learning_rate = {hparams['learningrate']}")
 
     if train_loss.shape[0] > 1:
         ci_train = np.quantile(train_loss, (0.05,0.95), axis=0)
@@ -37,18 +36,13 @@ def plot_nn_loss(train_loss, val_loss, hparams, datadir, figure = "", model = "c
     plt.ylim(bottom = 0)
     fig.legend(loc="upper left")
     
-    if save:
-        plt.savefig(os.path.join(data_dir, f"_loss_{figure}"))
-        plt.close()
 
 #%%
-def plot_nn_predictions(y_tests, y_preds, history, datadir, figure = "", model = "convnet", save=True):
+def plot_nn_predictions(y_tests, y_preds, history, model):
     
     """
     Plot model predictions.
     """
-    
-    data_dir = os.path.join(datadir, model)
     
     fig, ax = plt.subplots(len(y_tests), figsize=(10,10))
     fig.suptitle(f"Network Predictions")
@@ -60,20 +54,16 @@ def plot_nn_predictions(y_tests, y_preds, history, datadir, figure = "", model =
     
     handles, labels = ax[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='upper right')
-    if save:
-        plt.savefig(os.path.join(data_dir, f"_predictions_{figure}"))
-        plt.close()
     
     
 #%%
-def plot_prediction_error(predictions, history, datadir, figure = "", model="convnet", save=True):
+def plot_prediction_error(predictions, history, datadir, model):
     
     """
     Plot Model Prediction Error (root mean squared error).
     
     """
-    data_dir = os.path.join(datadir, model)
-
+    
     fig, ax = plt.subplots(len(predictions), figsize=(10,10))
     fig.suptitle(f"Network Prediction: Root Mean Squared Error (RMSE)")
 
@@ -83,9 +73,6 @@ def plot_prediction_error(predictions, history, datadir, figure = "", model="con
     
     #handles, labels = ax[0].get_legend_handles_labels()
     #fig.legend(handles, labels, loc='upper right')
-    if save:
-        plt.savefig(os.path.join(data_dir, f"_rmse_{figure}"))
-        plt.close()
     
 #%%
 def hparams_optimization_errors(results, model = "all", train_val = False, annotate = False):

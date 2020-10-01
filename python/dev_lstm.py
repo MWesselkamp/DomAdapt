@@ -24,7 +24,8 @@ import time
 
 #%%
 
-def train_model_CV(hparams, model_design, X, Y, splits):
+def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
+                   save, finetuning, feature_extraction):
     # z-score data
     Y_mean, Y_std = np.mean(Y), np.std(Y)
     X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
@@ -44,6 +45,12 @@ def train_model_CV(hparams, model_design, X, Y, splits):
     y_tests = []
     y_preds = []
     
+    if not eval_set is None:
+        print("Test set used for model evaluation")
+        Yt_mean, Yt_std = np.mean(eval_set), np.std(eval_set)
+        Yt = utils.minmax_scaler(eval_set)
+        yt_tests = []
+    
     kf = KFold(n_splits=splits, shuffle = False)
     kf.get_n_splits(X)
 
@@ -59,8 +66,24 @@ def train_model_CV(hparams, model_design, X, Y, splits):
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         Y_train = torch.tensor(Y_train).type(dtype=torch.float)
         
-        model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen, activation)
+        if not eval_set is None:
+            Yt_test = Yt[test_index]
+            Yt_test = torch.tensor(Yt_test).type(dtype=torch.float)
         
+        
+        if finetuning:
+            print("Loading pretrained Model.")
+            #model = models.MLP(model_design["dimensions"], model_design["activation"])
+            #model.load_state_dict(torch.load(os.path.join(data_dir, f"model{split}")))
+            model = torch.load(os.path.join(data_dir, f"model{split}.pth"))
+            model.eval()
+            if feature_extraction:
+                print("Extracting features.")
+                for param in model.parameters():
+                    param.requires_grad = False
+        else:
+            model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen, activation)
+            
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
         criterion = nn.MSELoss()
         
@@ -87,29 +110,51 @@ def train_model_CV(hparams, model_design, X, Y, splits):
 
                 pred_train = model(utils.reshaping(X_train, seqlen, model="lstm"))
                 pred_test = model(utils.reshaping(X_test, seqlen, model="lstm"))
-                rmse_train[split, epoch] = np.sqrt(np.mean(np.square(Y_train[seqlen+1:]-pred_train[:-1]).numpy()))
-                rmse_val[split, epoch] = np.sqrt(np.mean(np.square(Y_test[seqlen+1:]-pred_test[:-1]).numpy()))
-                mae_train[split, epoch] = metrics.mean_absolute_error(Y_train[seqlen+1:], pred_train[:-1])
-                mae_val[split, epoch] = metrics.mean_absolute_error(Y_test[seqlen+1:], pred_test[:-1])
+                if eval_set is None:
+                    rmse_train[split, epoch] = utils.rmse(Y_train[seqlen+1:], pred_train[:-1])
+                    rmse_val[split, epoch] = utils.rmse(Y_test[seqlen+1:], pred_test[:-1])
+                    mae_train[split, epoch] = metrics.mean_absolute_error(Y_train[seqlen+1:], pred_train[:-1])
+                    mae_val[split, epoch] = metrics.mean_absolute_error(Y_test[seqlen+1:], pred_test[:-1])
+                else:
+                    rmse_train[split, epoch] = utils.rmse(Y_train[seqlen+1:],pred_train[:-1])
+                    rmse_val[split, epoch] = utils.rmse(Yt_test[seqlen+1:],pred_test[:-1])
+                    mae_train[split, epoch] = metrics.mean_absolute_error(Y_train[seqlen+1:], pred_train[:-1])
+                    mae_val[split, epoch] = metrics.mean_absolute_error(Yt_test[seqlen+1:], pred_test[:-1])
             
         with torch.no_grad():
 
             preds_train = model(utils.reshaping(X_train, seqlen, model="lstm"))
             preds_test = model(utils.reshaping(X_test, seqlen, model="lstm"))
-            performance.append([np.sqrt(np.mean(np.square(Y_train[seqlen+1:]-preds_train[:-1]).numpy())),
-                                np.sqrt(np.mean(np.square(Y_test[seqlen+1:]-preds_test[:-1]).numpy())),
-                                metrics.mean_absolute_error(Y_train[seqlen+1:], preds_train[:-1]),
-                                metrics.mean_absolute_error(Y_test[seqlen+1:], preds_test[:-1])])
-
+            if eval_set is None:
+                performance.append([utils.rmse(Y_train[seqlen+1:],preds_train[:-1]),
+                                    utils.rmse(Y_test[seqlen+1:], preds_test[:-1]),
+                                    metrics.mean_absolute_error(Y_train[seqlen+1:], preds_train[:-1]),
+                                    metrics.mean_absolute_error(Y_test[seqlen+1:], preds_test[:-1])])
+            else:
+                performance.append([utils.rmse(Y_train[seqlen+1:],preds_train[:-1]),
+                                    utils.rmse(Yt_test[seqlen+1:],preds_test[:-1]),
+                                    metrics.mean_absolute_error(Y_train[seqlen+1:], preds_train[:-1]),
+                                    metrics.mean_absolute_error(Yt_test[seqlen+1:], preds_test[:-1])])
+        
+        if save:
+            #torch.save(model.state_dict(), os.path.join(data_dir, f"model{split}"))
+            torch.save(model, os.path.join(data_dir, f"model{split}.pth"))
+            
         y_test, preds_test = utils.minmax_rescaler(Y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
         y_tests.append(y_test[seqlen+1:])
         y_preds.append(preds_test[:-1])
         
+        if not eval_set is None:
+            yt_tests.append(utils.minmax_rescaler(Yt_test.numpy(), Yt_mean, Yt_std))
+            
         split += 1
             
     running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
             
-    return(running_losses, performance, y_tests, y_preds)
+    if eval_set is None:
+        return(running_losses, performance, y_tests, y_preds)
+    else:
+        return(running_losses, performance, yt_tests, y_preds)
             
 #%%
 def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q, hp_search = []):
@@ -124,8 +169,6 @@ def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, 
            "epochs":epochs, 
            "history":int(search[3]), 
            "hiddensize":int(search[0]),
-           "optimizer":"adam", 
-           "criterion":"mse", 
            "learningrate":search[2]}
     model_design = {"dimensions":[in_features, int(search[0]), out_features],
                     "activation":search[4]}
@@ -146,7 +189,8 @@ def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, 
     q.put(hp_search)
     
 #%%
-def selected(X, Y, model_params, epochs, splits, datadir):
+def selected(X, Y, model_params, epochs, splits, 
+             data_dir = None, save = False, eval_set = None, finetuning = False, feature_extraction=False):
     
     in_features = X.shape[1]
     out_features = Y.shape[1]
@@ -155,14 +199,15 @@ def selected(X, Y, model_params, epochs, splits, datadir):
                "epochs":epochs, 
                "history":int(model_params["history"]), 
                "hiddensize":int(model_params["hiddensize"]),
-               "optimizer":"adam", 
-               "criterion":"mse", 
                "learningrate":model_params["learningrate"]}
     model_design = {"dimensions":[in_features, int(model_params["hiddensize"]), out_features],
                     "activation":eval(model_params["activation"][8:-2])}
    
     start = time.time()
-    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits=splits)
+    if not data_dir is None:
+        data_dir = os.path.join(data_dir, f"lstm")
+    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits,
+                                                                  eval_set, data_dir, save, finetuning, feature_extraction)
     end = time.time()
     
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
@@ -171,7 +216,7 @@ def selected(X, Y, model_params, epochs, splits, datadir):
                  model_params["hiddensize"], model_params["batchsize"], model_params["learningrate"], model_params["history"], model_params["activation"], 
                  performance[0], performance[1], performance[2], performance[3]]
 
-    results = pd.DataFrame(rets, columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results = pd.DataFrame([rets], columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
     
     return(running_losses, y_tests, y_preds, results)
     

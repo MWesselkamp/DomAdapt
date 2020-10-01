@@ -152,13 +152,21 @@ def create_inout_sequences(x, y, batchsize, seqlen, model):
     return x_out, y_out
 
 
-def percentage_error(targets, predictions, y_range):
+def rmse(targets, predictions):
     
-    #p = (targets!=0).ravel()
-    #targets, predictions = targets[p], predictions[p]
-    pe = np.mean(np.abs((targets-predictions)/y_range))*100
+    """
+    Computes the Root Mean Squared Error.
     
-    return pe
+    Args:
+        targets (torch.tensor)
+        predictions (torch.tensor)
+    """
+    if torch.is_tensor(targets):
+        rmse = np.sqrt(np.mean(np.square(targets-predictions).numpy()))
+    else:
+        rmse = np.sqrt(np.mean(np.square(targets-predictions)))
+    
+    return rmse
 
 def nash_sutcliffe(targets, predictions):
     
