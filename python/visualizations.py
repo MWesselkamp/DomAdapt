@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #%%
-def plot_nn_loss(train_loss, val_loss, hparams, model):
+def plot_running_losses(train_loss, val_loss, hparams, model):
 
     
     fig, ax = plt.subplots(figsize=(10,6))
@@ -21,8 +21,8 @@ def plot_nn_loss(train_loss, val_loss, hparams, model):
         train_loss = np.mean(train_loss, axis=0)
         val_loss = np.mean(val_loss, axis=0)
         
-        ax.fill_between(np.arange(hparams["epochs"]), ci_train[0],ci_train[1], color="lightgreen", alpha=0.3)
-        ax.fill_between(np.arange(hparams["epochs"]), ci_val[0],ci_val[1], color="lightblue", alpha=0.3)
+        ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color="lightgreen", alpha=0.3)
+        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="lightblue", alpha=0.3)
     
     else: 
         train_loss = train_loss.reshape(-1,1)

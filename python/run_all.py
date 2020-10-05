@@ -33,10 +33,10 @@ X, Y_t = preprocessing.get_splits(sites = ['le_bray'],
                                 dataset = "profound",
                                 simulations = None)
 #%% Grid search of hparams
-rets_mlp = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\grid_search_results_mlp1.csv"))
-rets_cnn = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\grid_search_results_cnn1.csv"))
-rets_lstm = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\grid_search_results_lstm1.csv"))
-rets_rf = pd.read_csv(os.path.join(datadir, r"python\plots\data_quality_evaluation\fits_rf\grid_search_results_rf1.csv"))
+rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_mlp1.csv"))
+rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_cnn1.csv"))
+rets_lstm = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_lstm1.csv"))
+rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\fits_rf\grid_search_results_rf1.csv"))
 
 rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
 rets_cnn.iloc[rets_cnn['rmse_val'].idxmin()].to_dict()

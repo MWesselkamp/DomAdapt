@@ -42,13 +42,20 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
     mae_val = np.zeros((splits, epochs))
     
     # z-score data
-    Y_mean, Y_std = np.mean(Y), np.std(Y)
-    X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
+    #Y_mean, Y_std = np.mean(Y), np.std(Y)
+    X_mean, X_std = np.mean(X), np.std(X)
+    X = utils.minmax_scaler(X)
+    #Y = utils.minmax_scaler(Y)
     
     if not eval_set is None:
         print("Test set used for model evaluation")
-        Yt_mean, Yt_std = np.mean(eval_set), np.std(eval_set)
-        Yt = utils.minmax_scaler(eval_set)
+        Xt_test = eval_set["X_test"]
+        #Yt_mean, Yt_std = np.mean(eval_set[1]), np.std(eval_set[1])
+        Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])#, 
+        #yt_test = utils.minmax_scaler(eval_set[1], scaling=[Y_mean,Y_std])
+        yt_test = eval_set["Y_test"]
+        yt_test = torch.tensor(yt_test).type(dtype=torch.float)
+        Xt_test = torch.tensor(Xt_test).type(dtype=torch.float)
         yt_tests = []
         
     i = 0
@@ -66,10 +73,6 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         y_test = torch.tensor(y_test).type(dtype=torch.float)
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         y_train = torch.tensor(y_train).type(dtype=torch.float)
-        
-        if not eval_set is None:
-            yt_test = Yt[test_index]
-            yt_test = torch.tensor(yt_test).type(dtype=torch.float)
             
         if finetuning:
             print("Loading pretrained Model.")
@@ -114,14 +117,15 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
             
             with torch.no_grad():
                 pred_train = model(X_train)
-                pred_test = model(X_test)
                 if eval_set is None:
+                    pred_test = model(X_test)
                     rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
                     rmse_val[i, epoch] = utils.rmse(y_test, pred_test)
                     mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
                     mae_val[i, epoch] = metrics.mean_absolute_error(y_test, pred_test)  
                 else:
-                    rmse_train[i, epoch] = np.sqrt(np.mean(np.square(y_train-pred_train).numpy()))
+                    pred_test = model(Xt_test)
+                    rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
                     rmse_val[i, epoch] = utils.rmse(yt_test, pred_test)
                     mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
                     mae_val[i, epoch] = metrics.mean_absolute_error(yt_test, pred_test)
@@ -130,13 +134,14 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         # Predict with fitted model
         with torch.no_grad():
             preds_train = model(X_train)
-            preds_test = model(X_test)
             if eval_set is None:
+                preds_test = model(X_test)
                 performance.append([utils.rmse(y_train, preds_train),
                                     utils.rmse(y_test, preds_test),
                                     metrics.mean_absolute_error(y_train, preds_train.numpy()),
                                     metrics.mean_absolute_error(y_test, preds_test.numpy())])
             else:
+                preds_test = model(Xt_test)
                 performance.append([utils.rmse(y_train, preds_train),
                                     utils.rmse(yt_test, preds_test),
                                     metrics.mean_absolute_error(y_train, preds_train.numpy()),
@@ -147,12 +152,12 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
             torch.save(model, os.path.join(data_dir, f"model{i}.pth"))
         
         # rescale before returning predictions
-        y_test, preds_test = utils.minmax_rescaler(y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
+        #y_test, preds_test = utils.minmax_rescaler(y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
         y_tests.append(y_test)
-        y_preds.append(preds_test)
+        y_preds.append(preds_test.numpy())
         
-        if not eval_set is None:
-            yt_tests.append(utils.minmax_rescaler(yt_test.numpy(), Yt_mean, Yt_std))
+        #if not eval_set is None:
+        #    yt_tests.append(utils.minmax_rescaler(yt_test.numpy(), Yt_mean, Yt_std))
     
         i += 1
     
@@ -166,7 +171,9 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
     
 
 #%% Random Grid search: Paralellized
-def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q, hp_search = []):
+def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
+                           data_dir, q, hp_search = [], 
+                           eval_set = None, save = False, finetuning = False, feature_extraction = False):
     
     search = [random.choice(sublist) for sublist in hp_list]
     
@@ -187,7 +194,8 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q
                     "activation": search[4]}
    
     start = time.time()
-    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits=splits)
+    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
+                                                                  save, finetuning, feature_extraction)
     end = time.time()
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
     performance = np.mean(np.array(performance), axis=0)
@@ -197,9 +205,9 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, datadir, q
     
     q.put(hp_search)
     
-#%% Random Grid Search:
+#%% Train the model with hyperparameters selected after random grid search:
     
-def selected(X, Y, model_params, epochs, splits, data_dir = None, 
+def selected(X, Y, model, model_params, epochs, splits, data_dir = None, 
              save = False, eval_set = None, finetuning=False, feature_extraction=False):
     
     """
@@ -237,18 +245,24 @@ def selected(X, Y, model_params, epochs, splits, data_dir = None,
    
     start = time.time()
     if not data_dir is None:
-        data_dir = os.path.join(data_dir, f"mlp")
+        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}")
     running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
                                                                   save, finetuning, feature_extraction)
     end = time.time()
+    
+    # Save: Results
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
     performance = np.mean(np.array(performance), axis=0)
-    
     rets = [(end-start), 
             model_params["hiddensize"], model_params["batchsize"], model_params["learningrate"], model_params["history"], model_params["activation"], 
             performance[0], performance[1], performance[2], performance[3]]
-
     results = pd.DataFrame([rets], 
                            columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history", "activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(os.path.join(data_dir, r"selected_results.csv"), index = False)
     
-    return(running_losses, y_tests, y_preds, results)
+    # Save: Running losses, ytests and ypreds.
+    np.save(os.path.join(data_dir, "running_losses.npy"), running_losses)
+    np.save(os.path.join(data_dir, "y_tests.npy"), y_tests)
+    np.save(os.path.join(data_dir, "y_preds.npy"), y_preds)
+    
+    #return(running_losses, y_tests, y_preds)

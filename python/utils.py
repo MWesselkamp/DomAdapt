@@ -26,7 +26,7 @@ def merge_XY(data):
     data = {sim[0]: np.concatenate([v for k,v in sim[1].items()], 1) for sim in data.items()}
     return data
 
-def minmax_scaler(data):
+def minmax_scaler(data, scaling = None):
     """
     This function scales all features in an array between mean and standard deviation. 
     
@@ -37,13 +37,17 @@ def minmax_scaler(data):
         data_norm(np.array): two dimensional array of scaled model features.
     """
     #scaler = MinMaxScaler(feature_range = (-1,1))
-    if (isinstance(data, pd.DataFrame)):
-        data_norm = (data - pd.mean(data))/ pd.std(data)
-    elif (torch.is_tensor(data)):
-        data_norm = (data - torch.mean(data)) / torch.std(data)
-    else:
-        data_norm = (data - np.mean(data, axis=0))/np.std(data, axis=0)
-    
+    if (scaling is None):
+        
+        if (isinstance(data, pd.DataFrame)):
+            data_norm = (data - pd.mean(data))/ pd.std(data)
+        elif (torch.is_tensor(data)):
+            data_norm = (data - torch.mean(data)) / torch.std(data)
+        else:
+            data_norm = (data - np.mean(data, axis=0))/np.std(data, axis=0)
+    else: 
+        data_norm = (data - scaling[0])/scaling[1]
+        
     return data_norm
 
 def minmax_rescaler(data, mu, sigma):
