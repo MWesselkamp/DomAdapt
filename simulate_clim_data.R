@@ -7,8 +7,10 @@ require(mgcv)
 ## Sinusoidal function of average high and low temps + daily error model
 
 TAir_simulator <- function(days = 730, Tmin, Tmax){
+  
   amp = (Tmax-Tmin)/2
   avg = Tmin+amp
+  
   if(Tmax > Tmin){
     # Northern Hemisphere
     temp <- sapply(1:days, function(x) amp * cos(2*pi/365*x + pi) + avg) + rnorm(days, mean = 0, sd=3)

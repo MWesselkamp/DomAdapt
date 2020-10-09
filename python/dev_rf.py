@@ -24,8 +24,7 @@ import pandas as pd
 
 def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, selected = False):
     
-    Y_mean, Y_std = np.mean(Y), np.std(Y)
-    X, Y = minmax_scaler(X), minmax_scaler(Y)
+    X = minmax_scaler(X)
     
     # Divide into training and test
     kf = KFold(n_splits=splits, shuffle = shuffled)
@@ -42,6 +41,7 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, selected = False):
     y_tests = []
 
     i = 0
+    
     for train_index, test_index in kf.split(X):
     
         X_train, X_test = X[train_index], X[test_index]
@@ -58,12 +58,6 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, selected = False):
         rmse_train[i] = np.sqrt(metrics.mean_squared_error(y_train, y_pred_train))
         mae_train[i] = metrics.mean_absolute_error(y_train, y_pred_train)
         
-        y_train = minmax_rescaler(y_train, mu = Y_mean, sigma = Y_std)
-        y_test = minmax_rescaler(y_test, mu = Y_mean, sigma = Y_std)
-    
-        y_pred_train = minmax_rescaler(y_pred_train, mu = Y_mean, sigma = Y_std)
-        y_pred_test = minmax_rescaler(y_pred_test, mu = Y_mean, sigma = Y_std)
-    
         y_preds.append(y_pred_test)
         y_tests.append(y_test)
         y_trains.append(y_train)

@@ -34,7 +34,7 @@ def load_data(dataset, data_dir, simulations):
     
     return X, Y
 
-def get_splits(sites, years, datadir, dataset = "profound", simulations = None,
+def get_splits(sites, years, datadir, dataset = "profound", simulations = None, drop_cols = False,
     colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"],
     to_numpy = True):
     
@@ -64,10 +64,14 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None,
     except:
         print("Columns are missing!")
     
-    if simulations != None:        
-        X["ET"] = Y["ET"]
-        X["SW"] = Y["SW"]
-        Y= Y.drop(columns=["ET", "SW"])
+    if simulations != None:    
+        
+        if drop_cols:
+            Y= Y.drop(columns=["ET", "SW"])
+        else:
+            X["ET"] = Y["ET"]
+            X["SW"] = Y["SW"]
+            Y= Y.drop(columns=["ET", "SW"])
     else:
         try:
             Y= Y.drop(columns=["ET"])

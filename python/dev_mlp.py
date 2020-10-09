@@ -42,17 +42,13 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
     mae_val = np.zeros((splits, epochs))
     
     # z-score data
-    #Y_mean, Y_std = np.mean(Y), np.std(Y)
     X_mean, X_std = np.mean(X), np.std(X)
     X = utils.minmax_scaler(X)
-    #Y = utils.minmax_scaler(Y)
     
     if not eval_set is None:
         print("Test set used for model evaluation")
         Xt_test = eval_set["X_test"]
-        #Yt_mean, Yt_std = np.mean(eval_set[1]), np.std(eval_set[1])
-        Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])#, 
-        #yt_test = utils.minmax_scaler(eval_set[1], scaling=[Y_mean,Y_std])
+        Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])
         yt_test = eval_set["Y_test"]
         yt_test = torch.tensor(yt_test).type(dtype=torch.float)
         Xt_test = torch.tensor(Xt_test).type(dtype=torch.float)
@@ -76,9 +72,6 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
             
         if finetuning:
             print("Loading pretrained Model.")
-            #model = models.MLP(model_design["dimensions"], model_design["activation"])
-            #model = nn.DataParallel(model)
-            #model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
             model = torch.load(os.path.join(data_dir, f"model{i}.pth"))
             model.eval()
             if feature_extraction:
@@ -148,21 +141,15 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
                                     metrics.mean_absolute_error(yt_test, preds_test.numpy())])
     
         if save:
-            #torch.save(model.state_dict(), os.path.join(data_dir, f"model{i}.pth"))
             torch.save(model, os.path.join(data_dir, f"model{i}.pth"))
         
-        # rescale before returning predictions
-        #y_test, preds_test = utils.minmax_rescaler(y_test.numpy(), Y_mean, Y_std), utils.minmax_rescaler(preds_test.numpy(), Y_mean, Y_std)
-        y_tests.append(y_test)
+        y_tests.append(y_test.numpy())
         y_preds.append(preds_test.numpy())
         
-        #if not eval_set is None:
-        #    yt_tests.append(utils.minmax_rescaler(yt_test.numpy(), Yt_mean, Yt_std))
     
         i += 1
     
     running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
-    #performance = np.mean(np.array(performance), axis=0)
 
     if eval_set is None:
         return(running_losses, performance, y_tests, y_preds)

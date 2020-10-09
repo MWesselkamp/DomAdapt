@@ -1,0 +1,2 @@
+execution_time,hiddensize,batchsize,learningrate,history,activation,rmse_train,rmse_val,mae_train,mae_val
+1253.1670589447021,16,128,0.0001,20,<function relu at 0x7efee4623ea0>,1.9197345972061157,3.8041744232177734,1.4367873668670654,3.3338451385498047

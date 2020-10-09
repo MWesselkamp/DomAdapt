@@ -2,13 +2,13 @@
 ########## Begin MOAB/Slurm header ##########
 #
 # Give job a reasonable name
-#MOAB -N ms1_CNN
+#MOAB -N ms2_CNN
 #
 # Request number of nodes and CPU cores per node for job
 #MOAB -l nodes=3:ppn=20
 #
 # Estimated wallclock time for job
-#MOAB -l walltime=00:20:00:00
+#MOAB -l walltime=01:06:00:00
 #
 # Write standard output and errors in same file
 #MOAB -j oe 
@@ -30,4 +30,4 @@ echo "Number of cores allocated to job:     $MOAB_PROCCOUNT"
 module load devel/conda/latest
 
 conda activate nnets
-python /home/fr/fr_fr/fr_mw263/scripts/ms1_parallel_mlp.py
+python /home/fr/fr_fr/fr_mw263/scripts/ms2_parallel_conv.py

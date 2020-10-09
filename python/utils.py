@@ -9,6 +9,7 @@ import pandas as pd
 import itertools
 import torch
 import random
+import torch.nn.functional as F
 
 def merge_XY(data):
     """
@@ -133,8 +134,11 @@ def create_inout_sequences(x, y, batchsize, seqlen, model):
     In-out Sequences for LSTM.
     Used in: dev_lstm.train_model_CV
     """
-    
-    batches = random.sample(range(x.shape[0]-1-seqlen), batchsize) 
+    if batchsize == "full":
+        batchsize = x.shape[0]-seqlen-1
+        batches = range(batchsize)
+    else:
+        batches = random.sample(range(x.shape[0]-1-seqlen), batchsize) 
     
     y_out = torch.empty((batchsize, y.shape[1]))
     
@@ -171,6 +175,14 @@ def rmse(targets, predictions):
         rmse = np.sqrt(np.mean(np.square(targets-predictions)))
     
     return rmse
+
+def use_activation(act):
+    
+    if "relu" in act:
+        return(F.relu)
+    else:
+        return(torch.sigmoid)
+    
 
 def nash_sutcliffe(targets, predictions):
     

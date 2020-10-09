@@ -38,22 +38,22 @@ def plot_running_losses(train_loss, val_loss, hparams, model):
     
 
 #%%
-def plot_nn_predictions(y_tests, y_preds, history, model):
+def plot_nn_predictions(y_tests, y_preds):
     
     """
     Plot model predictions.
     """
     
-    fig, ax = plt.subplots(len(y_tests), figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(10,10))
     fig.suptitle(f"Network Predictions")
 
     for i in range(len(y_tests)):
-        ax[i].plot(y_tests[i], color="grey", label="targets", linewidth=0.9, alpha=0.6)
-        ax[i].plot(y_preds[i], color="darkblue", label="nn predictions", linewidth=0.9, alpha=0.6)
-        ax[i].plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
+        ax.plot(y_tests[i], color="grey", label="targets", linewidth=0.9, alpha=0.6)
+        ax.plot(y_preds[i], color="darkblue", label="nn predictions", linewidth=0.9, alpha=0.6)
+        #ax.plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
     
-    handles, labels = ax[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper right')
+    #handles, labels = ax[0].get_legend_handles_labels()
+    #fig.legend(handles, labels, loc='upper right')
     
     
 #%%

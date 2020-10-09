@@ -19,24 +19,24 @@ from ast import literal_eval
 import visualizations
 import torch.nn.functional as F
 import torch.nn as nn
-
+import numpy as np
 #%% Load Data: Profound in and out.
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
+                                years = [2001,2002,2003,2004,2005,2006, 2007],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound",
-                                simulations = "preles")
-X, Y_t = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
+                                simulations = None)
+X_t, Y_t = preprocessing.get_splits(sites = ['le_bray'],
+                                years = [2008],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
 #%% Grid search of hparams
-rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_mlp1.csv"))
-rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_cnn1.csv"))
+rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_mlp2.csv"))
+rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_cnn1_ex.csv"))
 rets_lstm = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_lstm1.csv"))
-rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\fits_rf\grid_search_results_rf1.csv"))
+rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_rf1.csv"))
 
 rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
 rets_cnn.iloc[rets_cnn['rmse_val'].idxmin()].to_dict()
@@ -55,6 +55,7 @@ rf_minval = rets_rf.iloc[rets_rf['rmse_val'].idxmin()].to_dict()
 rf_mintrain = rets_rf.iloc[rets_rf['rmse_train'].idxmin()].to_dict()
 
 y_preds_rf, y_tests_rf, errors = dev_rf.random_forest_CV(X, Y, 6, False, rf_minval["n_trees"], rf_minval["depth"], selected = True)
+np.mean(np.array(errors["rmse_val"]), axis=0)
 dev_rf.plot_rf_cv(y_preds_rf, y_tests_rf, rf_minval, datadir, save=False)
 
 

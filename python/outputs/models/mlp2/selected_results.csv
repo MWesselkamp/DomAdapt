@@ -1,0 +1,2 @@
+execution_time,hiddensize,batchsize,learningrate,history,activation,rmse_train,rmse_val,mae_train,mae_val
+35.4883177280426,"[64, 64]",64,0.001,0,<class 'torch.nn.modules.activation.Sigmoid'>,1.4577938318252563,2.8929553031921387,1.0368585586547852,2.617948293685913

@@ -2,16 +2,13 @@
 ########## Begin MOAB/Slurm header ##########
 #
 # Give job a reasonable name
-#MOAB -N birds_distribution
+#MOAB -N train_selected
 #
 # Request number of nodes and CPU cores per node for job
-#MOAB -l nodes=2:ppn=16
+#MOAB -l nodes=2:ppn=10
 #
 # Estimated wallclock time for job
 #MOAB -l walltime=00:01:00:00
-#
-# RAM
-#MOAB -l pmem=6400mb
 #
 # Write standard output and errors in same file
 #MOAB -j oe 
@@ -30,8 +27,7 @@ echo "Number of cores allocated to job:     $MOAB_PROCCOUNT"
 
 
 # Setup Conda
-module load python/miniconda
+module load devel/conda/latest
 
-source activate pytorch
-
-python ms_parallel_conv.py
+conda activate nnets
+python /home/fr/fr_fr/fr_mw263/scripts/train_selected.py

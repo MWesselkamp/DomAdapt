@@ -1,0 +1,1 @@
+Models evaluated on year 2008 of the same stand. This year was not used in the Crossvalidation.

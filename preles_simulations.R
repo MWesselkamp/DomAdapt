@@ -5,11 +5,6 @@
 # set seed for reproducability
 set.seed(123)
 
-# if not available,install packages
-if(!require(Rpreles)){devtools::install_github('MikkoPeltoniemi/Rpreles')}
-if(!require(lhs)){install.packages("lhs")}
-if(!require(abind)){install.packages("abind")}
-
 # load packages
 library(Rpreles)
 library(lhs)
