@@ -81,7 +81,7 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         else:
             model = models.MLP(model_design["dimensions"], model_design["activation"])
             
-        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
+        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         criterion = nn.MSELoss()
         
         for epoch in range(epochs):
@@ -194,7 +194,7 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize,
     
 #%% Train the model with hyperparameters selected after random grid search:
     
-def selected(X, Y, model, model_params, epochs, splits, data_dir = None, 
+def selected(X, Y, model,typ, model_params, epochs, splits, data_dir = None, 
              save = False, eval_set = None, finetuning=False, feature_extraction=False):
     
     """
@@ -232,7 +232,7 @@ def selected(X, Y, model, model_params, epochs, splits, data_dir = None,
    
     start = time.time()
     if not data_dir is None:
-        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}")
+        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}{typ}")
     running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
                                                                   save, finetuning, feature_extraction)
     end = time.time()

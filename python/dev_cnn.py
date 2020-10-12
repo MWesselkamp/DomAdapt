@@ -87,11 +87,11 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
                                  model_design["activation"])
 
         
-        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
+        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         criterion = nn.MSELoss()
         
         x_train, y_train = utils.create_inout_sequences(X_train, Y_train, "full", seqlen, model="cnn")
-        x_test, y_test = utils.create_inout_sequences(X_train, Y_train, "full", seqlen, model="cnn")
+        x_test, y_test = utils.create_inout_sequences(X_test, Y_test, "full", seqlen, model="cnn")
         
         for epoch in range(epochs):
     
@@ -195,7 +195,7 @@ def conv_selection_parallel(X, Y, hp_list, epochs, splits, searchsize,
     
     
 #%%
-def selected(X, Y, model, model_params, epochs, splits, 
+def selected(X, Y, model, typ, model_params, epochs, splits,
              data_dir = None, save = False, eval_set = None, finetuning = False, feature_extraction=False):
     
     in_features = X.shape[1]
@@ -214,7 +214,7 @@ def selected(X, Y, model, model_params, epochs, splits,
    
     start = time.time()
     if not data_dir is None:
-        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}")
+        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}{typ}")
     running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits, 
                                                                   eval_set, data_dir, save, finetuning, feature_extraction)
     end = time.time()

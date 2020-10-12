@@ -83,11 +83,11 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         else:
             model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen, activation)
             
-        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"], weight_decay=0.001)
+        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         criterion = nn.MSELoss()
         
         x_train, y_train = utils.create_inout_sequences(X_train, Y_train, "full", seqlen, model="lstm")
-        x_test, y_test = utils.create_inout_sequences(X_train, Y_train, "full", seqlen, model="lstm")
+        x_test, y_test = utils.create_inout_sequences(X_test, Y_test, "full", seqlen, model="lstm")
         
         for epoch in range(epochs):
             

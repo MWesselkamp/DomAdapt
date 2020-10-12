@@ -19,14 +19,15 @@ import itertools
 import utils
 
 #%% Load Data
-datadir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"
-X, Y = preprocessing.get_splits(sites = ["le_bray"], 
-                                datadir = os.path.join(datadir, "data"), 
-                                dataset = "profound",
-                                simulation = None)
+data_dir = r"/home/fr/fr_fr/fr_mw263/scripts"
+X, Y = preprocessing.get_splits(sites = ["bily_kriz", "collelongo", "soro"], 
+                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound", 
+                                simulations = None)
 
 #%% 
-cv_splits = [6]
+cv_splits = [5]
 shuffled = [False]
 n_trees = [200,300,400,500]
 depth = [4,5,6,7]
@@ -55,4 +56,4 @@ if __name__ == '__main__':
         p.join()
     
     results = pd.DataFrame(rets, columns=["run", "cv_splits", "shuffled", "n_trees", "depth", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(os.path.join(datadir, r"plots\data_quality_evaluation\fits_rf\grid_search_results_rf1.csv"), index = False)
+    results.to_csv("/home/fr/fr_fr/fr_mw263/output/grid_search/grid_search_results_rf4.csv", index = False)

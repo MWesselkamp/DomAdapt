@@ -28,19 +28,20 @@ X_test, Y_test = preprocessing.get_splits(sites = ['le_bray'],
                                 dataset = "profound",
                                 simulations = None)
 #%%
-def train_selected(X, Y, model, typ, epochs, splits, save, eval_set, finetuning, feature_extraction, q,
-                   data_dir):
+def train_selected(X, Y, model, typ, epochs, splits, save, eval_set, finetuning, feature_extraction,data_dir, q
+                   ):
 
-    results = pd.read_csv(os.path.join(data_dir, f"grid_search\grid_search_results_{model}{typ}.csv"))
+    results = pd.read_csv(os.path.join(data_dir, f"grid_search\{model}\grid_search_results_{model}{typ}.csv"))
 
     best_model = results.iloc[results['rmse_val'].idxmin()].to_dict()
 
     dev = __import__(f"dev_{model}")
     
-    dev.selected(X, Y, model, best_model, epochs, splits, data_dir, save, eval_set, finetuning)
+    dev.selected(X, Y, model, typ, best_model, epochs, splits, data_dir, save, eval_set, finetuning)
     
     #out = [running_losses, y_tests, y_preds]
     
+    #return(out)
     #q.put(out)
     
 #%%
@@ -64,7 +65,7 @@ if __name__ == '__main__':
     
     for i in range(len(models)):
         p = mp.Process(target=train_selected, args=(X, Y, models[i], typ, epochs, splits, 
-                                                    save, eval_set, finetuning, feature_extraction, q, data_dir))
+                                                    save, eval_set, finetuning, feature_extraction, data_dir, q))
         processes.append(p)
         p.start()
 

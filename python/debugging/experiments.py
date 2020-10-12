@@ -6,7 +6,7 @@ Created on Tue Jun 30 15:16:49 2020
 """
 #%% Set working directory
 import sys
-sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt')
+sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
 import os.path
 
 import preprocessing
@@ -34,7 +34,7 @@ X, Y = preprocessing.get_splits(sites = ["hyytiala"],
 #y = torch.tensor(np.transpose(sims['sim1'][1])).type(dtype=torch.float)
 
 #%% Normalize features
-X, Y = utils.minmax_scaler(X), utils.minmax_scaler(Y)
+X = utils.minmax_scaler(X)
 
 
 #%% Prep data
@@ -79,7 +79,7 @@ def create_inout_sequences(x, y, batchsize, seqlen, model):
 batchsize=16
 seqlen=10
 
-x, y = utils.create_inout_sequences(x, y, batchsize, seqlen, "lstm")
+x, y = utils.create_inout_sequences(x, y, batchsize, seqlen, "cnn")
 
 
 x.shape
@@ -87,27 +87,33 @@ y.shape
 
 
 #%%Layers
-nlayers = 1
 D_in = 7
 H = 32
 D_out = 1
+kernel_size=2
 
+x.shape
 
-lstm = nn.LSTM(D_in, H, batch_first=False)
-hidden_cell = (torch.zeros(1,batchsize, H),
-               torch.zeros(1,batchsize, H))
-out, hidden_cell = lstm(x, hidden_cell)
+conv1 = nn.Conv1d(D_in, 7, kernel_size)
 
+out = F.sigmoid(conv1(x))
 out.shape
-out[-1,:,:].shape
 
-fc1 = nn.Linear(H, H)
+max_pool = nn.MaxPool1d(kernel_size, 1)
 
-out = torch.sigmoid(out)
+out = max_pool(out)
+out.shape
+
+conv2 = nn.Conv1d(7, 14, kernel_size)
+out = conv2(out)
+out.shape
+out = max_pool(out)
+
+flat = Flatten()
+
+out = flat(out)
+out.shape
+
+fc1 = nn.Linear(84, 1)
 out = fc1(out)
 out.shape
-
-
-net = models.LSTM(7, H, 1, seqlen, nn.ReLU)
-
-out = net(x)

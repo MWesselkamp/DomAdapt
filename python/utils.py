@@ -102,7 +102,7 @@ def num_infeatures(dim_channels, kernel_size, length, stride=1):
     Used in: models.ConvN
     """
     
-    linear_in = dim_channels[-1]*(length-len(dim_channels)*(kernel_size-stride))
+    linear_in = dim_channels[-1]*(length-len(dim_channels)*((kernel_size-stride)+(2-1)))
     
     return(linear_in)
 

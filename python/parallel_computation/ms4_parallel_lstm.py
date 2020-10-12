@@ -18,17 +18,11 @@ import itertools
 import torch
 import torch.nn.functional as F
 #%% Load Data
-data_dir = r"/home/fr/fr_fr/fr_mw263"
-X, Y = preprocessing.get_splits(sites = ["le_bray"], 
-                                years = [2001,2003,2004,2005,2006],
-                                datadir = os.path.join(data_dir, "scripts/data"), 
-                                dataset = "profound",
-                                simulations = None)
-
-X_test, Y_test = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2008],
-                                datadir = os.path.join(data_dir, "scripts/data"), 
-                                dataset = "profound",
+data_dir = r"/home/fr/fr_fr/fr_mw263/scripts/"
+X, Y = preprocessing.get_splits(sites = ['bily_kriz', 'soro','collelongo'],
+                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound", 
                                 simulations = None)
 
 #%% Grid search of hparams
@@ -39,11 +33,9 @@ history = [5,10,15,20]
 activation = [torch.sigmoid, F.relu]
 hp_list = [hiddensize, batchsize, learningrate, history, activation]
 
-epochs = 3000
-splits = 5
+epochs = 5000
+splits=5
 searchsize = 50
-hp_search = []
-eval_set = {"X_test":X_test, "Y_test":Y_test}
 
 #%% multiprocessed model selection with searching random hparam combinations from above.
 
@@ -58,7 +50,7 @@ if __name__ == '__main__':
     
     for i in range(searchsize):
         p = mp.Process(target=lstm_selection_parallel, args=(X, Y, hp_list, epochs, splits, searchsize, 
-                           data_dir, q, hp_search, eval_set))
+                           data_dir, q))
         processes.append(p)
         p.start()
 
@@ -68,4 +60,4 @@ if __name__ == '__main__':
         p.join()
     
     results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(r"/home/fr/fr_fr/fr_mw263/output/grid_search/grid_search_results_lstm2.csv", index = False)
+    results.to_csv(r"/home/fr/fr_fr/fr_mw263/output/grid_search/grid_search_results_lstm4.csv", index = False)

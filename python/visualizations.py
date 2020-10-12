@@ -9,11 +9,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #%%
-def plot_running_losses(train_loss, val_loss, hparams, model):
+def plot_running_losses(train_loss, val_loss, suptitle, model):
 
     
     fig, ax = plt.subplots(figsize=(10,6))
-    #fig.suptitle(f"{model} \n Epochs = {hparams['epochs']}, History = {hparams['history']} \n Hiddensize = {hparams['hiddensize']}, Batchsize = {hparams['batchsize']}, Learning_rate = {hparams['learningrate']}")
+    fig.suptitle(suptitle)
 
     if train_loss.shape[0] > 1:
         ci_train = np.quantile(train_loss, (0.05,0.95), axis=0)
@@ -94,16 +94,21 @@ def hparams_optimization_errors(results, model = "all", train_val = False, annot
 
     fig, ax = plt.subplots()
     
-    
+    custom_xlim = (0, 5)
+    custom_ylim = (0, 5)
+
+    # Setting the values for all axes.
+    plt.setp(ax, xlim=custom_xlim, ylim=custom_ylim)
+
     if train_val:
         x = "rmse_val"
         y = "rmse_train"
-        fig.suptitle(f"Hyperparameter Optimization \n Training vs. Validation Error")
+        #fig.suptitle(f"Hyperparameter Optimization \n Training vs. Validation Error")
         data_dir = os.path.join(data_dir, f"_valtrain_errors_")
     else:
         x = "rmse_val"
         y = "mae_val"
-        fig.suptitle(f"Hyperparameter Optimization\n Validation Errors")
+        #fig.suptitle(f"Hyperparameter Optimization\n Validation Errors")
         data_dir = os.path.join(data_dir, f"_val_errors_")
         
     if isinstance(model, list):
@@ -119,8 +124,8 @@ def hparams_optimization_errors(results, model = "all", train_val = False, annot
             ax.annotate(txt, (results["rmse_val"][i], results["mae_val"][i]))
     
     plt.legend()
-    plt.xlabel(x)
-    plt.ylabel(y)
+    plt.xlabel("RMSE Validation Data")
+    plt.ylabel("RMSE Training Data")
     #plt.savefig(data_dir)
     #plt.close()
     

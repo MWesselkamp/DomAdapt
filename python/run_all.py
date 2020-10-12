@@ -20,6 +20,8 @@ import visualizations
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
+
+import train_selected
 #%% Load Data: Profound in and out.
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X, Y = preprocessing.get_splits(sites = ['le_bray'],
@@ -33,21 +35,22 @@ X_t, Y_t = preprocessing.get_splits(sites = ['le_bray'],
                                 dataset = "profound",
                                 simulations = None)
 #%% Grid search of hparams
-rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_mlp2.csv"))
-rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_cnn1_ex.csv"))
-rets_lstm = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_lstm1.csv"))
-rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_rf1.csv"))
+rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\mlp\grid_search_results_mlp4.csv"))
+rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\cnn\grid_search_results_cnn4.csv"))
+rets_cnn2 = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_cnn1.csv"))
+rets_lstm = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\lstm\grid_search_results_lstm1.csv"))
+rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\rf\grid_search_results_rf4.csv"))
 
 rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
 rets_cnn.iloc[rets_cnn['rmse_val'].idxmin()].to_dict()
 rets_lstm.iloc[rets_lstm['rmse_val'].idxmin()].to_dict()
 rets_rf.iloc[rets_rf['rmse_val'].idxmin()].to_dict()
 #%%
-visualizations.hparams_optimization_errors([rets_rf, rets_mlp, rets_cnn, rets_lstm], 
-                                           ["rf", "mlp", "cnn", "lstm"], 
+visualizations.hparams_optimization_errors([rets_rf, rets_mlp, rets_cnn], 
+                                           ["rf", "mlp", "cnn"], 
                                            train_val = False)
-visualizations.hparams_optimization_errors([rets_rf, rets_mlp, rets_cnn, rets_lstm], 
-                                           ["rf", "mlp", "cnn", "lstm"], 
+visualizations.hparams_optimization_errors([rets_rf, rets_mlp, rets_cnn], 
+                                           ["rf", "mlp", "cnn"], 
                                            train_val=True)
 
 #%% Fit Random Forest
@@ -59,15 +62,17 @@ np.mean(np.array(errors["rmse_val"]), axis=0)
 dev_rf.plot_rf_cv(y_preds_rf, y_tests_rf, rf_minval, datadir, save=False)
 
 
-#%%
-visualizations.plot_errors_selmod(errors, running_losses_mlp, running_losses_conv, datadir, save=True)
+#%% Evaluate
+model = "cnn"
+typ = 1
+epochs = 100
+splits = 6
+save=True
+eval_set = None #{"X_test":X_test, "Y_test":Y_test}
+finetuning = False
+feature_extraction=False
+data_dir = os.path.join(datadir, "python\outputs")
+q=None
 
-#%% Evaluate on test set.
-epochs = 1000
-best_model = rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
-best_model["hiddensize"] = '[128, 128]'
-best_model["activation"] = "<class 'torch.nn.modules.activation.ReLU'>"
-running_losses, y_tests, y_preds, rets = dev_mlp.selected(X, Y, best_model, epochs, 6, Y_t)
-
-best_model["epochs"]=epochs
-visualizations.plot_nn_loss(running_losses["rmse_train"], running_losses["rmse_val"], best_model, model="mlp")
+train_selected.train_selected(X, Y, model, typ, epochs, splits, 
+                              save, eval_set, finetuning, feature_extraction, data_dir, q=None)
