@@ -6,7 +6,7 @@ require(mgcv)
 # 1. Create a TAir simulator (Northern & Southern Hemisphere)
 ## Sinusoidal function of average high and low temps + daily error model
 
-TAir_simulator <- function(days = 730, Tmin, Tmax){
+TAir_simulator <- function(Tmin, Tmax, days){
   
   amp = (Tmax-Tmin)/2
   avg = Tmin+amp
@@ -21,16 +21,25 @@ TAir_simulator <- function(days = 730, Tmin, Tmax){
   return(temp)
 }
 
-minmax_temps <- function(Min = min(X$TAir), Max = max(X$TAir)){
-  temps <- runif(2, min = Min, max = Max)
+minmax_temps <- function(nsamples, Min = min(X$TAir), Max = max(X$TAir)){
+  
+  temps <- runif(2, min = Min-5, max = Max+5)
+  
+  # uniformly distributed
+  #lhs <- randomLHS(nsamples, 1)
+
+  
+  # Generate stratified parameter combinations by mapping lhs to data space.
+  #temps <- t(apply(lhs, 1, function(x) Min + x*abs(Max-Min)))
+  
   return(temps)
 }
 
-get_temps <- function(days = 730, nsamples){
+get_temps <- function(days, nsamples){
   temp = matrix(NA, nrow=nsamples, ncol=days)
   for (i in 1:nsamples){
     temps = minmax_temps()
-    temp[i,] = TAir_simulator(Tmin = min(temps), Tmax = max(temps))
+    temp[i,] = TAir_simulator(Tmin = min(temps), Tmax = max(temps), days = days)
   }
   return(temp)
 }
@@ -54,14 +63,14 @@ fit_mvr <- function(clim_data){
   return(fgam)
 }
 
-simulate_climate <- function(nsamples, clim, days = 730, sim_CO2 = FALSE){
+
+simulate_climate <- function(nsamples, fgam, days, sim_CO2 = FALSE){
   
   if(sim_CO2 == FALSE){
     CO2 = X$CO2
   }
   
-  temps = get_temps(nsamples = nsamples)
-  fgam = fit_mvr(clim)
+  temps = get_temps(days = days, nsamples = nsamples)
   
   arr = array(NA, dim = c(nsamples, days, 6))
   

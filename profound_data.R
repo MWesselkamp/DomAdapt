@@ -164,6 +164,17 @@ rem = which(((year(date(X$date)) %in% GPPavg$year) & (X$site %in% GPPavg$site)))
 X = X[-rem,]
 y = data.frame(GPP= y[-rem,])
 
+# Modify DOY: day of year
+X = X %>% 
+  mutate(year= year(date(X$date))) %>% 
+  group_by(site, year) %>%
+  mutate(DOY = row_number(year))
+
+# Modify DOS: days of sites total
+X = X %>%
+  group_by(site) %>% 
+  mutate(DOS = row_number(year))
+
 #========================#
 # Save input and output  #
 #========================#

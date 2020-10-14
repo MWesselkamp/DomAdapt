@@ -20,10 +20,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+import utils
+
 #%% Train the Algorithm
 
-def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, selected = False):
+def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, eval_set = None, selected = False):
     
+    X_mean, X_std = np.mean(X), np.std(X)
     X = minmax_scaler(X)
     
     # Divide into training and test
@@ -46,6 +49,11 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, selected = False):
     
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = Y[train_index], Y[test_index]
+        
+        if not eval_set is None:
+            X_test = eval_set["X_test"]
+            X_test= utils.minmax_scaler(X_test, scaling = [X_mean, X_std])
+            y_test = eval_set["Y_test"]
     
         regressor.fit(X_train, y_train.ravel())
         y_pred_test = regressor.predict(X_test)
@@ -91,12 +99,12 @@ def rf_selection(X, Y, p_list):
     return results.iloc[results['rmse_val'].idxmin()].to_dict() 
 #%% Model selection parallel
 
-def rf_selection_parallel(X, Y, p_list, searchsize, q, p_search=[]):
+def rf_selection_parallel(X, Y, p_list, eval_set, searchsize, q, p_search=[]):
 
 
     search = [sublist[searchsize] for sublist in p_list]
         
-    y_preds, y_tests, errors = random_forest_CV(X, Y, splits=search[0], shuffled = search[1], n_trees = search[2], depth = search[3])
+    y_preds, y_tests, errors = random_forest_CV(X, Y, splits=search[0], shuffled = search[1], n_trees = search[2], depth = search[3], eval_set=eval_set)
 
     p_search.append([item for sublist in [[searchsize], search, errors] for item in sublist])
     

@@ -101,8 +101,8 @@ def hparams_optimization_errors(results, model = "all", train_val = False, annot
     plt.setp(ax, xlim=custom_xlim, ylim=custom_ylim)
 
     if train_val:
-        x = "rmse_val"
-        y = "rmse_train"
+        x = "mae_val"
+        y = "mae_train"
         #fig.suptitle(f"Hyperparameter Optimization \n Training vs. Validation Error")
         data_dir = os.path.join(data_dir, f"_valtrain_errors_")
     else:

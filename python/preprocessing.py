@@ -86,22 +86,15 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
 
 
 #%%
-def get_simulations(data_dir = 'data\preles\exp', ignore_env = True):
+def get_simulations(data_dir, ignore_env = True):
 
-    filesnum = int(len([name for name in os.listdir(data_dir)])/2)
-    filenames = [f'sim{i}' for i in range(1,filesnum+1)]
     
-    X = [None]*filesnum
-    Y = [None]*filesnum
+    path_in = os.path.join(data_dir, f"sims_in.csv")
+    path_out = os.path.join(data_dir, f"sims_out.csv")
     
-    for i in range(filesnum):
-        filename = filenames[i]
-        path_in = os.path.join(data_dir, f"{filename}_in")
-        path_out = os.path.join(data_dir, f"{filename}_out")
-        X[i] = pd.read_csv(path_in, sep=";")
-        if(ignore_env):
-            X[i] = X[i].drop(columns=['date']).to_numpy()
-        Y[i] = pd.read_csv(path_out, sep=";").to_numpy()
+    X = pd.read_csv(path_in, sep=";")
+
+    Y = pd.read_csv(path_out, sep=";")
         
     return X, Y#, filenames
 
