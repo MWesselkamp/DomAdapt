@@ -93,8 +93,11 @@ def get_simulations(data_dir, ignore_env = True):
     path_out = os.path.join(data_dir, f"sims_out.csv")
     
     X = pd.read_csv(path_in, sep=";")
+    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
+    
+    X = X.drop(columns=["DOY", "sample", "year", "CO2"])
 
     Y = pd.read_csv(path_out, sep=";")
         
-    return X, Y#, filenames
+    return X.to_numpy(), Y.to_numpy()#, filenames
 

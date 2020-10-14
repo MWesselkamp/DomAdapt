@@ -27,11 +27,12 @@ X_t, Y_t = preprocessing.get_splits(sites = ['le_bray'],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
+#%%
 X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(datadir, "data\preles\simulations"))
 #%% Grid search of hparams
 rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\mlp\grid_search_results_mlp1.csv"))
 rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\cnn\grid_search_results_cnn1.csv"))
-rets_cnn2 = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_cnn1_ex.csv"))
+rets_cnn2 = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\cnn\grid_search_results_cnn2.csv"))
 rets_lstm = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\lstm\grid_search_results_lstm1.csv"))
 rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\rf\grid_search_results_rf1.csv"))
 

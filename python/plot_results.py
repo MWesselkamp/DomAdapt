@@ -32,4 +32,4 @@ res_mlp = model_performance("mlp", 1, "MLP") #
 res_mlp = model_performance("mlp", 3, "MLP") # evaluation on preles simulations
 
 res_cnn = model_performance("cnn", 1, "CNN")
-model_performance("lstm",2)
+

@@ -6,29 +6,42 @@
 # As well as the range of functions we are going to use below.
 source("simulation_functions.R")
 
-nsamples = 100
-# get the values for the 30 Preles parameters:
-#   default values or calibrated parameters?
-pars_def <- get_parameters(default = TRUE)
-pars_calib <- get_parameters(default= FALSE)
+load("Rdata/fmT.Rdata")
+load("Rdata/fmPAR.Rdata")
+load("Rdata/fmVPD.Rdata")
+load("Rdata/fmPrecip.Rdata")
+load("Rdata/fmfAPAR.Rdata")
 
-# sample a selection of these parameters (here: 5) in a latin hypercube design
-parsLHS <- sample_parameters(pars_default = pars_calib, nsamples = nsamples, pars_names = c("beta", "X0", "gamma", "alpha", "chi"))
+nsamples = 1000
+seq_len=365
 
-# Simulate climate
-
-climate_simulations = climate_simulator(nsamples = nsamples, seq_len = 365)
-
-#fgam = fit_mvr(X)
-#save(fgam, file="Rdata/fgam_mvr.Rdata")
-
-load("Rdata/fgam_mvr.Rdata")
-
-climate_simulation <- simulate_climate(nsamples = nsamples, fgam = fgam, days = 365)
-save(climate_simulation, file="Rdata/climate_simulation.Rdata")
-
-# create Preles output from climate data and the parameter combinations.
-# In the same step, write the output to files (in data/profound) for use in Python. 
-# Save the output for visualization in R.
 data_dir <- "data/preles/simulations/"
-get_simulations(pars = pars_calib, clim_data = climate_simulation, data_dir = data_dir)
+
+pars = get_parameters()
+pars_values = pars$Default
+pars_names = c("beta", "X0", "gamma", "alpha", "chi")
+
+sims_in = NULL
+sims_out = NULL
+
+for (sample in 1:nsamples){
+  
+  climate_simulations = climate_simulator(seq_len, sample)
+  
+  pars_lhs = sample_parameters(pars = pars)
+  
+  pars_values[which(as.character(pars$Name) %in% pars_names)] = pars_lhs[,1]
+  
+  targets = matrix(unlist(get_preles_output(climate_simulations, pars_values, c("GPP"))), nrow = seq_len, ncol=1)
+  
+  features = cbind(climate_simulations, apply(pars_lhs, 1, function(x) rep(x, times=seq_len)))
+  
+  names(features)[10:14] = pars_names
+  
+  sims_in = rbind(sims_in, features)
+  sims_out = rbind(sims_out, targets)
+  
+}
+
+write.table(sims_in, file=paste0(data_dir, "sims_in.csv"), sep=";", row.names = FALSE)
+write.table(sims_out, file=paste0(data_dir, "sims_out.csv"), sep=";", row.names = FALSE, col.names = c("GPP"))
