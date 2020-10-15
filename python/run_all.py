@@ -30,17 +30,17 @@ X_t, Y_t = preprocessing.get_splits(sites = ['le_bray'],
 #%%
 X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(datadir, "data\preles\simulations"))
 #%% Grid search of hparams
-rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\mlp\grid_search_results_mlp1.csv"))
+rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\grid_search_results_mlp1.csv"))
 rets_cnn = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\cnn\grid_search_results_cnn1.csv"))
 rets_cnn2 = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\cnn\grid_search_results_cnn2.csv"))
 rets_lstm = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\lstm\grid_search_results_lstm1.csv"))
 rets_rf = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\rf\grid_search_results_rf1.csv"))
 
-rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
+adict = rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
 rets_cnn.iloc[rets_cnn['rmse_val'].idxmin()].to_dict()
 rets_lstm.iloc[rets_lstm['rmse_val'].idxmin()].to_dict()
 rets_rf.iloc[rets_rf['rmse_val'].idxmin()].to_dict()
 #%%
 visualizations.hparams_optimization_errors([rets_rf, rets_mlp, rets_cnn, rets_lstm], 
                                            ["rf", "mlp", "cnn", "lstm"], 
-                                           train_val = False)
+                                           train_val = True)

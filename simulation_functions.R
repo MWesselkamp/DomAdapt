@@ -17,12 +17,13 @@ set.seed(123)
 climate_simulator = function(seq_len, sample, zero=TRUE){
 
   year = sample(2001:2008, 1)
-    
-  T_hat = predict(fmT, data.frame(DOY = 1:seq_len, year=year))
-  PAR_hat = predict(fmPAR, data.frame(DOY = 1:seq_len, year=year))
-  VPD_hat = predict(fmVPD, data.frame(DOY = 1:seq_len, year=year))
-  Precip_hat = predict(fmPrecip, data.frame(DOY = 1:seq_len, year=year))
-  fAPAR_hat = predict(fmfAPAR, data.frame(DOY = 1:seq_len, year=year))
+  doy = sample(1:(365-seq_len), 1)
+  
+  T_hat = predict(fmT, data.frame(DOY = doy:(doy+seq_len-1), year=year))
+  PAR_hat = predict(fmPAR, data.frame(DOY = doy:(doy+seq_len-1), year=year))
+  VPD_hat = predict(fmVPD, data.frame(DOY = doy:(doy+seq_len-1), year=year))
+  Precip_hat = predict(fmPrecip, data.frame(DOY = doy:(doy+seq_len-1), year=year))
+  fAPAR_hat = predict(fmfAPAR, data.frame(DOY = doy:(doy+seq_len-1), year=year))
   
   res_mat = data.frame(TAir=fmT$residuals, 
                       PAR=fmPAR$residuals, 
@@ -53,7 +54,7 @@ climate_simulator = function(seq_len, sample, zero=TRUE){
                       Precip = Precip_hat,
                       fAPAR = fAPAR_hat,
                       CO2 = 380,
-                      DOY = 1:seq_len,
+                      DOY = doy:(doy+seq_len-1),
                       year = year,
                       sample = sample)
   

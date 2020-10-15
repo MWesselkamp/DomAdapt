@@ -13,9 +13,9 @@ load("Rdata/fmPrecip.Rdata")
 load("Rdata/fmfAPAR.Rdata")
 
 nsamples = 1000
-seq_len=365
+seq_len=30
 
-data_dir <- "data/preles/simulations/"
+data_dir <- "data/simulations/"
 
 pars = get_parameters()
 pars_values = pars$Default

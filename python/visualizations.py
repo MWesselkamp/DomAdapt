@@ -34,6 +34,7 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
     ax.set(xlabel="Epochs", ylabel="Root Mean Squared Error")
     plt.ylim(bottom = 0)
+    plt.rcParams.update({'font.size': 14})
     fig.legend(loc="upper left")
     
 

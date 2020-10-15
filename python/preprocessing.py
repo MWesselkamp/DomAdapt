@@ -95,7 +95,7 @@ def get_simulations(data_dir, ignore_env = True):
     X = pd.read_csv(path_in, sep=";")
     X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
     
-    X = X.drop(columns=["DOY", "sample", "year", "CO2"])
+    X = X.drop(columns=["DOY","sample", "year", "CO2"])
 
     Y = pd.read_csv(path_out, sep=";")
         

@@ -27,9 +27,10 @@ def model_performance(model, typ, suptitle):
     #return(y_tests,y_preds)
     return(results)
 #%%
-out = model_performance("mlp", 2) # evaluation on test set
-res_mlp = model_performance("mlp", 1, "MLP") # 
-res_mlp = model_performance("mlp", 3, "MLP") # evaluation on preles simulations
+res_mlp = model_performance("mlp", 1, "") # best performing network .
+res_mlp = model_performance("mlp", 2, "") # network with this architecture on test set.
+res_mlp = model_performance("mlp", 3, "") # network with this architecture on preles GPP predictions.
+res_mlp = model_performance("mlp", 5, "") # network with this architecture on full simulations
 
-res_cnn = model_performance("cnn", 1, "CNN")
+#res_cnn = model_performance("cnn", 5, "CNN")
 

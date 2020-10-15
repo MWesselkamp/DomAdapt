@@ -18,12 +18,17 @@ data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(data_dir, "data\preles\simulations"))
 
 #%%
-def train_selected(X, Y, model, typ, epochs, splits, save, eval_set, finetuning, feature_extraction,data_dir, q
+def train_selected(X, Y, model, typ, epochs, splits, change_architecture, save, eval_set, finetuning, feature_extraction,data_dir, q
                    ):
 
     results = pd.read_csv(os.path.join(data_dir, f"grid_search\{model}\grid_search_results_{model}{typ}.csv"))
 
     best_model = results.iloc[results['rmse_val'].idxmin()].to_dict()
+    
+    if not change_architecture is None:
+      
+      for item in change_architecture.items():
+        best_model[item[0]] = item[1]
 
     dev = __import__(f"dev_{model}")
     
@@ -39,6 +44,7 @@ models = ["mlp"]
 typ = 5
 epochs = 4000
 splits = 5
+change_architecture = None
 save=True
 eval_set = None #{"X_test":X_test, "Y_test":Y_test}
 finetuning = False
@@ -54,7 +60,7 @@ if __name__ == '__main__':
     rets =[]
     
     for i in range(len(models)):
-        p = mp.Process(target=train_selected, args=(X_sims, Y_sims, models[i], typ, epochs, splits, 
+        p = mp.Process(target=train_selected, args=(X_sims, Y_sims, models[i], typ, epochs, splits, change_architecture, 
                                                     save, eval_set, finetuning, feature_extraction, data_dir, q))
         processes.append(p)
         p.start()
