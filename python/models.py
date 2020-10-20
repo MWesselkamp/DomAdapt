@@ -25,6 +25,34 @@ def MLP(dimensions, activation):
     
     return network
 
+
+#%%
+class MLPmod(nn.Module):
+    
+    def __init__(self, dimensions, activation):
+        
+        super(MLPmod, self).__init__()
+        #self.features = features
+        self.avgpool = nn.AdaptiveAvgPool1d(dimensions[0])
+        self.classifier = self.MLP(dimensions, activation)
+        
+    def forward(self, x):
+        
+        #x = self.features(x)
+        x = self.avgpool(x)
+        x = self.classifier(x)
+        return(x)
+
+    def MLP(self, dimensions, activation):
+    
+        network = nn.Sequential()
+    
+        for i in range(len(dimensions)-1):
+            network.add_module(f'hidden{i}', nn.Linear(dimensions[i], dimensions[i+1]))
+            if i < len(dimensions)-2:
+                network.add_module(f'activation{i}', activation())
+    
+        return network
 #%%
 class Flatten(nn.Module):
     
@@ -125,23 +153,3 @@ class ConvNet(nn.Module):
         out = self.fc2(out)
         
         return out
-
-#%% Fully Connected Linear Net
-
-class LinNet(nn.Module):
-    
-    def __init__(self, D_in, H, D_out):
-        super(LinNet, self).__init__()
-        
-        self.fc1 = nn.Linear(in_features = D_in, out_features = H)
-        self.fc2 = nn.Linear(in_features = H, out_features = H)
-        self.fc3 = nn.Linear(in_features = H, out_features = D_out)
-        
-    def forward(self, x):
-        out = torch.sigmoid(self.fc1(x))
-        out = torch.sigmoid(self.fc2(out))
-        out = self.fc3(out)
-        
-        return out
-    
-#%% 

@@ -7,10 +7,18 @@ Created on Thu Aug  6 08:46:14 2020
 import os.path
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
+cols = sns.color_palette(palette="Paired")
 #%%
 def plot_running_losses(train_loss, val_loss, suptitle, model):
 
+    if model=="mlp":
+        colors = ["blue","lightblue"]
+    elif model=="cnn":
+        colors = ["darkgreen", "palegreen"]
+    elif model=="lstm":
+        colors = ["blueviolet", "thistle"]
     
     fig, ax = plt.subplots(figsize=(10,6))
     fig.suptitle(suptitle)
@@ -21,15 +29,15 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
         train_loss = np.mean(train_loss, axis=0)
         val_loss = np.mean(val_loss, axis=0)
         
-        ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color="lightgreen", alpha=0.3)
-        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="lightblue", alpha=0.3)
+        ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color=colors[1], alpha=0.3)
+        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="moccasin", alpha=0.3)
     
     else: 
         train_loss = train_loss.reshape(-1,1)
         val_loss = val_loss.reshape(-1,1)
     
-    ax.plot(train_loss, color="green", label="Training loss", linewidth=0.8)
-    ax.plot(val_loss, color="blue", label = "Validation loss", linewidth=0.8)
+    ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=0.8)
+    ax.plot(val_loss, color="orange", label = "Validation loss", linewidth=0.8)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
     ax.set(xlabel="Epochs", ylabel="Root Mean Squared Error")
@@ -76,7 +84,7 @@ def plot_prediction_error(predictions, history, datadir, model):
     #fig.legend(handles, labels, loc='upper right')
     
 #%%
-def hparams_optimization_errors(results, model = "all", train_val = False, annotate = False):
+def hparams_optimization_errors(results, model = "all", error = "rmse", train_val = False):
     """
     Scatterplot (_valtrain_erros).
     
@@ -95,15 +103,15 @@ def hparams_optimization_errors(results, model = "all", train_val = False, annot
 
     fig, ax = plt.subplots()
     
-    custom_xlim = (0, 5)
-    custom_ylim = (0, 5)
+    custom_xlim = (0, 3)
+    custom_ylim = (0, 3)
 
     # Setting the values for all axes.
     plt.setp(ax, xlim=custom_xlim, ylim=custom_ylim)
 
     if train_val:
-        x = "mae_val"
-        y = "mae_train"
+        x = f"{error}_val"
+        y = f"{error}_train"
         #fig.suptitle(f"Hyperparameter Optimization \n Training vs. Validation Error")
         data_dir = os.path.join(data_dir, f"_valtrain_errors_")
     else:
@@ -113,20 +121,25 @@ def hparams_optimization_errors(results, model = "all", train_val = False, annot
         data_dir = os.path.join(data_dir, f"_val_errors_")
         
     if isinstance(model, list):
-        colors = ["blue", "green", "yellow", "orange"]
+        colors = [cols[1], cols[3], cols[5], cols[7]]
+        #colors = ["blue", "darkgreen", "blueviolet", "gold"]
         #markers = ["o", "o", "*", "*"]
+        models = ["MLP", "CNN", "LSTM", "RF"]
         for i in range(len(results)):
-            ax.scatter(results[i][x], results[i][y], color=colors[i], label=model[i])
+            ax.scatter(results[i][x], results[i][y], color=colors[i], 
+                       #edgecolors = "black", 
+                       alpha = 0.9, label=models[i])
     else:
         ax.scatter(results[x], results[y])
     
-    if annotate:
-        for i, txt in enumerate(results["run"]):
-            ax.annotate(txt, (results["rmse_val"][i], results["mae_val"][i]))
-    
     plt.legend()
-    plt.xlabel("RMSE Validation Data")
-    plt.ylabel("RMSE Training Data")
+    if error == "rmse":
+        error="RMSE"
+    else:
+        error="MAE"
+        
+    plt.xlabel(f"Validation {error}")
+    plt.ylabel(f"Training {error}")
     #plt.savefig(data_dir)
     #plt.close()
     

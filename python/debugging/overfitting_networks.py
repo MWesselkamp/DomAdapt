@@ -15,6 +15,7 @@ import visualizations
 import numpy as np
 #%%
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+#%%
 X, Y = preprocessing.get_splits(sites = ['le_bray'],
                                 years = [2001,2003],
                                 datadir = os.path.join(data_dir, "data"), 
@@ -27,6 +28,8 @@ X_t, Y_t = preprocessing.get_splits(sites = ['le_bray'],
                                 dataset = "profound",
                                 simulations = "preles",
                                 drop_cols=True)
+#%%
+X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(data_dir, "data\simulations"))
 
 #%%
 hparams = {"batchsize": 64, 
@@ -40,7 +43,7 @@ model_design = {"dimensions":[X.shape[1], 64, Y.shape[1]],
                 "kernelsize":3}
 
 splits=5
-eval_set = {"Y_test":Y_t, "X_test":X_t}
+eval_set = None#{"Y_test":Y_t, "X_test":X_t}
 
 save=False
 finetuning = False
@@ -59,13 +62,21 @@ visualizations.plot_running_losses(running_losses["rmse_train"],
                                    "cnn")
 
 #%%
-hparams = {"batchsize": 64, 
-           "epochs":400, 
-           "history":2, 
-           "hiddensize":[64,64],
-           "learningrate":0.01}
+hparams = {"batchsize": 256, 
+           "epochs":1000, 
+           "history":1, 
+           "hiddensize":[64, 64],
+           "learningrate":0.001}
 model_design = {"dimensions": [X.shape[1], 64,64, Y.shape[1]],
                 "activation": nn.ReLU}
+
+splits=5
+eval_set = None#{"Y_test":Y_t, "X_test":X_t}
+
+save=True
+finetuning = False
+feature_extraction=False
+data_dir = os.path.join(data_dir, f"python\outputs\models\exps")
 
 running_losses, performance, y_tests, y_preds = dev_mlp.train_model_CV(hparams, model_design, 
                                                                        X, Y, splits, eval_set, 
