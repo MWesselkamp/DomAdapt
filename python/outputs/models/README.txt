@@ -3,6 +3,7 @@ The different model numerations refer to the data that they have been trained an
 1 or 2, only one way will finally be used to select models. To discuss with Maria.
 4 will be removed eventually as soon as the data splitting is fixed.
 
+0) 6-fold CV. Training data: 5 Years of Profound data (Hyytiala). Validation data: 1 Year of Profound data. ONLY AFTER MODEL SELECTION
 1) 6-fold CV. Training data: 5 Years of Profound data (Le Bray). Validation data: 1 Year of Profound data.
 2) 5-fold CV. Training data: 4 Years of Profound data (Le Bray). Validation data: 1 Year of Profound data. Test data: 1 Year of Profound data.
 3) 5-fold CV. Training data: 4 Years of Profound data (Le Bray). Validation data: 1 Year of Profound data. 
@@ -11,4 +12,7 @@ The different model numerations refer to the data that they have been trained an
 	Test data: 1 Year of Profound data from 3 different stands, i.e. 3 years. 
 
 
-Stand: 09.10.2020
+5) 5-fold CV. Training and Validation data: Simulated Climate and Parameter samples. Ready for finetuning.
+6) 5-fold CV. Training and Validation data: Simulated Climate. Ready for finetuning.
+
+Stand: 22.10.2020

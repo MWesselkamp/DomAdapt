@@ -1,0 +1,2 @@
+execution_time,hiddensize,batchsize,learningrate,history,channels,kernelsize,activation,rmse_train,rmse_val,mae_train,mae_val
+1006.3873991966248,16,128,0.0001,10,"[14, 28]",2,<class 'torch.nn.modules.activation.ReLU'>,2.4000236988067627,3.017991542816162,1.7118761539459229,2.1553077697753906

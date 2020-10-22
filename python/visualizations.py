@@ -8,17 +8,22 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd 
+from pylab import *
+import dev_rf
 
 cols = sns.color_palette(palette="Paired")
 #%%
 def plot_running_losses(train_loss, val_loss, suptitle, model):
 
-    if model=="mlp":
-        colors = ["blue","lightblue"]
-    elif model=="cnn":
-        colors = ["darkgreen", "palegreen"]
-    elif model=="lstm":
-        colors = ["blueviolet", "thistle"]
+    #if model=="mlp":
+    #    colors = ["blue","lightblue"]
+    #elif model=="cnn":
+    #    colors = ["darkgreen", "palegreen"]
+    #elif model=="lstm":
+    #    colors = ["blueviolet", "thistle"]
+    #else:
+    colors=["blue", "lightblue"]
     
     fig, ax = plt.subplots(figsize=(10,6))
     fig.suptitle(suptitle)
@@ -30,14 +35,14 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
         val_loss = np.mean(val_loss, axis=0)
         
         ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color=colors[1], alpha=0.3)
-        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="moccasin", alpha=0.3)
+        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="lightgreen", alpha=0.3)
     
     else: 
         train_loss = train_loss.reshape(-1,1)
         val_loss = val_loss.reshape(-1,1)
     
     ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=0.8)
-    ax.plot(val_loss, color="orange", label = "Validation loss", linewidth=0.8)
+    ax.plot(val_loss, color="green", label = "Validation loss", linewidth=0.8)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
     ax.set(xlabel="Epochs", ylabel="Root Mean Squared Error")
@@ -46,6 +51,23 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
     fig.legend(loc="upper left")
     
 
+#%% SELECTED MODELS: PERFORMANCE
+
+def losses(model, typ, suptitle,
+                      data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
+
+    datadir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+
+    results = pd.read_csv(os.path.join(datadir, "selected_results.csv"))
+    print(results)
+    running_losses = np.load(os.path.join(datadir,"running_losses.npy"), allow_pickle=True).item()
+
+
+    plot_running_losses(running_losses["rmse_train"], running_losses["rmse_val"], suptitle, model)
+    #visualizations.plot_nn_predictions(y_tests, y_preds)
+    #return(y_tests,y_preds)
+    return(results)
+    
 #%%
 def plot_nn_predictions(y_tests, y_preds):
     
@@ -57,8 +79,8 @@ def plot_nn_predictions(y_tests, y_preds):
     fig.suptitle(f"Network Predictions")
 
     for i in range(len(y_tests)):
-        ax.plot(y_tests[i], color="grey", label="targets", linewidth=0.9, alpha=0.6)
-        ax.plot(y_preds[i], color="darkblue", label="nn predictions", linewidth=0.9, alpha=0.6)
+        ax.plot(y_tests[i], color="grey", label="Ground Truth", linewidth=0.9, alpha=0.6)
+        ax.plot(y_preds[i], color="darkblue", label="Network Prediction", linewidth=0.9, alpha=0.6)
         #ax.plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
     
     #handles, labels = ax[0].get_legend_handles_labels()
@@ -144,7 +166,7 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
     #plt.close()
     
 #%%
-def plot_errors_selmod(errors, running_losses_mlp, running_losses_conv, datadir, error = "rmse_val", save=True):
+def performance_boxplots(errors, running_losses_mlp, running_losses_conv, error = "rmse_val"):
     
     """
     This function returns a boxplot of the cross-validation training or validation errors (see argument error) after model selection.
@@ -155,12 +177,13 @@ def plot_errors_selmod(errors, running_losses_mlp, running_losses_conv, datadir,
     data_to_plot = [errors[error], np.mean(running_losses_mlp[error], axis=1), np.mean(running_losses_conv[error], axis=1) ]
 
     fig = plt.figure()
-    fig.suptitle(f"RMS-CV errors ({error}) \nafter Hyperparameter Optimization")
+    #fig.suptitle(f"")
     ax = fig.add_subplot(111)
-    bp = ax.boxplot(data_to_plot)
+    bp = ax.boxplot(data_to_plot, showmeans=True)
 
-    ax.set_xticklabels(['RF', 'MLP', 'ConvNet'])
+    ax.set_xticklabels(['RF', 'MLP', 'CNN'])
     ax.set_ylim(bottom=0)
+    ax.set_ylabel("RMSE")
 
     for box in bp['boxes']:
         # change outline color
@@ -179,14 +202,24 @@ def plot_errors_selmod(errors, running_losses_mlp, running_losses_conv, datadir,
     ## change color and linewidth of the medians
     for median in bp['medians']:
         median.set(color='orange', linewidth=2)
+        x, y = median.get_xydata()[1] # top of median line
+        # overlay median value
+        text(x, y, '%.1f' % y,
+        horizontalalignment='left') # draw above, centered
 
     ## change the style of fliers and their fill
     for flier in bp['fliers']:
         flier.set(marker='o', color='#e7298a', alpha=0.7)
                   
-    if save:
-        plt.savefig(os.path.join(datadir, r"plots\data_quality_evaluation\_errors_selected"))
-        plt.close()
+#%%
+def performance(X, Y, models = ["rf", "mlp", "cnn"],
+                data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    errors = np.load(os.path.join(data_dir,f"python\outputs\models\{models[0]}1\\errors.npy"), allow_pickle=True).item()
+    running_losses_mlp = np.load(os.path.join(data_dir,f"python\outputs\models\{models[1]}1\\running_losses.npy"), allow_pickle=True).item()
+    running_losses_cnn = np.load(os.path.join(data_dir,f"python\outputs\models\{models[2]}1\\running_losses.npy"), allow_pickle=True).item()
+
+    performance_boxplots(errors, running_losses_mlp, running_losses_cnn)
     
 #%%
 def main(y_preds_rf, y_tests_rf, y_tests_nn, y_preds_nn, rfp, nnp, datadir):

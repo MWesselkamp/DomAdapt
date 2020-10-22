@@ -24,7 +24,7 @@ import utils
 
 #%% Train the Algorithm
 
-def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, eval_set = None, selected = False):
+def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, eval_set = None, selected = True):
     
     X_mean, X_std = np.mean(X), np.std(X)
     X = minmax_scaler(X)
@@ -153,9 +153,7 @@ def plot_rf_fit(fitted, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\M
 #%%
 def random_forest_fit(X, Y, rfp, data="profound"):
     
-    Y_mean, Y_std = np.mean(Y), np.std(Y)
-    
-    X, Y = minmax_scaler(X), minmax_scaler(Y)
+    X = minmax_scaler(X)
     
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, shuffle=False)
 

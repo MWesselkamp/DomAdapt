@@ -29,30 +29,51 @@ def MLP(dimensions, activation):
 #%%
 class MLPmod(nn.Module):
     
-    def __init__(self, dimensions, activation):
+    def __init__(self, hidden_features, dimensions, activation):
         
         super(MLPmod, self).__init__()
-        #self.features = features
-        self.avgpool = nn.AdaptiveAvgPool1d(dimensions[0])
-        self.classifier = self.MLP(dimensions, activation)
+        self.hidden_features = hidden_features
+        self.activation = activation()
+        
+        self.encoder = nn.Linear(1, hidden_features)
+        self.avgpool = nn.AdaptiveAvgPool1d(hidden_features)
+        self.classifier = self.mlp(dimensions, activation)
         
     def forward(self, x):
         
-        #x = self.features(x)
-        x = self.avgpool(x)
+        x = self.encode(x)
+        x = self.avgpool(x).view(x.shape[0],-1)
         x = self.classifier(x)
+        
         return(x)
 
-    def MLP(self, dimensions, activation):
+    def mlp(self, dimensions, activation):
     
         network = nn.Sequential()
-    
+        network.add_module(f"hidden0", nn.Linear(self.hidden_features*self.hidden_features, dimensions[0]))
+        network.add_module(f'activation0', activation())
         for i in range(len(dimensions)-1):
-            network.add_module(f'hidden{i}', nn.Linear(dimensions[i], dimensions[i+1]))
+            network.add_module(f'hidden{i+1}', nn.Linear(dimensions[i], dimensions[i+1]))
             if i < len(dimensions)-2:
-                network.add_module(f'activation{i}', activation())
+                network.add_module(f'activation{i+1}', activation())
     
-        return network
+        return(network)
+    
+    def encode(self, x):
+        
+        x = x.unsqueeze(1)
+        
+        latent = torch.empty(x.shape[0], self.hidden_features, 1)
+        
+        for feature in range(x.shape[-1]):
+            latent = torch.cat((latent, self.encoder(x[:,:,feature]).unsqueeze(2)),dim=2)
+            
+        latent = self.activation(latent)
+        
+        return(latent)
+            
+            
+        
 #%%
 class Flatten(nn.Module):
     

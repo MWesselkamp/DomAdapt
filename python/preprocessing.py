@@ -86,7 +86,7 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
 
 
 #%%
-def get_simulations(data_dir, ignore_env = True):
+def get_simulations(data_dir, drop_parameters = False):
 
     
     path_in = os.path.join(data_dir, f"sims_in.csv")
@@ -96,6 +96,9 @@ def get_simulations(data_dir, ignore_env = True):
     X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
     
     X = X.drop(columns=["DOY","sample", "year", "CO2"])
+    
+    if drop_parameters:
+        X = X.drop(columns=["beta","X0", "gamma", "alpha", "chi"])
 
     Y = pd.read_csv(path_out, sep=";")
         

@@ -51,7 +51,7 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set,
         yt_test = eval_set["Y_test"]
         yt_test = torch.tensor(yt_test).type(dtype=torch.float)
         Xt_test = torch.tensor(Xt_test).type(dtype=torch.float)
-        yt_tests = []
+        #yt_tests = []
         
     i = 0
     
@@ -131,7 +131,11 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set,
         if save:
             torch.save(model.state_dict(), os.path.join(data_dir, f"model{i}.pth"))
         
-        y_tests.append(y_test.numpy())
+        if eval_set is None:
+            y_tests.append(y_test.numpy())
+        else:
+            y_tests.append(yt_test.numpy())
+            
         y_preds.append(preds_test.numpy())
         
     
@@ -139,10 +143,8 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set,
     
     running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
 
-    if eval_set is None:
-        return(running_losses, performance, y_tests, y_preds)
-    else:
-        return(running_losses, performance, yt_tests, y_preds)
+    return(running_losses, performance, y_tests, y_preds)
+
     
 #%%
 def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
@@ -193,7 +195,7 @@ def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         y_train = torch.tensor(y_train).type(dtype=torch.float)
             
         print("Loading pretrained Model.")
-        model = models.MLPmod(model_design["dimensions"], model_design["activation"])
+        model = models.MLP(model_design["dimensions"], model_design["activation"])
         model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
         model.eval()
         if feature_extraction:

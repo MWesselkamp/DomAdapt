@@ -16,27 +16,27 @@ import numpy as np
 #%%
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 #%%
-X, Y = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2001,2003],
+X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2001,2003, 2004],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
 
-X_t, Y_t = preprocessing.get_splits(sites = ['le_bray'],
+X_t, Y_t = preprocessing.get_splits(sites = ['hyytiala'],
                                 years = [2001,2003],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = "preles",
                                 drop_cols=True)
 #%%
-X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(data_dir, "data\simulations"))
+X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(data_dir, "data\simulations"), drop_parameters=True)
 
 #%%
-hparams = {"batchsize": 64, 
+hparams = {"batchsize": 512, 
            "epochs":500, 
            "history":15, 
            "hiddensize":64, 
-           "learningrate":0.01}
+           "learningrate":0.001}
 model_design = {"dimensions":[X.shape[1], 64, Y.shape[1]],
                 "activation":nn.ReLU,
                 "channels":[28,52],
@@ -45,14 +45,11 @@ model_design = {"dimensions":[X.shape[1], 64, Y.shape[1]],
 splits=5
 eval_set = None#{"Y_test":Y_t, "X_test":X_t}
 
-save=False
-finetuning = False
-feature_extraction=False
-
-running_losses, performance, y_tests, y_preds = dev_cnn.train_model_CV(hparams, model_design, 
+running_losses, performance, y_tests, y_preds = dev_cnn.finetuning_CV(hparams, model_design, 
                                                                        X, Y, splits, eval_set, 
-                                                                       data_dir, save, finetuning, 
-                                                                       feature_extraction)
+                                                                       data_dir = os.path.join(data_dir, r"python\outputs\models\mlp6"), 
+                                                                       save =False, 
+                                                                       feature_extraction =False)
 
 #%%
 perf = np.mean(np.array(performance), axis=0)
@@ -62,26 +59,22 @@ visualizations.plot_running_losses(running_losses["rmse_train"],
                                    "cnn")
 
 #%%
-hparams = {"batchsize": 256, 
-           "epochs":1000, 
-           "history":1, 
-           "hiddensize":[64, 64],
+hparams = {"batchsize": 512, 
+           "epochs":500, 
+           "history":15, 
+           "hiddensize":[64], 
            "learningrate":0.001}
-model_design = {"dimensions": [X.shape[1], 64,64, Y.shape[1]],
+model_design = {"dimensions": [X.shape[1], 64, Y.shape[1]],
                 "activation": nn.ReLU}
 
 splits=5
 eval_set = None#{"Y_test":Y_t, "X_test":X_t}
 
-save=True
-finetuning = False
-feature_extraction=False
-data_dir = os.path.join(data_dir, f"python\outputs\models\exps")
-
-running_losses, performance, y_tests, y_preds = dev_mlp.train_model_CV(hparams, model_design, 
+running_losses, performance, y_tests, y_preds = dev_mlp.finetuning_CV(hparams, model_design, 
                                                                        X, Y, splits, eval_set, 
-                                                                       data_dir, save, finetuning, 
-                                                                       feature_extraction)
+                                                                       data_dir = os.path.join(data_dir, r"python\outputs\models\mlp6"), 
+                                                                       save =False, 
+                                                                       feature_extraction =False)
 #%%
 perf = np.mean(np.array(performance), axis=0)
 visualizations.plot_running_losses(running_losses["rmse_train"], 
