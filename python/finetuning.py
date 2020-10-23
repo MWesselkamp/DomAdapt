@@ -12,12 +12,13 @@ import os.path
 import preprocessing
 import torch.nn as nn
 import visualizations
-# Finetuning
+from ast import literal_eval
+import numpy as np
 
 #%% Load Data: Profound in and out.
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-X, Y = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2001,2002,2003,2004,2005,2006,2007, 2008],
+X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2001,2002,2003, 2004],
                                 datadir = os.path.join(datadir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
@@ -25,18 +26,19 @@ X, Y = preprocessing.get_splits(sites = ['le_bray'],
 
 #%%
 rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\mlp\grid_search_results_mlp1.csv"))
-
-res_mlp = rets_mlp.iloc[rets_mlp['rmse_val'].idxmin()].to_dict()
-
+res_mlp = rets_mlp.iloc[rets_mlp['mae_val'].idxmin()].to_dict()
+results = visualizations.losses("mlp", 6, "") 
 #%%
 model = "mlp"
-typ = 5
-epochs = 5000
-splits = 6
-dimensions = [12,literal_eval(res_mlp["hiddensize"])[0],Y.shape[1]]
+typ = 6
+splits = 5
+dimensions = [X.shape[1]]
+for hs in literal_eval(res_mlp["hiddensize"]):
+    dimensions.append(hs)
+dimensions.append(Y.shape[1])
 
 hparams = {"batchsize": int(res_mlp["batchsize"]), 
-           "epochs":epochs, 
+           "epochs":10000, 
            "history": int(res_mlp["history"]), 
            "hiddensize":literal_eval(res_mlp["hiddensize"]),
            "learningrate":res_mlp["learningrate"]}
@@ -44,17 +46,15 @@ hparams = {"batchsize": int(res_mlp["batchsize"]),
 model_design = {"dimensions": dimensions,
                 "activation": nn.ReLU}
 
-save = False
-eval_set = None
-finetuning=True
-feature_extraction=False
    
 #%%
-running_losses,performance, y_tests, y_preds = dev_mlp.train_model_CV(hparams, model_design, X, Y, splits, 
-                                                                      eval_set,os.path.join(datadir, f"python\outputs\models\mlp5") , 
-                                                                      save, finetuning, feature_extraction)
+running_losses,performance, y_tests, y_preds = dev_mlp.finetuning_CV(hparams, model_design, X, Y, splits, 
+                                                                      eval_set=None, data_dir = os.path.join(datadir, f"python\outputs\models\mlp6") , 
+                                                                      save=False, feature_extraction=False)
 
 
 #%%
-visualizations.plot_running_losses(running_losses["rmse_train"], running_losses["rmse_val"], "anything", "mlp")
+visualizations.plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], "", "mlp")
 print(np.mean(np.array(performance), axis=0))
+
+res_mlp = visualizations.losses("mlp", 0, "") 

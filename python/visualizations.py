@@ -45,7 +45,7 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
     ax.plot(val_loss, color="green", label = "Validation loss", linewidth=0.8)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
-    ax.set(xlabel="Epochs", ylabel="Root Mean Squared Error")
+    ax.set(xlabel="Epochs", ylabel="MAE")
     plt.ylim(bottom = 0)
     plt.rcParams.update({'font.size': 14})
     fig.legend(loc="upper left")
@@ -63,7 +63,7 @@ def losses(model, typ, suptitle,
     running_losses = np.load(os.path.join(datadir,"running_losses.npy"), allow_pickle=True).item()
 
 
-    plot_running_losses(running_losses["rmse_train"], running_losses["rmse_val"], suptitle, model)
+    plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], suptitle, model)
     #visualizations.plot_nn_predictions(y_tests, y_preds)
     #return(y_tests,y_preds)
     return(results)

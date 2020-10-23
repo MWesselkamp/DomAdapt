@@ -45,8 +45,8 @@ visualizations.hparams_optimization_errors([rets_mlp, rets_cnn, rets_lstm, rets_
 res_mlp = visualizations.losses("mlp", 0, "") # best performing network .
 res_mlp = visualizations.losses("mlp", 2, "") # network with this architecture on test set.
 res_mlp = visualizations.losses("mlp", 3, "") # network with this architecture on preles GPP predictions.
-res_mlp = visualizations.losses("mlp", 5, "") # network with this architecture on full simulations
-res_mlp = visualizations.losses("mlp", 6, "")
+res_mlp = visualizations.losses("mlp", 5, "") # network with this architecture on full simulations (parameters included)
+res_mlp = visualizations.losses("mlp", 6, "") # network with this architecture on only climate simulations
 res_cnn = visualizations.losses("cnn", 0, "")
 res_cnn = visualizations.losses("cnn", 5, "")
 

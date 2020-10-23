@@ -15,26 +15,32 @@ import torch.nn as nn
 import preprocessing
 import visualizations
 import models
+from sklearn import metrics
 import utils
 import numpy as np
 #%%
 
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-X, Y = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2001,2003],
+X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2001,2003, 2004],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
 
+X = utils.minmax_scaler(X)
 #%%
+
+
 
 fc = nn.Linear(1,32)
 
 tt = torch.empty(730,32,1)
 
-for i in range(3):
-    tt = torch.cat((tt, fc(X[:,:,i]).unsqueeze(2)),dim=2)
+for i in range(X.shape[1]):
+    tt = torch.cat((tt, fc(X.unsqueeze(1)[:,:,i]).unsqueeze(2)),dim=2)
 tt.shape
+
+torch.mean(tt, dim=2).shape
 
 avgpool = nn.AdaptiveAvgPool1d(1)
 
@@ -48,8 +54,8 @@ out.shape
 #%%
 dimensions = [32,64,64, 1]
 
-X = utils.minmax_scaler(X)
 X = torch.tensor(X).type(dtype=torch.float)
+
 Y = torch.tensor(Y).type(dtype=torch.float)
 
 #%%
@@ -57,15 +63,16 @@ model = models.MLPmod(32, dimensions, nn.ReLU)
 out = model(X)
 out.shape
 #%%
-rmse_trains = []
-optimizer = optim.Adam(model.parameters(), lr = 0.01)
+model = models.MLPmod(16, dimensions, nn.ReLU)
+mae_trains = []
+optimizer = optim.Adam(model.parameters(), lr = 0.001)
 criterion = nn.MSELoss()
 
 #x_test, target_test = utils.create_batches(X, Y, 64, 1)
 
-for epoch in range(100):
+for epoch in range(1500):
     
-    x, y = utils.create_batches(X, Y, 64, 1)
+    x, y = utils.create_batches(X, Y, 256, 1)
     
     x = torch.tensor(x).type(dtype=torch.float)
     y = torch.tensor(y).type(dtype=torch.float)
@@ -73,7 +80,6 @@ for epoch in range(100):
     model.train()
     output = model(x)
     loss = criterion(output, y)
-    print(loss)
     
     optimizer.zero_grad()
     loss.backward()
@@ -86,18 +92,17 @@ for epoch in range(100):
         pred_train = model(X)
         #preds = model(x_test)
         #plt.plot(utils.minmax_rescaler(preds.numpy(), Y_mean, Y_std), label= epoch)
-        rmse_train = utils.rmse(pred_train, Y)
+        mae_train = metrics.mean_absolute_error(Y, pred_train)
         #mse_test = utils.rmse(preds, target_test)
         #print('Epoch {}, loss {}, train_a {}, test_a {}'.format(epoch,loss.item(), 
           #np.sqrt(np.mean(mse_train.numpy())),
           #np.sqrt(np.mean(mse_test.numpy()))))
     
-    rmse_trains.append(rmse_train)
+    mae_trains.append(mae_train)
     #rmse_test.append(mse_test)
 
 #%%
-    
-m = nn.AdaptiveAvgPool1d(5)
-input = torch.randn(1, 64, 8)
-output = m(input)
-output.shape
+import matplotlib.pyplot as plt
+
+plt.plot(mae_trains[5:])
+mae_trains[-1]

@@ -69,7 +69,7 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set,
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         y_train = torch.tensor(y_train).type(dtype=torch.float)
         
-        model = models.MLP(model_design["dimensions"], model_design["activation"])
+        model = models.MLPmod(model_design["dimensions"], model_design["activation"])
             
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         criterion = nn.MSELoss()
@@ -281,7 +281,7 @@ def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
 #%% Random Grid search: Paralellized
 def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
                            data_dir, q, hp_search = [], 
-                           eval_set = None, save = False, finetuning = False, feature_extraction = False):
+                           eval_set = None, save = False):
     
     search = [random.choice(sublist) for sublist in hp_list]
     

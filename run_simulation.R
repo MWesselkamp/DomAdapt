@@ -12,8 +12,8 @@ load("Rdata/fmVPD.Rdata")
 load("Rdata/fmPrecip.Rdata")
 load("Rdata/fmfAPAR.Rdata")
 
-nsamples = 1000
-seq_len=30
+nsamples = 10000
+seq_len=20
 
 data_dir <- "data/simulations/"
 
