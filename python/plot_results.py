@@ -24,6 +24,7 @@ X, Y = preprocessing.get_splits(sites = ['le_bray'],
 
 #%% load GRID SEARCH results
 rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp1.csv"))
+rets_mlp4 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp4.csv"))
 rets_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\cnn\grid_search_results_cnn1.csv"))
 rets_cnn2 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\cnn\grid_search_results_cnn1_2.csv"))
 rets_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\grid_search_results_lstm1.csv"))

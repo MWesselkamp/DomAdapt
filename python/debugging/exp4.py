@@ -34,13 +34,14 @@ X = utils.minmax_scaler(X)
 
 fc = nn.Linear(1,32)
 
-tt = torch.empty(730,32,1)
-
-for i in range(X.shape[1]):
-    tt = torch.cat((tt, fc(X.unsqueeze(1)[:,:,i]).unsqueeze(2)),dim=2)
-tt.shape
-
-torch.mean(tt, dim=2).shape
+latent = []
+for feature in range(3):
+    latent.append(fc(X.unsqueeze(1)[:,:,feature]).unsqueeze(2))
+        
+latent = torch.stack(latent, dim=2).squeeze(3)
+latent.shape
+latent = torch.mean(latent, dim=2)
+latent.shape
 
 avgpool = nn.AdaptiveAvgPool1d(1)
 
@@ -56,14 +57,15 @@ dimensions = [32,64,64, 1]
 
 X = torch.tensor(X).type(dtype=torch.float)
 
+
 Y = torch.tensor(Y).type(dtype=torch.float)
 
 #%%
-model = models.MLPmod(32, dimensions, nn.ReLU)
+model = models.MLPmod(7, dimensions, nn.ReLU)
 out = model(X)
 out.shape
 #%%
-model = models.MLPmod(16, dimensions, nn.ReLU)
+model = models.MLPmod(7, dimensions, nn.ReLU)
 mae_trains = []
 optimizer = optim.Adam(model.parameters(), lr = 0.001)
 criterion = nn.MSELoss()

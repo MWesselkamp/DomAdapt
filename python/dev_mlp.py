@@ -23,7 +23,7 @@ import os.path
 
 from ast import literal_eval
 #%%
-def train_model_CV(hparams, model_design, X, Y, splits, eval_set, 
+def train_model_CV(hparams, model_design, X, Y, splits, eval_set, featuresize,
                    data_dir, save):
     
     """
@@ -69,7 +69,10 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set,
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         y_train = torch.tensor(y_train).type(dtype=torch.float)
         
-        model = models.MLPmod(model_design["dimensions"], model_design["activation"])
+        if featuresize is None:
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+        else:
+            model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
             
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         criterion = nn.MSELoss()
@@ -147,7 +150,7 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set,
 
     
 #%%
-def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
+def finetuning_CV(hparams, model_design, X, Y, splits, featuresize, eval_set, data_dir,
                    save, feature_extraction):
     
     """
@@ -195,7 +198,7 @@ def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         y_train = torch.tensor(y_train).type(dtype=torch.float)
             
         print("Loading pretrained Model.")
-        model = models.MLP(model_design["dimensions"], model_design["activation"])
+        model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
         model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
         model.eval()
         if feature_extraction:
@@ -217,7 +220,7 @@ def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
             x = torch.tensor(x).type(dtype=torch.float)
             y = torch.tensor(y).type(dtype=torch.float)
             
-            output = model(x.unsqueeze(1)).squeeze_(1)
+            output = model(x)
             
             # Compute training loss
             loss = criterion(output, y)
@@ -230,15 +233,15 @@ def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
             model.eval()
             
             with torch.no_grad():
-                pred_train = model(X_train.unsqueeze(1)).squeeze_(1)
+                pred_train = model(X_train)
                 if eval_set is None:
-                    pred_test = model(X_test.unsqueeze(1)).squeeze_(1)
+                    pred_test = model(X_test)
                     rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
                     rmse_val[i, epoch] = utils.rmse(y_test, pred_test)
                     mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
                     mae_val[i, epoch] = metrics.mean_absolute_error(y_test, pred_test)  
                 else:
-                    pred_test = model(Xt_test.unsqueeze(1)).squeeze_(1)
+                    pred_test = model(Xt_test)
                     rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
                     rmse_val[i, epoch] = utils.rmse(yt_test, pred_test)
                     mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
@@ -247,15 +250,15 @@ def finetuning_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
          
         # Predict with fitted model
         with torch.no_grad():
-            preds_train = model(X_train.unsqueeze(1)).squeeze_(1)
+            preds_train = model(X_train)
             if eval_set is None:
-                preds_test = model(X_test.unsqueeze(1)).squeeze_(1)
+                preds_test = model(X_test)
                 performance.append([utils.rmse(y_train, preds_train),
                                     utils.rmse(y_test, preds_test),
                                     metrics.mean_absolute_error(y_train, preds_train.numpy()),
                                     metrics.mean_absolute_error(y_test, preds_test.numpy())])
             else:
-                preds_test = model(Xt_test.unsqueeze(1)).squeeze_(1)
+                preds_test = model(Xt_test)
                 performance.append([utils.rmse(y_train, preds_train),
                                     utils.rmse(yt_test, preds_test),
                                     metrics.mean_absolute_error(y_train, preds_train.numpy()),
@@ -286,7 +289,7 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize,
     search = [random.choice(sublist) for sublist in hp_list]
     
     n_layers = search[5]
-    dimensions = [X.shape[1]]
+    dimensions = []
     for layer in range(n_layers):
         # randomly pick hiddensize from hiddensize list
         dimensions.append(random.choice(hp_list[0]))
@@ -315,7 +318,7 @@ def mlp_selection_parallel(X, Y, hp_list, epochs, splits, searchsize,
     
 #%% Train the model with hyperparameters selected after random grid search:
     
-def selected(X, Y, model,typ, model_params, epochs, splits, data_dir = None, 
+def selected(X, Y, model,typ, model_params, epochs, splits, featuresize, data_dir = None, 
              save = False, eval_set = None):
     
     """
@@ -337,7 +340,10 @@ def selected(X, Y, model,typ, model_params, epochs, splits, data_dir = None,
     
     hidden_dims = literal_eval(model_params["hiddensize"])
     
-    dimensions = [X.shape[1]]
+    if featuresize is None:
+        dimensions = [X.shape[1]]
+    else:
+        dimensions = []
     for hdim in hidden_dims:
         dimensions.append(hdim)
     dimensions.append(Y.shape[1])
@@ -354,7 +360,7 @@ def selected(X, Y, model,typ, model_params, epochs, splits, data_dir = None,
     start = time.time()
     if not data_dir is None:
         data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}{typ}")
-    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
+    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits, eval_set, featuresize, data_dir, 
                                                                   save)
     end = time.time()
     

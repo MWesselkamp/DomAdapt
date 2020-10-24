@@ -29,22 +29,25 @@ def MLP(dimensions, activation):
 #%%
 class MLPmod(nn.Module):
     
-    def __init__(self, dimensions, activation):
+    def __init__(self, featuresize, dimensions, activation, dropout_prob = 0.0):
         
         super(MLPmod, self).__init__()
+        self.featuresize = featuresize
         self.hidden_features = dimensions[0]
         self.activation = activation()
         
         self.encoder = nn.Linear(1, self.hidden_features)
-        #self.avgpool = nn.AdaptiveAvgPool1d(hidden_features)
+        self.dropout = nn.Dropout(dropout_prob)
+        self.avgpool = nn.AdaptiveAvgPool1d(self.featuresize)
         self.classifier = self.mlp(dimensions, activation)
         
     def forward(self, x):
         
         out = self.encode(x)
         out = self.activation(out)
-        #out = self.avgpool(out)
-        out = self.activation(out)
+        out = self.dropout(out)
+        out = self.avgpool(out).view(x.shape[0],-1)
+        #out = self.activation(out)
         out = self.classifier(out)
         
         return(out)
@@ -52,7 +55,7 @@ class MLPmod(nn.Module):
     def mlp(self, dimensions, activation):
     
         network = nn.Sequential()
-        network.add_module(f"hidden0", nn.Linear(self.hidden_features, dimensions[0]))
+        network.add_module(f"hidden0", nn.Linear(self.featuresize*self.hidden_features, dimensions[0]))
         network.add_module(f'activation0', activation())
         for i in range(len(dimensions)-1):
             network.add_module(f'hidden{i+1}', nn.Linear(dimensions[i], dimensions[i+1]))
@@ -63,12 +66,12 @@ class MLPmod(nn.Module):
     
     def encode(self, x):
         
-        latent = torch.empty(x.shape[0], self.hidden_features, 1)
+        latent = []
         
-        for feature in range(x.shape[1]):
-            latent = torch.cat((latent, self.encoder(x.unsqueeze(1)[:,:,feature]).unsqueeze(2)),dim=2)
+        for feature in range(x.shape[1]):         
+            latent.append(self.encoder(x.unsqueeze(1)[:,:,feature]).unsqueeze(2))
         
-        latent = torch.mean(latent, dim=2)
+        latent = torch.stack(latent, dim=2).squeeze(3)
         
         return(latent)
             
