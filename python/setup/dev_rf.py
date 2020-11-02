@@ -8,8 +8,9 @@ Created on Wed Jul  8 14:22:10 2020
 import os
 import os.path
 
-from utils import minmax_scaler
-from utils import minmax_rescaler
+from setup.utils import minmax_scaler
+from setup.utils import minmax_rescaler
+import setup.utils as utils
 
 from sklearn.model_selection import KFold
 from sklearn.ensemble import RandomForestRegressor
@@ -19,9 +20,6 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-import utils
-
 #%% Train the Algorithm
 
 def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, eval_set = None, selected = True):

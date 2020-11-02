@@ -4,59 +4,181 @@ Created on Mon Oct 19 11:48:58 2020
 
 @author: marie
 """
-import sys
-sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
-import dev_mlp
-import pandas as pd
-import os.path
-import preprocessing
-import torch.nn as nn
-import visualizations
-from ast import literal_eval
+
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn import metrics
+from sklearn.model_selection import KFold
+import os.path
+import pandas as pd
+from ast import literal_eval
 
-#%% Load Data: Profound in and out.
-datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-X, Y = preprocessing.get_splits(sites = ['hyytiala'],
-                                years = [2001,2002,2003, 2004, 2005, 2006],
-                                datadir = os.path.join(datadir, "data"), 
-                                dataset = "profound",
-                                simulations = None)
+import setup.models as models
+import setup.utils as utils
 
 
 #%%
-rets_mlp = pd.read_csv(os.path.join(datadir, r"python\outputs\grid_search\mlp\grid_search_results_mlp1.csv"))
-res_mlp = rets_mlp.iloc[rets_mlp['mae_val'].idxmin()].to_dict()
-results = visualizations.losses("mlp", 5, "") 
+def training_CV(hparams, model_design, X, Y,  feature_extraction, splits, featuresize, eval_set, data_dir,
+                   save):
+    
+    """
+    
+    
+    """
+    
+    epochs = hparams["epochs"]
+    
+    kf = KFold(n_splits=splits, shuffle = False)
+    kf.get_n_splits(X)
+    
+    rmse_train = np.zeros((splits, epochs))
+    rmse_val = np.zeros((splits, epochs))
+    mae_train = np.zeros((splits, epochs))
+    mae_val = np.zeros((splits, epochs))
+    
+    # z-score data
+    #X_mean, X_std = np.mean(X), np.std(X)
+    #X = utils.minmax_scaler(X)
+    
+    if not eval_set is None:
+        print("Test set used for model evaluation")
+        Xt_test = eval_set["X_test"]
+        #Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])
+        yt_test = eval_set["Y_test"]
+        yt_test = torch.tensor(yt_test).type(dtype=torch.float)
+        Xt_test = torch.tensor(Xt_test).type(dtype=torch.float)
+        yt_tests = []
+        
+    i = 0
+    
+    performance = []
+    y_tests = []
+    y_preds = []
+    
+    for train_index, test_index in kf.split(X):
+        
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = Y[train_index], Y[test_index]
+        
+        X_test = torch.tensor(X_test).type(dtype=torch.float)
+        y_test = torch.tensor(y_test).type(dtype=torch.float)
+        X_train = torch.tensor(X_train).type(dtype=torch.float)
+        y_train = torch.tensor(y_train).type(dtype=torch.float)
+            
+        print("Loading pretrained Model.")
+        model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
+        model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
+        model.eval()
+        
+        if not feature_extraction is None:
+            print("Extracting features.")
+            for child in model.children():
+                for name, parameter in child.named_parameters():
+                    if name in feature_extraction:
+                        print("enable backprob for", name)
+                        parameter.requires_grad = True
+                    else:
+                        parameter.requires_grad = False
+            
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
+        
+        for epoch in range(epochs):
+            
+            # Training
+            model.train()
+
+            x, y = utils.create_batches(X_train, y_train, hparams["batchsize"], hparams["history"])
+            
+            x = torch.tensor(x).type(dtype=torch.float)
+            y = torch.tensor(y).type(dtype=torch.float)
+            
+            output = model(x)
+            
+            # Compute training loss
+            loss = criterion(output, y)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        
+            # Evaluate current model at test set
+            model.eval()
+            
+            with torch.no_grad():
+                pred_train = model(X_train)
+                if eval_set is None:
+                    pred_test = model(X_test)
+                    rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
+                    rmse_val[i, epoch] = utils.rmse(y_test, pred_test)
+                    mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
+                    mae_val[i, epoch] = metrics.mean_absolute_error(y_test, pred_test)  
+                else:
+                    pred_test = model(Xt_test)
+                    rmse_train[i, epoch] = utils.rmse(y_train, pred_train)
+                    rmse_val[i, epoch] = utils.rmse(yt_test, pred_test)
+                    mae_train[i, epoch] = metrics.mean_absolute_error(y_train, pred_train)
+                    mae_val[i, epoch] = metrics.mean_absolute_error(yt_test, pred_test)
+                    
+         
+        # Predict with fitted model
+        with torch.no_grad():
+            preds_train = model(X_train)
+            if eval_set is None:
+                preds_test = model(X_test)
+                performance.append([utils.rmse(y_train, preds_train),
+                                    utils.rmse(y_test, preds_test),
+                                    metrics.mean_absolute_error(y_train, preds_train.numpy()),
+                                    metrics.mean_absolute_error(y_test, preds_test.numpy())])
+            else:
+                preds_test = model(Xt_test)
+                performance.append([utils.rmse(y_train, preds_train),
+                                    utils.rmse(yt_test, preds_test),
+                                    metrics.mean_absolute_error(y_train, preds_train.numpy()),
+                                    metrics.mean_absolute_error(yt_test, preds_test.numpy())])
+    
+        if save:
+            torch.save(model.state_dict(), os.path.join(data_dir, f"model{i}.pth"))
+        
+        y_tests.append(y_test.numpy())
+        y_preds.append(preds_test.numpy())
+        
+    
+        i += 1
+    
+    running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
+
+    if eval_set is None:
+        return(running_losses, performance, y_tests, y_preds)
+    else:
+        return(running_losses, performance, yt_tests, y_preds)
+        
 #%%
-model = "mlp"
-typ = 7
-splits = 5
-dimensions = [X.shape[1]]
-for hs in literal_eval(res_mlp["hiddensize"]):
-    dimensions.append(hs)
-dimensions.append(Y.shape[1])
+def finetune(X, Y, epochs, model, pretrained_type, feature_extraction = None,
+             data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\mlp\grid_search_results_{model}1.csv"))
+    
+    setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
 
-hparams = {"batchsize": int(res_mlp["batchsize"]), 
-           "epochs":1000, 
-           "history": int(res_mlp["history"]), 
-           "hiddensize":literal_eval(res_mlp["hiddensize"]),
-           "learningrate":res_mlp["learningrate"]}
+    dimensions = literal_eval(setup["hiddensize"])
+    dimensions.append(1) # adds the output dimension!
 
-model_design = {"dimensions": [12, 64, 64, 16,1],
-                "activation": nn.ReLU}
+    hparams = {"batchsize": int(setup["batchsize"]), 
+               "epochs":epochs, 
+               "history": int(setup["history"]), 
+               "hiddensize":literal_eval(setup["hiddensize"]),
+               "learningrate":setup["learningrate"]}
 
-   
-#%%
-running_losses,performance, y_tests, y_preds = dev_mlp.finetuning_CV(hparams, model_design, X, Y, splits, featuresize=7,
+    model_design = {"dimensions":dimensions,
+                    "activation":nn.ReLU}
+
+    running_losses,performance, y_tests, y_preds = training_CV(hparams, model_design, X, Y,  feature_extraction, splits = 5, featuresize=7,
                                                                       eval_set=None, 
-                                                                      data_dir = os.path.join(datadir, f"python\outputs\models\mlp{typ}") , 
-                                                                      save=False, feature_extraction=False)
-
-
-#%%
-visualizations.plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], "", "mlp")
-print(np.mean(np.array(performance), axis=0))
-
-res_mlp = visualizations.losses("mlp", 0, "") 
+                                                                      data_dir = os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}") , 
+                                                                      save=False)
+    
+    return(running_losses,performance, y_tests, y_preds)
 

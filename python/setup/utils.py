@@ -41,7 +41,7 @@ def minmax_scaler(data, scaling = None):
     if (scaling is None):
         
         if (isinstance(data, pd.DataFrame)):
-            data_norm = (data - pd.mean(data))/ pd.std(data)
+            data_norm = (data - data.mean())/ data.std()
         elif (torch.is_tensor(data)):
             data_norm = (data - torch.mean(data)) / torch.std(data)
         else:

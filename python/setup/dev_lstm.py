@@ -6,26 +6,24 @@ Created on Mon Sep 14 13:04:40 2020
 """
 
 #%%
-import models
+import setup.models as models
+import setup.utils as utils
+
 from sklearn import metrics
 from sklearn.model_selection import KFold
-
 import os.path
-import utils
 import random
 import numpy as np
 import pandas as pd
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
 import time
 
 #%%
 
 def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
-                   save, finetuning, feature_extraction):
+                   save):
 
     batchsize = hparams["batchsize"]
     epochs = hparams["epochs"]
@@ -42,13 +40,13 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
     y_tests = []
     y_preds = []
     
-    X_mean, X_std = np.mean(X), np.std(X)
-    X = utils.minmax_scaler(X)
+    #X_mean, X_std = np.mean(X), np.std(X)
+    #X = utils.minmax_scaler(X)
     
     if not eval_set is None:
         print("Test set used for model evaluation")
         Xt_test = eval_set["X_test"]
-        Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])
+        #Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])
         Yt_test = eval_set["Y_test"]
         Yt_test = torch.tensor(Yt_test).type(dtype=torch.float)
         Xt_test = torch.tensor(Xt_test).type(dtype=torch.float)
@@ -69,19 +67,8 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         Y_test = torch.tensor(Y_test).type(dtype=torch.float)
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         Y_train = torch.tensor(Y_train).type(dtype=torch.float)
-        
-        if finetuning:
-            print("Loading pretrained Model.")
-            #model = models.MLP(model_design["dimensions"], model_design["activation"])
-            #model.load_state_dict(torch.load(os.path.join(data_dir, f"model{split}")))
-            model = torch.load(os.path.join(data_dir, f"model{split}.pth"))
-            model.eval()
-            if feature_extraction:
-                print("Extracting features.")
-                for param in model.parameters():
-                    param.requires_grad = False
-        else:
-            model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen, activation)
+
+        model = models.LSTM(dimensions[0], dimensions[1], dimensions[2], seqlen, activation)
             
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         criterion = nn.MSELoss()
@@ -155,9 +142,9 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
         return(running_losses, performance, yt_tests, y_preds)
             
 #%%
-def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
+def _selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
                            data_dir, q, hp_search = [], 
-                           eval_set = None, save = False, finetuning = False, feature_extraction = False):
+                           eval_set = None, save = False):
     
     in_features = X.shape[1]
     out_features = Y.shape[1]
@@ -176,7 +163,7 @@ def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize,
     #try: 
     start = time.time()
     running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
-                                                                  save, finetuning, feature_extraction)
+                                                                  save)
     end = time.time()
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
     performance = np.mean(np.array(performance), axis=0)
@@ -187,8 +174,8 @@ def lstm_selection_parallel(X, Y, hp_list, epochs, splits, searchsize,
     q.put(hp_search)
     
 #%%
-def selected(X, Y, model, model_params, epochs, splits, 
-             data_dir = None, save = False, eval_set = None, finetuning = False, feature_extraction=False):
+def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, dropout_prob = 0.0, data_dir = None, 
+              save = False, eval_set = None):
     
     in_features = X.shape[1]
     out_features = Y.shape[1]
@@ -204,8 +191,10 @@ def selected(X, Y, model, model_params, epochs, splits,
     start = time.time()
     if not data_dir is None:
         data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}")
-    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, X, Y, splits,
-                                                                  eval_set, data_dir, save, finetuning, feature_extraction)
+    running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, 
+                                                                  X, Y, 
+                                                                  splits, eval_set,
+                                                                  data_dir, save)
     end = time.time()
     
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.

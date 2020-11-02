@@ -4,52 +4,50 @@ Created on Thu Sep 24 12:33:52 2020
 
 @author: marie
 """
-import sys
-sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
+#import sys
+#sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
 
-import preprocessing
+import setup.preprocessing as preprocessing
 import os.path
 
 import pandas as pd
+import numpy as np
 import multiprocessing as mp
-#%% Load Data: Profound in and out.
-data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-
-X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(data_dir, "data\preles\simulations"))
 
 #%%
-def train_selected(X, Y, model, typ, epochs, splits, change_architecture, save, eval_set, finetuning, feature_extraction,data_dir, q
-                   ):
+def train_selected_simulations(model, typ, epochs, dropout_prob, q, splits = 5, featuresize = 7, change_architecture = None, 
+                  save = True, eval_set = None, data_dir = r"/home/fr/fr_fr/fr_mw263"):
+                  
+    X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, "scripts/data/simulations"), drop_parameters=False)
+    
+    if typ >= 5:
+      results = pd.read_csv(os.path.join(data_dir, f"output/grid_search/grid_search_results_{model}1.csv"))
+    else:
+      results = pd.read_csv(os.path.join(data_dir, f"output/grid_search/grid_search_results_{model}{typ}.csv"))
 
-    results = pd.read_csv(os.path.join(data_dir, f"grid_search\{model}\grid_search_results_{model}{typ}.csv"))
-
-    best_model = results.iloc[results['rmse_val'].idxmin()].to_dict()
+    best_model = results.iloc[results['mae_val'].idxmin()].to_dict()
     
     if not change_architecture is None:
       
       for item in change_architecture.items():
         best_model[item[0]] = item[1]
-
+    
     dev = __import__(f"dev_{model}")
     
-    dev.selected(X, Y, model, typ, best_model, epochs, splits, data_dir, save, eval_set, finetuning)
+    index = np.random.choice(X.shape[0], 30000, replace=False)
+    X, Y = X[index], Y[index]
     
-    #out = [running_losses, y_tests, y_preds]
+    dev.selected(X, Y, model, typ, best_model, epochs, splits, featuresize,  dropout_prob, 
+                 os.path.join(data_dir, "output"), save, eval_set)
     
-    #return(out)
-    #q.put(out)
     
 #%%
-models = ["mlp"]
-typ = 5
-epochs = 4000
-splits = 5
-change_architecture = None
-save=True
-eval_set = None #{"X_test":X_test, "Y_test":Y_test}
-finetuning = False
-feature_extraction=False
-data_dir = os.path.join(data_dir, "python\outputs")
+model = "mlp"
+typ = [7, 8]
+dropout_prob = [0.0, 0.05]
+epochs = 70000
+# change architecture: {"learningrate":1e-4, "batchsize":512} # {"nlayers":2, "hiddensize":str([32, 64]), "batchsize":512}
+
 
 if __name__ == '__main__':
     #freeze_support()
@@ -59,18 +57,7 @@ if __name__ == '__main__':
     processes = []
     rets =[]
     
-    for i in range(len(models)):
-        p = mp.Process(target=train_selected, args=(X_sims, Y_sims, models[i], typ, epochs, splits, change_architecture, 
-                                                    save, eval_set, finetuning, feature_extraction, data_dir, q))
+    for i in range(len(typ)):
+        p = mp.Process(target=train_selected_simulations, args=(model, typ[i], epochs, dropout_prob[i], q))
         processes.append(p)
         p.start()
-
-    #for p in processes:
-    #    ret = itertools.chain(*q.get())
-    #    rets.append(list(ret))
-    #    p.join()
-    
-    #for i in range(len(models)):
-    #    print(rets[i])
-        #with open(os.path.join(data_dir, f"{models[i]}\\running_losses.txt"), "w") as f:
-            #f.write(json.dumps(rets[i]))

@@ -10,7 +10,7 @@ import os
 import os.path
 import pandas as pd
 
-import utils
+import setup.utils as utils
 
 
 #%% load data
@@ -34,7 +34,7 @@ def load_data(dataset, data_dir, simulations):
     
     return X, Y
 
-def get_splits(sites, years, datadir, dataset = "profound", simulations = None, drop_cols = False,
+def get_splits(sites, years, datadir, dataset = "profound", simulations = None, drop_cols = False, standardized = True,
     colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"],
     to_numpy = True):
     
@@ -51,6 +51,9 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
         X, Y = X[row_ind], Y[row_ind]
     else: 
         print("Not all sites in dataset!")
+        
+    if standardized:
+        X[colnames] = utils.minmax_scaler(X[colnames])
         
     try:
         row_ind = X["date"].isin(years)

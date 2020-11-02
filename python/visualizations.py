@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd 
 from pylab import *
-import dev_rf
+
+import setup.dev_rf as dev_rf
 
 cols = sns.color_palette(palette="Paired")
 #%%
@@ -53,14 +54,18 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
 
 #%% SELECTED MODELS: PERFORMANCE
 
-def losses(model, typ, suptitle,
+def losses(model, typ, suptitle, simulations = None, finetuned = False, setting = None,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
+    if finetuned:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\tuned\setting{setting}")
+    elif not simulations is None:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\pretrained_{simulations}Pars")
+    else:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
 
-    datadir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
-
-    results = pd.read_csv(os.path.join(datadir, "selected_results.csv"))
+    results = pd.read_csv(os.path.join(data_dir, "selected_results.csv"))
     print(results)
-    running_losses = np.load(os.path.join(datadir,"running_losses.npy"), allow_pickle=True).item()
+    running_losses = np.load(os.path.join(data_dir,"running_losses.npy"), allow_pickle=True).item()
 
 
     plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], suptitle, model)
@@ -69,18 +74,39 @@ def losses(model, typ, suptitle,
     return(results)
     
 #%%
-def plot_nn_predictions(y_tests, y_preds):
+def predictions(model, typ, suptitle, stand = None, simulations = None, finetuned = False, setting = None,
+                      data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
     """
     Plot model predictions.
     """
+    if finetuned:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\tuned\setting{setting}")
+    elif not simulations is None:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\pretrained_{simulations}Pars")
+    elif not stand is None:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\{stand}")
+    else:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+        
+    y_tests = np.load(os.path.join(data_dir,"y_tests.npy"), allow_pickle=True).tolist()
+    y_preds = np.load(os.path.join(data_dir,"y_preds.npy"), allow_pickle=True).tolist()
     
     fig, ax = plt.subplots(figsize=(10,10))
     fig.suptitle(f"Network Predictions")
+    
+    ax.plot(y_tests[0], color="grey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9)
+    
+    preds_arr = np.array(y_preds).squeeze(2)
 
-    for i in range(len(y_tests)):
-        ax.plot(y_tests[i], color="grey", label="Ground Truth", linewidth=0.9, alpha=0.6)
-        ax.plot(y_preds[i], color="darkblue", label="Network Prediction", linewidth=0.9, alpha=0.6)
+    ci_preds = np.quantile(preds_arr, (0.05,0.95), axis=0)
+    m_preds = np.mean(preds_arr, axis=0)
+        
+    ax.fill_between(np.arange(preds_arr.shape[1]), ci_preds[0],ci_preds[1], color="lightsalmon", alpha=0.9)
+    ax.plot(m_preds, color="red", label="Ground Truth", marker = "", alpha=0.5)
+        
+    #for i in range(len(y_tests)):
+    #    ax.plot(y_preds[i], color="darkblue", label="Network Prediction", linewidth=0.9, alpha=0.6)
         #ax.plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
     
     #handles, labels = ax[0].get_legend_handles_labels()
@@ -125,8 +151,8 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
 
     fig, ax = plt.subplots()
     
-    custom_xlim = (0, 3)
-    custom_ylim = (0, 3)
+    custom_xlim = (0, 2.5)
+    custom_ylim = (0, 2.5)
 
     # Setting the values for all axes.
     plt.setp(ax, xlim=custom_xlim, ylim=custom_ylim)
@@ -143,7 +169,7 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         data_dir = os.path.join(data_dir, f"_val_errors_")
         
     if isinstance(model, list):
-        colors = [cols[1], cols[3], cols[5], cols[7]]
+        colors = [cols[1], cols[3], cols[9], cols[7]]
         #colors = ["blue", "darkgreen", "blueviolet", "gold"]
         #markers = ["o", "o", "*", "*"]
         models = ["MLP", "CNN", "LSTM", "RF"]

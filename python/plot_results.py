@@ -12,15 +12,8 @@ import numpy as np
 import pandas as pd
 import os.path
 import visualizations
-import preprocessing
 #%%
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-
-X, Y = preprocessing.get_splits(sites = ['le_bray'],
-                                years = [2001,2002,2003,2004,2005, 2006, 2007, 2008],
-                                datadir = os.path.join(data_dir, "data"), 
-                                dataset = "profound",
-                                simulations = None)
 
 #%% load GRID SEARCH results
 rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp1.csv"))
@@ -31,11 +24,6 @@ rets_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\grid
 rets_rf = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\rf\grid_search_results_rf1.csv"))
 
 #%% MAE and RMSE of Grid search
-visualizations.hparams_optimization_errors([rets_mlp, rets_cnn, rets_lstm, rets_rf], 
-                                           ["mlp", "cnn", "lstm", "rf"], 
-                                           error="rmse",
-                                           train_val = True)
-
 visualizations.hparams_optimization_errors([rets_mlp, rets_cnn, rets_lstm, rets_rf], 
                                            ["mlp", "cnn", "lstm", "rf"], 
                                            error="mae",
@@ -52,11 +40,18 @@ res_cnn = visualizations.losses("cnn", 0, "")
 res_cnn = visualizations.losses("cnn", 5, "")
 
 #%% Predictions of Best Networks.
-y_tests = np.load(os.path.join(data_dir,"python\outputs\models\cnn2\y_tests.npy"), allow_pickle=True).tolist()
-y_preds = np.load(os.path.join(data_dir,"python\outputs\models\cnn2\y_preds.npy"), allow_pickle=True).tolist()
-
-visualizations.plot_nn_predictions(y_tests, y_preds)
+y_tests1 = np.load(os.path.join(data_dir,"python\outputs\models\mlp1\y_tests.npy"), allow_pickle=True).tolist()
+y_preds1 = np.load(os.path.join(data_dir,"python\outputs\models\mlp1\y_preds.npy"), allow_pickle=True).tolist()
+res1 = visualizations.losses("mlp", 1, "")
+visualizations.plot_nn_predictions(y_tests1, y_preds1)
 
 #%%
-visualizations.performance(X, Y)
 
+y_tests2 = np.load(os.path.join(data_dir,"python\outputs\models\mlp2\bilykriz\y_tests.npy"), allow_pickle=True).tolist()
+y_preds2 = np.load(os.path.join(data_dir,"python\outputs\models\mlp2\\bilykriz\y_preds.npy"), allow_pickle=True).tolist()
+res2 = visualizations.losses("mlp", 2, "")
+
+visualizations.plot_nn_predictions(y_tests2, y_preds2)
+
+
+y_tests_test = np.array(y_preds2).squeeze(2)

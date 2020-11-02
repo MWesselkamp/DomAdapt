@@ -4,6 +4,7 @@ library(Rpreles)
 library(lhs)
 library(tidyverse)
 library(dplyr)
+library(msm)
 
 # helper functions
 source("utils.R")
@@ -86,15 +87,25 @@ get_parameters <- function(){
 
 # select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
 # sample params in Latin Hypercube design
-sample_parameters <- function(pars, pars_names = c("beta", "X0", "gamma", "alpha", "chi")){
+sample_parameters <- function(pars, samples, normal, pars_names = c("beta", "X0", "gamma", "alpha", "chi")){
   
   pars_influential <- pars %>% 
-    filter(Name %in% pars_names)
+    filter(Name %in% pars_names) %>% 
+    mutate(std = abs(Max-Min)/4)
   
-  lhs <- randomLHS(1, nrow(pars_influential))
-  
-  # Generate stratified parameter combinations by mapping lhs to data space.
-  pars_lhs <- apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min))
+  if (normal){
+    lhs <- randomLHS(samples, nrow(pars_influential))
+    for (i in 1:length(pars_influential)){
+      lhs[,i] = qtnorm(lhs[,i], mean = pars_influential$Default[i], sd=pars_influential$std[i], 
+                       lower=pars_influential$Min[i], upper = pars_influential$Max[i])
+    }
+    pars_lhs = t(lhs)
+      
+  }else{
+    lhs <- randomLHS(samples, nrow(pars_influential))
+    # Generate stratified parameter combinations by mapping lhs to data space.
+    pars_lhs <- apply(lhs, 1, function(x) pars_influential$Min + x*abs(pars_influential$Max-pars_influential$Min))
+  }
 
   return(pars_lhs)
   
