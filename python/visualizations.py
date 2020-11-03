@@ -54,12 +54,15 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
 
 #%% SELECTED MODELS: PERFORMANCE
 
-def losses(model, typ, suptitle, simulations = None, finetuned = False, setting = None,
+def losses(model, typ, suptitle, stand = None, simulations = None, finetuned = False, setting = None,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
-    if finetuned:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\tuned\setting{setting}")
-    elif not simulations is None:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\pretrained_{simulations}Pars")
+    
+    if not simulations is None:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\pretrained{simulations}Pars")
+        if finetuned:
+            data_dir = os.path.join(data_dir, f"tuned\setting{setting}")
+    elif not stand is None:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\{stand}")
     else:
         data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
 
@@ -74,7 +77,7 @@ def losses(model, typ, suptitle, simulations = None, finetuned = False, setting 
     return(results)
     
 #%%
-def predictions(model, typ, suptitle, stand = None, simulations = None, finetuned = False, setting = None,
+def predictions(model, typ, stand = None, simulations = None, finetuned = False, setting = None,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
     """
@@ -92,19 +95,44 @@ def predictions(model, typ, suptitle, stand = None, simulations = None, finetune
     y_tests = np.load(os.path.join(data_dir,"y_tests.npy"), allow_pickle=True).tolist()
     y_preds = np.load(os.path.join(data_dir,"y_preds.npy"), allow_pickle=True).tolist()
     
+    try:
+        results = pd.read_csv(os.path.join(data_dir, "selected_results.csv"))
+    except:
+        pass
+    
     fig, ax = plt.subplots(figsize=(10,10))
-    fig.suptitle(f"Network Predictions")
     
-    ax.plot(y_tests[0], color="grey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9)
+    ax.plot(y_tests[0], color="grey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
     
-    preds_arr = np.array(y_preds).squeeze(2)
-
+    try:
+        preds_arr = np.array(y_preds).squeeze(2)
+    except:
+        preds_arr = np.array(y_preds)
+        
     ci_preds = np.quantile(preds_arr, (0.05,0.95), axis=0)
     m_preds = np.mean(preds_arr, axis=0)
         
-    ax.fill_between(np.arange(preds_arr.shape[1]), ci_preds[0],ci_preds[1], color="lightsalmon", alpha=0.9)
-    ax.plot(m_preds, color="red", label="Ground Truth", marker = "", alpha=0.5)
+    ax.fill_between(np.arange(preds_arr.shape[1]), ci_preds[0],ci_preds[1], color="lightgreen", alpha=0.9)
+    ax.plot(m_preds, color="green", label="Predictions", marker = "", alpha=0.5)
+    ax.set(xlabel="Day of Year", ylabel="GPP [g C m$^{-2}$ day$^{-1}$]")
+    
+    
+    tests_arr = np.array(y_tests).squeeze(2)
+    errors = np.subtract(preds_arr, tests_arr)
+    ci_preds = np.quantile(errors, (0.05,0.95), axis=0)
+    m_errors = np.mean(errors, axis=0)
+    
+    ax.fill_between(np.arange(errors.shape[1]), ci_preds[0],ci_preds[1], color="lightsalmon", alpha=0.9)
+    ax.plot(m_errors, color="red", label="Absolute Error", marker = "", alpha=0.5)
+    
+    #return(results)
+    try:
+        ax.text(280,10, f"MAE = {np.round(results['mae_val'].item(), 4)}")
+    except:
+        errors = np.load(os.path.join(data_dir,"errors.npy"), allow_pickle=True)
+        ax.text(280,10, f"MAE = {np.round(np.mean(errors, axis = 0), 4)[4]}")
         
+    ax.legend(loc="upper left")
     #for i in range(len(y_tests)):
     #    ax.plot(y_preds[i], color="darkblue", label="Network Prediction", linewidth=0.9, alpha=0.6)
         #ax.plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
@@ -192,7 +220,8 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
     #plt.close()
     
 #%%
-def performance_boxplots(errors, running_losses_mlp, running_losses_conv, error = "rmse_val"):
+def performance_boxplots(typ, error = "mae_val",
+                         data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
     """
     This function returns a boxplot of the cross-validation training or validation errors (see argument error) after model selection.
@@ -200,16 +229,25 @@ def performance_boxplots(errors, running_losses_mlp, running_losses_conv, error 
     It compares the performance of all final models.
     
     """
-    data_to_plot = [errors[error], np.mean(running_losses_mlp[error], axis=1), np.mean(running_losses_conv[error], axis=1) ]
+    
+    running_losses_mlp = np.load(os.path.join(data_dir,f"outputs\models\mlp{typ}\hyytiala\\running_losses.npy"), allow_pickle=True).tolist()
+    running_losses_cnn = np.load(os.path.join(data_dir,f"outputs\models\cnn{typ}\hyttiala\\running_losses.npy"), allow_pickle=True).tolist()
+    running_losses_lstm = np.load(os.path.join(data_dir, f"outputs\models\lstm{typ}\hyytiala\\running_losses.npy"), allow_pickle=True).tolist()
+    errors = np.load(os.path.join(data_dir,f"outputs\models\\rf{typ}\errors.npy"), allow_pickle=True).tolist()
+    
+    data_to_plot = [[sublist[-1] for sublist in running_losses_mlp["mae_val"]], 
+                    [sublist[-1] for sublist in running_losses_cnn["mae_val"]], 
+                    [sublist[-1] for sublist in running_losses_lstm["mae_val"]],
+                    errors[3]]
 
     fig = plt.figure()
     #fig.suptitle(f"")
     ax = fig.add_subplot(111)
     bp = ax.boxplot(data_to_plot, showmeans=True)
 
-    ax.set_xticklabels(['RF', 'MLP', 'CNN'])
+    ax.set_xticklabels(['MLP', 'CNN', 'LSTM', 'RF'])
     ax.set_ylim(bottom=0)
-    ax.set_ylabel("RMSE")
+    ax.set_ylabel("MAE")
 
     for box in bp['boxes']:
         # change outline color

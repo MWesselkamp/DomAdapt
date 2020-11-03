@@ -20,7 +20,7 @@ import setup.utils as utils
 
 
 #%%
-def training_CV(hparams, model_design, X, Y,  feature_extraction, splits, featuresize, eval_set, data_dir,
+def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, splits, featuresize, data_dir,
                    save):
     
     """
@@ -156,7 +156,7 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, splits, featur
         return(running_losses, performance, yt_tests, y_preds)
         
 #%%
-def finetune(X, Y, epochs, model, pretrained_type, feature_extraction = None,
+def finetune(X, Y, epochs, model, pretrained_type, params_distr, feature_extraction = None, eval_set = None,
              data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\mlp\grid_search_results_{model}1.csv"))
@@ -175,9 +175,8 @@ def finetune(X, Y, epochs, model, pretrained_type, feature_extraction = None,
     model_design = {"dimensions":dimensions,
                     "activation":nn.ReLU}
 
-    running_losses,performance, y_tests, y_preds = training_CV(hparams, model_design, X, Y,  feature_extraction, splits = 5, featuresize=7,
-                                                                      eval_set=None, 
-                                                                      data_dir = os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}") , 
+    running_losses,performance, y_tests, y_preds = training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, splits = 5, featuresize=7,
+                                                                      data_dir = os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}\pretrained{params_distr}Pars") , 
                                                                       save=False)
     
     return(running_losses,performance, y_tests, y_preds)
