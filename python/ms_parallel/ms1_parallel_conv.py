@@ -22,7 +22,7 @@ import torch.nn as nn
 #%% Load Data
 data_dir = r"/home/fr/fr_fr/fr_mw263/scripts/"
 X, Y = preprocessing.get_splits(sites = ["le_bray"], 
-                                years = [2001,2002,2003,2004,2005,2006, 2007],
+                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound", 
                                 simulations = None)                        

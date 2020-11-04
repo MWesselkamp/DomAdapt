@@ -15,7 +15,7 @@ set.seed(123)
 # CLIMATE SIMULATOR#
 #==================#
 
-climate_simulator = function(seq_len, sample, zero=TRUE){
+climate_simulator = function(seq_len, sam, zero=TRUE){
 
   year = sample(2001:2008, 1)
   doy = sample(1:(365-seq_len), 1)
@@ -57,7 +57,7 @@ climate_simulator = function(seq_len, sample, zero=TRUE){
                       CO2 = 380,
                       DOY = doy:(doy+seq_len-1),
                       year = year,
-                      sample = sample)
+                      sample = sam)
   
   return(climsim)
   
@@ -87,13 +87,13 @@ get_parameters <- function(){
 
 # select a range of parameters for sampling (influential model parameters, taken from Minunno, Plein and Schneider).
 # sample params in Latin Hypercube design
-sample_parameters <- function(pars, samples, normal, pars_names = c("beta", "X0", "gamma", "alpha", "chi")){
+sample_parameters <- function(pars, samples, params_distr, pars_names = c("beta", "X0", "gamma", "alpha", "chi")){
   
   pars_influential <- pars %>% 
     filter(Name %in% pars_names) %>% 
     mutate(std = abs(Max-Min)/4)
   
-  if (normal){
+  if (params_distr == "normal"){
     lhs <- randomLHS(samples, nrow(pars_influential))
     for (i in 1:length(pars_influential)){
       lhs[,i] = qtnorm(lhs[,i], mean = pars_influential$Default[i], sd=pars_influential$std[i], 
