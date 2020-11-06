@@ -68,12 +68,13 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, spli
         y_train = torch.tensor(y_train).type(dtype=torch.float)
             
         print("Loading pretrained Model.")
+
         model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
         model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
         model.eval()
         
         if not feature_extraction is None:
-            print("Extracting features.")
+            print("Freezing all weights.")
             for child in model.children():
                 for name, parameter in child.named_parameters():
                     if name in feature_extraction:
@@ -81,7 +82,7 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, spli
                         parameter.requires_grad = True
                     else:
                         parameter.requires_grad = False
-            
+        
         criterion = nn.MSELoss()
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
         
@@ -156,7 +157,7 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, spli
         return(running_losses, performance, yt_tests, y_preds)
         
 #%%
-def finetune(X, Y, epochs, model, pretrained_type, params_distr, feature_extraction = None, eval_set = None,
+def finetune(X, Y, epochs, model, pretrained_type, searchpath, feature_extraction = None, eval_set = None,
              data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\mlp\grid_search_results_{model}1.csv"))
@@ -176,7 +177,7 @@ def finetune(X, Y, epochs, model, pretrained_type, params_distr, feature_extract
                     "activation":nn.ReLU}
 
     running_losses,performance, y_tests, y_preds = training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, splits = 5, featuresize=7,
-                                                                      data_dir = os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}\pretrained{params_distr}Pars") , 
+                                                                      data_dir = os.path.join(os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}"), searchpath) , 
                                                                       save=False)
     
     return(running_losses,performance, y_tests, y_preds)

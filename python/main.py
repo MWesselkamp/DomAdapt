@@ -29,7 +29,7 @@ pretrained_model = visualizations.losses("mlp", 7, "")
 running_losses,performance, y_tests, y_preds  = finetuning.finetune(X, Y, epochs = 1000, model="mlp", 
                                                                     pretrained_type=7, feature_extraction=None)
 #%%
-visualizations.plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], "", "mlp")
+visualizations.plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], "mlp")
 print(np.mean(np.array(performance), axis=0))
 
 #%% plot the losses of the baseline model MLP0 
@@ -47,19 +47,42 @@ visualizations.losses("mlp", 7, "", simulations = "normal", finetuned = True, se
 visualizations.losses("mlp", 7, "", simulations = "normal", finetuned = True, setting = 1)
 
 #%%
-visualizations.losses("mlp", 2, "")
-visualizations.predictions("mlp", 2, "hyytiala")
-visualizations.predictions("mlp", 2, "bilykriz")
+visualizations.losses("mlp", 2, r"bilykriz")
+visualizations.losses("mlp", 2, r"hyytiala")
 
-visualizations.predictions("lstm", 2, "bilykriz")
-visualizations.predictions("cnn", 2, "bilykriz")
-visualizations.predictions("lstm", 2, "hyytiala")
-visualizations.predictions("cnn", 2, "hyttiala")
+visualizations.losses("mlp", 5, r"paramsFix\nodropout")
+visualizations.losses("mlp", 6, r"paramsFix\nodropout")
 
-visualizations.losses("mlp", 2, "", "bilykriz")
-visualizations.losses("mlp", 2, "", "hyytiala")
+visualizations.losses("mlp", 5, r"paramsFix\dropout")
+visualizations.losses("mlp", 6, r"paramsFix\dropout")
+
+visualizations.losses("mlp", 7, r"nodropout")
+visualizations.losses("mlp", 8, r"nodropout")
+#%%
+visualizations.predictions("mlp", 2, r"hyytiala")
+visualizations.predictions("mlp", 2, r"bilykriz")
+
+visualizations.predictions("lstm", 2, r"bilykriz")
+visualizations.predictions("cnn", 2, r"bilykriz")
+visualizations.predictions("lstm", 2, r"hyytiala")
+visualizations.predictions("cnn", 2, r"hyttiala")
 
 visualizations.predictions("rf", 2)
 
+visualizations.predictions("mlp", 5, r"paramsFix\nodropout")
+visualizations.predictions("mlp", 6, r"paramsFix\nodropout")
 #%%
 visualizations.performance_boxplots(typ=2)
+
+#%%
+running_losses,performance, y_tests, y_preds  = finetuning.finetune(X, Y, epochs = 1000, model="mlp", 
+                                                                    pretrained_type=6, searchpath = r"paramsFix\nodropout", 
+                                                                    feature_extraction=None)
+#%%
+visualizations.plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], "mlp")
+#%%
+running_losses,performance, y_tests, y_preds  = finetuning.finetune(X, Y, epochs = 2000, model="mlp", 
+                                                                    pretrained_type=6, searchpath = r"paramsFix\nodropout", 
+                                                                    feature_extraction=["hidden2.weight", "hidden3.weight"])
+#%%
+visualizations.plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], "mlp")

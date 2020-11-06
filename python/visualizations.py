@@ -15,7 +15,7 @@ import setup.dev_rf as dev_rf
 
 cols = sns.color_palette(palette="Paired")
 #%%
-def plot_running_losses(train_loss, val_loss, suptitle, model):
+def plot_running_losses(train_loss, val_loss, model):
 
     #if model=="mlp":
     #    colors = ["blue","lightblue"]
@@ -27,7 +27,6 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
     colors=["blue", "lightblue"]
     
     fig, ax = plt.subplots(figsize=(10,6))
-    fig.suptitle(suptitle)
 
     if train_loss.shape[0] > 1:
         ci_train = np.quantile(train_loss, (0.05,0.95), axis=0)
@@ -54,43 +53,32 @@ def plot_running_losses(train_loss, val_loss, suptitle, model):
 
 #%% SELECTED MODELS: PERFORMANCE
 
-def losses(model, typ, suptitle, stand = None, simulations = None, finetuned = False, setting = None,
+def losses(model, typ, searchpath,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
-    if not simulations is None:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\pretrained{simulations}Pars")
-        if finetuned:
-            data_dir = os.path.join(data_dir, f"tuned\setting{setting}")
-    elif not stand is None:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\{stand}")
-    else:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+    data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+    data_dir = os.path.join(data_dir, searchpath)
 
     results = pd.read_csv(os.path.join(data_dir, "selected_results.csv"))
     print(results)
     running_losses = np.load(os.path.join(data_dir,"running_losses.npy"), allow_pickle=True).item()
 
 
-    plot_running_losses(running_losses["mae_train"], running_losses["mae_val"], suptitle, model)
+    plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  model)
     #visualizations.plot_nn_predictions(y_tests, y_preds)
     #return(y_tests,y_preds)
     return(results)
     
 #%%
-def predictions(model, typ, stand = None, simulations = None, finetuned = False, setting = None,
+def predictions(model, typ, searchpath,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
     """
     Plot model predictions.
     """
-    if finetuned:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\tuned\setting{setting}")
-    elif not simulations is None:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\\pretrained_{simulations}Pars")
-    elif not stand is None:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}\{stand}")
-    else:
-        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+    
+    data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+    data_dir = os.path.join(data_dir, searchpath)
         
     y_tests = np.load(os.path.join(data_dir,"y_tests.npy"), allow_pickle=True).tolist()
     y_preds = np.load(os.path.join(data_dir,"y_preds.npy"), allow_pickle=True).tolist()
@@ -179,8 +167,8 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
 
     fig, ax = plt.subplots()
     
-    custom_xlim = (0, 2.5)
-    custom_ylim = (0, 2.5)
+    custom_xlim = (0, 4)
+    custom_ylim = (0, 4)
 
     # Setting the values for all axes.
     plt.setp(ax, xlim=custom_xlim, ylim=custom_ylim)
