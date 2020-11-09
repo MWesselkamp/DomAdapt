@@ -188,7 +188,7 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         colors = [cols[1], cols[3], cols[9], cols[7]]
         #colors = ["blue", "darkgreen", "blueviolet", "gold"]
         #markers = ["o", "o", "*", "*"]
-        models = ["MLP", "CNN", "LSTM", "RF"]
+        models = ["MLP", "RF", "MLP4", "RF4"]
         for i in range(len(results)):
             ax.scatter(results[i][x], results[i][y], color=colors[i], 
                        #edgecolors = "black", 

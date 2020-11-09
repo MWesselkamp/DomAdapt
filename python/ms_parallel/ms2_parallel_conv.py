@@ -20,31 +20,32 @@ import itertools
 import torch.nn as nn
 #%% Load Data
 data_dir = r"/home/fr/fr_fr/fr_mw263"
-X, Y = preprocessing.get_splits(sites = ["le_bray"], 
-                                years = [2001,2003,2004,2005,2006],
+X, Y = preprocessing.get_splits(sites = ["bily_kriz"], 
+                                years = [2001,2002,2003,2004,2005,2006, 2007],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound",
                                 simulations = None)
 
-X_test, Y_test = preprocessing.get_splits(sites = ['le_bray'],
+X_test, Y_test = preprocessing.get_splits(sites = ['bily_kriz'],
                                 years = [2008],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound",
                                 simulations = None)
 #%% Grid search of hparams
 #%% Grid search of hparams
-hiddensize = [32, 64, 128, 256, 512]
-batchsize = [32, 64, 128, 256, 512]
+hiddensize = [8, 16, 32, 64, 128, 256]
+batchsize = [8, 16, 32, 64, 128, 256]
 learningrate = [1e-4, 1e-3, 5e-3, 1e-2]
-history = [10,20,30]
-channels = [[10,20], [14,28], [28, 52]]
+history = [10,14]
+channels = [[10],[14],[28], [10,20], [14,28], [28, 52]]
 kernelsize = [2,3,4]
 activation = [nn.ReLU]
 
+
 hp_list = [hiddensize, batchsize, learningrate, history, channels, kernelsize, activation]
-epochs = 5000
+epochs = 10000
 splits = 5
-searchsize = 50
+searchsize = 70
 hp_search = []
 eval_set = {"X_test":X_test, "Y_test":Y_test}
 

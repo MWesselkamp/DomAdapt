@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 19 11:48:58 2020
+Created on Tue Jul 21 16:08:25 2020
 
 @author: marie
 """
@@ -11,23 +11,25 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn import metrics
 from sklearn.model_selection import KFold
-import os.path
-import pandas as pd
-from ast import literal_eval
 
 import setup.models as models
 import setup.utils as utils
+#from sklearn.model_selection import train_test_split
 
+import random
+import time
+import pandas as pd
+import os.path
 
+from ast import literal_eval
 #%%
-def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, featuresize, data_dir,
-                   save, splits = 5):
+def train_model_CV(hparams, model_design, X, Y, splits, eval_set, featuresize, dropout_prob,
+                   data_dir, save):
     
     """
     
     
     """
-    
     epochs = hparams["epochs"]
     
     kf = KFold(n_splits=splits, shuffle = False)
@@ -45,11 +47,11 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
     if not eval_set is None:
         print("Test set used for model evaluation")
         Xt_test = eval_set["X_test"]
-        #Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])
         yt_test = eval_set["Y_test"]
+        #Xt_test= utils.minmax_scaler(Xt_test, scaling = [X_mean, X_std])
         yt_test = torch.tensor(yt_test).type(dtype=torch.float)
         Xt_test = torch.tensor(Xt_test).type(dtype=torch.float)
-        yt_tests = []
+        #yt_tests = []
         
     i = 0
     
@@ -67,28 +69,13 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
         X_train = torch.tensor(X_train).type(dtype=torch.float)
         y_train = torch.tensor(y_train).type(dtype=torch.float)
         
-        if isinstance(model_design, dict):
-            print("Loading pretrained Model.")
-            model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
-            model.load_state_dict(torch.load(os.path.join(data_dir, f"model{i}.pth")))
+        if featuresize is None:
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
         else:
-            model = model_design
-        model.eval()
-        
-        if not feature_extraction is None:
-            print("Freezing all weights.")
-            for child in model.children():
-                print("Entering child node")
-                for name, parameter in child.named_parameters():
-                    #print(name)
-                    if not name in feature_extraction:
-                        print("disable backprob for", name)
-                        parameter.requires_grad = False
-                    #else:
-                    #    parameter.requires_grad = False
-        
-        criterion = nn.MSELoss()
+            model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"], dropout_prob)
+            
         optimizer = optim.Adam(model.parameters(), lr = hparams["learningrate"])
+        criterion = nn.MSELoss()
         
         for epoch in range(epochs):
             
@@ -99,7 +86,7 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
             
             x = torch.tensor(x).type(dtype=torch.float)
             y = torch.tensor(y).type(dtype=torch.float)
-            
+                
             output = model(x)
             
             # Compute training loss
@@ -145,12 +132,13 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
                                     metrics.mean_absolute_error(yt_test, preds_test.numpy())])
     
         if save:
-            if not feature_extraction is None:
-                torch.save(model.state_dict(), os.path.join(data_dir, f"tuned\setting1\model{i}.pth"))
-            else:
-                torch.save(model.state_dict(), os.path.join(data_dir, f"tuned\setting0\model{i}.pth"))
+            torch.save(model.state_dict(), os.path.join(data_dir, f"model{i}.pth"))
         
-        y_tests.append(y_test.numpy())
+        if eval_set is None:
+            y_tests.append(y_test.numpy())
+        else:
+            y_tests.append(yt_test.numpy())
+            
         y_preds.append(preds_test.numpy())
         
     
@@ -158,34 +146,44 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
     
     running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
 
-    if eval_set is None:
-        return(running_losses, performance, y_tests, y_preds)
-    else:
-        return(running_losses, performance, yt_tests, y_preds)
-        
-#%%
-def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save=False, feature_extraction = None, eval_set = None,
-             data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
-    
-    gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\mlp\grid_search_results_{model}1.csv"))
-    
-    setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
+    return(running_losses, performance, y_tests, y_preds)
 
-    dimensions = literal_eval(setup["hiddensize"])
-    dimensions.append(1) # adds the output dimension!
-
-    hparams = {"batchsize": int(setup["batchsize"]), 
+#%% Random Grid search: Paralellized
+def _selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
+                           data_dir, q, hp_search = [], 
+                           eval_set = None, dropout_prob = 0.0, save = False):
+    
+    search = [random.choice(sublist) for sublist in hp_list]
+    
+    nlayers = search[5]
+    featuresize = search[6]
+    
+    dimensions = [X.shape[1]]
+    for layer in range(nlayers):
+        # randomly pick hiddensize from hiddensize list
+        dimensions.append(random.choice(hp_list[0]))
+    dimensions.append(Y.shape[1])
+    
+    # Network training
+    hparams = {"batchsize": search[1], 
                "epochs":epochs, 
-               "history": int(setup["history"]), 
-               "hiddensize":literal_eval(setup["hiddensize"]),
-               "learningrate":setup["learningrate"]}
+               "history":search[3], 
+               "hiddensize":dimensions[1:-1],
+               "learningrate":search[2]}
+    model_design = {"dimensions": dimensions,
+                    "activation": search[4]}
+   
+    start = time.time()
+    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, 
+                                                                        X, Y, splits, eval_set, featuresize, dropout_prob,
+                                                                        data_dir, save)
+    end = time.time()
+    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+    performance = np.mean(np.array(performance), axis=0)
+    hp_search.append([item for sublist in [[searchsize, (end-start)], [hparams["hiddensize"]], search[1:], performance] for item in sublist])
 
-    model_design = {"dimensions":dimensions,
-                    "activation":nn.ReLU}
-
-    running_losses,performance, y_tests, y_preds = training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, featuresize,
-                                                               os.path.join(os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}"), searchpath) , 
-                                                               save)
+    print("Model fitted!")
     
-    return(running_losses,performance, y_tests, y_preds)
-
+    q.put(hp_search)
+    
+    

@@ -20,13 +20,13 @@ import setup.utils as utils
 
 #%% Load Data
 data_dir = r"/home/fr/fr_fr/fr_mw263"
-X, Y = preprocessing.get_splits(sites = ["le_bray"], 
-                                years = [2001,2003,2004,2005,2006],
+X, Y = preprocessing.get_splits(sites = ["bily_kriz"], 
+                                years = [2001,2002, 2003,2004,2005,2006, 2007],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound",
                                 simulations = None)
 
-X_test, Y_test = preprocessing.get_splits(sites = ['le_bray'],
+X_test, Y_test = preprocessing.get_splits(sites = ['bily_kriz'],
                                 years = [2008],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound",
@@ -35,7 +35,7 @@ X_test, Y_test = preprocessing.get_splits(sites = ['le_bray'],
 #%% 
 cv_splits = [5]
 shuffled = [False]
-n_trees = [200,300,400,500]
+n_trees = [200,300,400,500, 600]
 depth = [4,5,6,7]
 
 eval_set = {"X_test":X_test, "Y_test":Y_test}

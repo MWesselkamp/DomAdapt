@@ -17,15 +17,16 @@ data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 
 #%% load GRID SEARCH results
 rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp2.csv"))
+rets_mlp_adapt = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\AdaptPool\grid_search_results_mlp2.csv"))
 rets_mlp4 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp4.csv"))
 rets_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\cnn\grid_search_results_cnn1.csv"))
 rets_cnn2 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\cnn\grid_search_results_cnn1_2.csv"))
 rets_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\lstm\grid_search_results_lstm2.csv"))
 rets_rf = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\rf\grid_search_results_rf2.csv"))
-
+rets_rf4 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\rf\grid_search_results_rf4.csv"))
 #%% MAE and RMSE of Grid search
-visualizations.hparams_optimization_errors([rets_mlp, rets_rf, rets_lstm], 
-                                           ["mlp",  "rf", "lstm"], 
+visualizations.hparams_optimization_errors([rets_mlp, rets_mlp_adapt, rets_mlp4,  rets_lstm], 
+                                           ["mlp",  "rets_mlp_adapt", "mlp4", "lstm"], 
                                            error="mae",
                                            train_val = True)
 

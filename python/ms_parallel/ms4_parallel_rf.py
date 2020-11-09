@@ -17,12 +17,19 @@ from setup.dev_rf import rf_selection_parallel
 import multiprocessing as mp
 import itertools
 import setup.utils as utils
+
 #%% Load Data
 data_dir = r"/home/fr/fr_fr/fr_mw263"
 X, Y = preprocessing.get_splits(sites = ["bily_kriz", "collelongo", "soro"], 
-                                years = [2001,2002,2003,2004,2005,2006, 2007, 2008],
+                                years = [2001,2002,2003,2004,2005,2006, 2007],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound", 
+                                simulations = None)
+
+X_test, Y_test = preprocessing.get_splits(sites = ["bily_kriz", "collelongo", "soro"],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "scripts/data"), 
+                                dataset = "profound",
                                 simulations = None)
 
 #%% 

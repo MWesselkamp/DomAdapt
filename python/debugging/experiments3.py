@@ -12,11 +12,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import models
+import setup.models as models
 import numpy as np
-import utils
-import preprocessing
+import setup.utils as utils
+import setup.preprocessing as preprocessing
 import matplotlib.pyplot as plt
+import random
 
 #%%%
 datadir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
@@ -37,14 +38,25 @@ Y = torch.tensor(Y).type(dtype=torch.float)
 #model = models.MLP([X.shape[1],12,1], nn.ReLU)
 #model = models.LSTM(X.shape[1], 12, 1, 10, F.relu)
 
-#x, target = utils.create_batches(X, Y, 128, 0)
+x, target = utils.create_batches(X, Y, 128, 0)
 #x_test, target_test = utils.create_batches(X, Y, 128, 0)
 
 
-#x = torch.tensor(x).type(dtype=torch.float)
-#target = torch.tensor(target).type(dtype=torch.float)
+x = torch.tensor(x).type(dtype=torch.float)
+target = torch.tensor(target).type(dtype=torch.float)
 #x_test = torch.tensor(x_test).type(dtype=torch.float)
 #target_test = torch.tensor(target_test).type(dtype=torch.float)
+#%%
+hiddensize = [16, 32, 64, 128, 256]
+dimensions = [X.shape[1]]
+for layer in range(2):
+        # randomly pick hiddensize from hiddensize list
+        dimensions.append(random.choice(hiddensize))
+dimensions.append(Y.shape[1])
+
+model = models.MLP(dimensions, nn.ReLU)
+
+out = model(x)
 
 #%%
 x_test, target_test = utils.create_inout_sequences(X, Y, 64, 10, model="cnn")

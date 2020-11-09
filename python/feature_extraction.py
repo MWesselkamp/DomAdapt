@@ -54,28 +54,96 @@ X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
 X = torch.tensor(X).type(dtype=torch.float)
 X_test = torch.tensor(X_test).type(dtype=torch.float)
 
-Y, Y_test = np.log(Y), np.log(Y_test)
+#%% Predict with network directly to finnish data
+preds = model(X_test).detach().numpy()
+
+metrics.mean_absolute_error(Y_test, preds)
+
+plt.plot(preds)
+
+#%% Finetune network on finish data, Full Backprob.
+import finetuning
+
+running_losses,performance, y_tests, y_preds = finetuning.finetune(X, Y, 1000, "mlp", 7, "nodropout", featuresize, True)
+model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
+model.load_state_dict(torch.load(os.path.join(data_dir, r"python\outputs\models\mlp7\nodropout\tuned\model0.pth")))
+
+preds = model(X_test).detach().numpy()
+
+metrics.mean_absolute_error(Y_test, preds)
+
+plt.plot(preds)
+
+#%% finetune network on finish data: Freeze all but last two layers.
+
+running_losses,performance, y_tests, y_preds = finetuning.finetune(X, Y, 1000, "mlp", 7, "nodropout", featuresize, True, 
+                                                                   ["hidden2.weight", "hidden3.weight"])
+model = models.MLPmod(featuresize, model_design["dimensions"], model_design["activation"])
+model.load_state_dict(torch.load(os.path.join(data_dir, r"python\outputs\models\mlp7\nodropout\tuned\setting1\model0.pth")))
+
+preds = model(X_test).detach().numpy()
+
+metrics.mean_absolute_error(Y_test, preds)
+
+plt.plot(preds)
+
+#%% Finetune With Different Classifiers
+
+#%% 0) Replace last layer by Layer with selected number of hidden nodes
+model.classifier = nn.Sequential(*list(model.classifier.children())[:-1])
+model.classifier.add_module("hidden4", nn.Linear(16, 256))
+model.classifier.add_module("activation4", nn.ReLU())
+model.classifier.add_module("fc_out", nn.Linear(256, 1))
 
 #%%
+running_losses,performance, y_tests, y_preds = finetuning.finetune(X, Y, 1000, "mlp", 7, "nodropout", featuresize, False, 
+                                                                   ["hidden4.weight"])
+
+
+
+#%% 1) Ordinary Least Squares
 model.classifier = nn.Sequential(*list(model.classifier.children())[:-2]) # Remove Final layer and activation.
 
 out_train = model(X).detach().numpy()
+out_train = sm.add_constant(out_train) # Add intercept.
 out_test = model(X_test).detach().numpy()
+out_test = sm.add_constant(out_test) # Add intercept.
+
 
 #%%
-out_train = sm.add_constant(out_train) # Add intercept.
 ols = sm.OLS(Y, out_train) 
 results = ols.fit()
 print(results.summary())
 
-#%%
 predictions = np.expand_dims(results.predict(), axis=1)
 metrics.mean_absolute_error(Y, predictions)
 plt.plot(predictions)
 
 #%%
-out_test = sm.add_constant(out_test)
 preds_test = np.expand_dims(results.predict(out_test), axis=1)
 metrics.mean_absolute_error(Y_test, preds_test)
 plt.plot(preds_test)
 plt.plot(Y_test)
+
+#%% 2) Non-negative Least Squares
+from scipy.optimize import nnls
+
+theta = np.expand_dims(nnls(out_train, Y[:,0])[0], axis=1)
+
+predictions = np.dot(out_train, theta)
+
+plt.plot(predictions)
+plt.plot(Y)
+
+metrics.mean_absolute_error(Y, predictions)
+
+#%% 3) Generalized Least Squares
+
+gamma_model = sm.GLM(Y, out_train, family=sm.families.InverseGaussian(sm.families.links.log())) 
+g_results = gamma_model.fit()
+print(g_results.summary())
+
+predictions = g_results.predict()
+
+plt.plot(predictions)
+metrics.mean_absolute_error(Y, predictions)

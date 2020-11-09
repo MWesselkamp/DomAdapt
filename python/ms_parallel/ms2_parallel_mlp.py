@@ -18,32 +18,34 @@ import torch.nn as nn
 
 #%% Load Data
 data_dir = r"/home/fr/fr_fr/fr_mw263"
-X, Y = preprocessing.get_splits(sites = ["le_bray"], 
-                                years = [2001,2003,2004,2005,2006],
+X, Y = preprocessing.get_splits(sites = ["bily_kriz"], 
+                                years = [2001,2002, 2003,2004,2005,2006, 2007],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound",
                                 simulations = None)
 
-X_test, Y_test = preprocessing.get_splits(sites = ['le_bray'],
+X_test, Y_test = preprocessing.get_splits(sites = ['bily_kriz'],
                                 years = [2008],
                                 datadir = os.path.join(data_dir, "scripts/data"), 
                                 dataset = "profound",
                                 simulations = None)
 
 #%% Grid search of hparams
-hiddensize = [32, 64, 128, 256, 512]
-batchsize = [32, 64, 128, 256, 512]
+hiddensize = [8, 16, 32, 64, 128, 256]
+batchsize = [8, 16, 32, 64, 128, 256]
 learningrate = [1e-4, 1e-3, 5e-3, 1e-2]
 history = [0,1,2]
 n_layers = [1,2,3]
 activation = [nn.ReLU]
-hp_list = [hiddensize, batchsize, learningrate, history, activation, n_layers]
+featuresize = [5, 7,10]
+hp_list = [hiddensize, batchsize, learningrate, history, activation, n_layers, featuresize]
 
-epochs = 5000
+epochs = 10000
 eval_set = {"X_test":X_test, "Y_test":Y_test}
 splits=5
-searchsize = 50
+searchsize = 70
 hp_search = []
+
 
 #%% multiprocessed model selection with searching random hparam combinations from above.
 
@@ -58,7 +60,7 @@ if __name__ == '__main__':
     
     for i in range(searchsize):
         p = mp.Process(target=_selection_parallel, args=(X, Y, hp_list, epochs, splits, searchsize, 
-                           data_dir, q, hp_search, eval_set))
+                           data_dir, q, hp_search, featuresize, eval_set))
         processes.append(p)
         p.start()
 
@@ -69,5 +71,5 @@ if __name__ == '__main__':
         
     print('NN fitting took {} seconds'.format(time.time() - starttime))
     
-    results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "nlayers", "rmse_train", "rmse_val", "mae_train", "mae_val"])
-    results.to_csv(r"/home/fr/fr_fr/fr_mw263/output/grid_search/grid_search_results_mlp2.csv", index = False)
+    results = pd.DataFrame(rets, columns=["run", "execution_time", "hiddensize", "batchsize", "learningrate", "history","activation", "nlayers", "featuresize", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(r"/home/fr/fr_fr/fr_mw263/output/grid_search/adaptPool/grid_search_results_mlp2.csv", index = False)

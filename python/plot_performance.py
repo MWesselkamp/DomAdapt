@@ -47,8 +47,17 @@ visualizations.losses("mlp", 7, "", simulations = "normal", finetuned = True, se
 visualizations.losses("mlp", 7, "", simulations = "normal", finetuned = True, setting = 1)
 
 #%%
-visualizations.losses("mlp", 2, r"bilykriz")
-visualizations.losses("mlp", 2, r"hyytiala")
+l = visualizations.losses("mlp", 0, r"noPool")
+l = visualizations.losses("mlp", 0, r"AdaptPool\nodropout")
+l = visualizations.losses("mlp", 0, r"AdaptPool\dropout")
+
+l = visualizations.losses("mlp", 4, r"")
+l = visualizations.losses("mlp", 4, r"adaptPool\nodropout")
+l = visualizations.losses("mlp", 4, r"adaptPool\dropout")
+
+l = visualizations.losses("mlp", 2, r"bilykriz\adaptPool\dropout")
+l = visualizations.losses("mlp", 2, r"bilykriz\adaptPool\nodropout")
+l = visualizations.losses("mlp", 2, r"bilykriz\noPool")
 
 visualizations.losses("mlp", 5, r"paramsFix\nodropout")
 visualizations.losses("mlp", 6, r"paramsFix\nodropout")
@@ -56,11 +65,17 @@ visualizations.losses("mlp", 6, r"paramsFix\nodropout")
 visualizations.losses("mlp", 5, r"paramsFix\dropout")
 visualizations.losses("mlp", 6, r"paramsFix\dropout")
 
-visualizations.losses("mlp", 7, r"nodropout")
-visualizations.losses("mlp", 8, r"nodropout")
+l = visualizations.losses("mlp", 7, r"nodropout")
+l = visualizations.losses("mlp", 7, r"dropout")
+l = visualizations.losses("mlp", 8, r"nodropout")
+l = visualizations.losses("mlp", 8, r"dropout")
 #%%
+visualizations.predictions("mlp", 0, r"noPool")
+visualizations.predictions("mlp", 0, r"AdaptPool\nodropout")
+visualizations.predictions("mlp", 0, r"AdaptPool\dropout")
+
 visualizations.predictions("mlp", 2, r"hyytiala")
-visualizations.predictions("mlp", 2, r"bilykriz")
+visualizations.predictions("mlp", 2, r"bilykriz\noPool")
 
 visualizations.predictions("lstm", 2, r"bilykriz")
 visualizations.predictions("cnn", 2, r"bilykriz")
