@@ -130,22 +130,26 @@ def predictions(model, typ, searchpath,
     
     
 #%%
-def plot_prediction_error(predictions, history, datadir, model):
+def plot_prediction(y_tests, predictions, suptitle):
     
     """
     Plot Model Prediction Error (root mean squared error).
     
     """
     
-    fig, ax = plt.subplots(len(predictions), figsize=(10,10))
-    fig.suptitle(f"Network Prediction: Root Mean Squared Error (RMSE)")
-
-    for i in range(len(predictions)):
-        ax[i].plot(np.sqrt(np.square(predictions[i][0] - predictions[i][1])), color="green", label="rmse", linewidth=0.9, alpha=0.6)
-        ax[i].set(xlabel="Day of Year", ylabel="RMSE")
+    fig, ax = plt.subplots(figsize=(10,10))
+    fig.suptitle(suptitle)
     
-    #handles, labels = ax[0].get_legend_handles_labels()
-    #fig.legend(handles, labels, loc='upper right')
+    ax.plot(y_tests, color="grey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
+
+    ci_preds = np.quantile(np.array(predictions)[:,:,0], (0.05,0.95), axis=0)
+    m_preds = np.mean(np.array(predictions)[:,:,0], axis=0)
+    
+    ax.fill_between(np.arange(len(ci_preds[0])), ci_preds[0],ci_preds[1], color="lightgreen", alpha=0.9)
+    ax.plot(m_preds, color="green", label="Predictions", marker = "", alpha=0.5)
+    
+    ax.set(xlabel="Day of Year", ylabel="GPP [g C m$^{-2}$ day$^{-1}$]")
+    
     
 #%%
 def hparams_optimization_errors(results, model = "all", error = "rmse", train_val = False):
@@ -185,14 +189,16 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         data_dir = os.path.join(data_dir, f"_val_errors_")
         
     if isinstance(model, list):
-        colors = [cols[1], cols[3], cols[9], cols[7]]
-        #colors = ["blue", "darkgreen", "blueviolet", "gold"]
-        #markers = ["o", "o", "*", "*"]
-        models = ["MLP", "RF", "MLP4", "RF4"]
+        if len(model) == 5:
+            colors = [cols[5], cols[1], cols[3], cols[9], cols[7]]
+            models = ["MLP_ap", "MLP", "CNN", "LSTM", "RF"]
+        else:
+            colors = [cols[1], cols[3], cols[9], cols[7]]
+            models = ["MLP", "CNN", "LSTM", "RF"]
         for i in range(len(results)):
             ax.scatter(results[i][x], results[i][y], color=colors[i], 
                        #edgecolors = "black", 
-                       alpha = 0.9, label=models[i])
+                       alpha = 0.8, label=models[i])
     else:
         ax.scatter(results[x], results[y])
     

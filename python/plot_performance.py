@@ -59,6 +59,9 @@ l = visualizations.losses("mlp", 2, r"bilykriz\adaptPool\dropout")
 l = visualizations.losses("mlp", 2, r"bilykriz\adaptPool\nodropout")
 l = visualizations.losses("mlp", 2, r"bilykriz\noPool")
 
+l = visualizations.losses("cnn", 2, r"nodropout")
+l = visualizations.losses("lstm", 2, r"nodropout")
+
 visualizations.losses("mlp", 5, r"paramsFix\nodropout")
 visualizations.losses("mlp", 6, r"paramsFix\nodropout")
 

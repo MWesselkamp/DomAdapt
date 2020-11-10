@@ -78,11 +78,8 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
         if not feature_extraction is None:
             print("Freezing all weights.")
             for child in model.children():
-                print("Entering child node")
                 for name, parameter in child.named_parameters():
-                    #print(name)
                     if not name in feature_extraction:
-                        print("disable backprob for", name)
                         parameter.requires_grad = False
                     #else:
                     #    parameter.requires_grad = False
@@ -164,7 +161,8 @@ def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, feat
         return(running_losses, performance, yt_tests, y_preds)
         
 #%%
-def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save=False, feature_extraction = None, eval_set = None,
+def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save=False, 
+             feature_extraction = None, eval_set = None,
              data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\mlp\grid_search_results_{model}1.csv"))
@@ -182,10 +180,30 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
 
     model_design = {"dimensions":dimensions,
                     "activation":nn.ReLU}
+    
+    data_dir = os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}\{searchpath}")
 
     running_losses,performance, y_tests, y_preds = training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, featuresize,
-                                                               os.path.join(os.path.join(data_dir, f"python\outputs\models\{model}{pretrained_type}"), searchpath) , 
+                                                               data_dir, 
                                                                save)
+        
+    if not feature_extraction is None:
+        data_dir = os.path.join(data_dir, "tuned\setting1")
+    else:
+        data_dir = os.path.join(data_dir, "tuned\setting0")
+    
+    performance = np.mean(np.array(performance), axis=0)
+    rets = [epochs, pretrained_type, 
+            performance[0], performance[1], performance[2], performance[3]]
+    results = pd.DataFrame([rets], 
+                           columns=["epochs", "pretrained_type", 
+                                    "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(os.path.join(data_dir, r"selected_results.csv"), index = False)
+        
+    # Save: Running losses, ytests and ypreds.
+    np.save(os.path.join(data_dir, "running_losses.npy"), running_losses)
+    np.save(os.path.join(data_dir, "y_tests.npy"), y_tests)
+    np.save(os.path.join(data_dir, "y_preds.npy"), y_preds)
     
     return(running_losses,performance, y_tests, y_preds)
 
