@@ -37,28 +37,9 @@ visualizations.hparams_optimization_errors([ rets_mlp_adapt, rets_mlp, rets_cnn,
                                            error="mae",
                                            train_val = True)
 
-#%% Best Network Losses and Hyperparameters
-res_mlp = visualizations.losses("mlp", 0, "") # best performing network .
-res_mlp = visualizations.losses("mlp", 2, "") # network with this architecture on test set.
-res_mlp = visualizations.losses("mlp", 3, "") # network with this architecture on preles GPP predictions.
-res_mlp = visualizations.losses("mlp", 5, "") # network with this architecture on full simulations (parameters included)
-res_mlp = visualizations.losses("mlp", 6, "") # network with this architecture on only climate simulations
-res_cnn = visualizations.losses("cnn", 0, "")
-res_cnn = visualizations.losses("cnn", 5, "")
 
-#%% Predictions of Best Networks.
-y_tests1 = np.load(os.path.join(data_dir,"python\outputs\models\mlp1\y_tests.npy"), allow_pickle=True).tolist()
-y_preds1 = np.load(os.path.join(data_dir,"python\outputs\models\mlp1\y_preds.npy"), allow_pickle=True).tolist()
-res1 = visualizations.losses("mlp", 1, "")
-visualizations.plot_nn_predictions(y_tests1, y_preds1)
+#%% load performance of best models
 
-#%%
-
-y_tests2 = np.load(os.path.join(data_dir,"python\outputs\models\mlp2\bilykriz\y_tests.npy"), allow_pickle=True).tolist()
-y_preds2 = np.load(os.path.join(data_dir,"python\outputs\models\mlp2\\bilykriz\y_preds.npy"), allow_pickle=True).tolist()
-res2 = visualizations.losses("mlp", 2, "")
-
-visualizations.plot_nn_predictions(y_tests2, y_preds2)
-
-
-y_tests_test = np.array(y_preds2).squeeze(2)
+best_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\mlp0\AdaptPool\dropout\selected_results.csv"))
+best_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\cnn0\selected_results.csv"))
+best_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\lstm0\selected_results.csv"))

@@ -17,7 +17,44 @@ from ast import literal_eval
 
 import setup.models as models
 import setup.utils as utils
+import setup.preprocessing as preprocessing
 
+from scipy.optimize import nnls
+import statsmodels.api as sm
+
+#%%
+def settings(model, epochs, data_dir):
+
+
+    gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\{model}\grid_search_results_{model}1.csv"))
+    
+    setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
+
+    dimensions = literal_eval(setup["hiddensize"])
+    dimensions.append(1) # adds the output dimension!
+
+    hparams = {"batchsize": int(setup["batchsize"]), 
+               "epochs":epochs, 
+               "history": int(setup["history"]), 
+               "hiddensize":literal_eval(setup["hiddensize"]),
+               "learningrate":setup["learningrate"]}
+
+    model_design = {"dimensions":dimensions,
+                    "activation":nn.ReLU,
+                    "featuresize":7}
+
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                    years = [2001,2002,2003, 2004, 2005, 2006, 2007],
+                                    datadir = os.path.join(data_dir, "data"), 
+                                    dataset = "profound",
+                                    simulations = None)
+    X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
+                                              years = [2008],
+                                              datadir = os.path.join(data_dir, "data"), 
+                                              dataset = "profound",
+                                              simulations = None)
+    
+    return hparams, model_design, X, Y, X_test, Y_test
 
 #%%
 def training_CV(hparams, model_design, X, Y,  feature_extraction, eval_set, featuresize, data_dir,
@@ -207,3 +244,97 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
     
     return(running_losses,performance, y_tests, y_preds)
 
+#%%
+def featureExtractorA(model, typ, epochs,
+                      splits=5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
+    
+    X = torch.tensor(X).type(dtype=torch.float)
+    X_test = torch.tensor(X_test).type(dtype=torch.float)
+    
+    predictions = []
+    mae = []
+    rmse = []
+
+    for i in range(splits):
+        
+        model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\model{i}.pth")))
+        
+        preds = model(X_test).detach().numpy()
+
+        mae.append(metrics.mean_absolute_error(Y_test, preds))
+        rmse.append(utils.rmse(Y_test, preds))
+        predictions.append(preds)
+    
+    errors = {"rmse_val":rmse, "mae_val":mae}
+
+    return predictions, errors, Y_test
+
+#%% Finetune network on finish data, Full Backprob.
+
+def featureExtractorB(model, typ, epochs, feature_extraction= None,
+                      data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
+    
+    running_losses,performance, y_tests, y_preds = finetune(X, Y, epochs, model, typ, "nodropout", model_design["featuresize"], 
+                                                                       False, feature_extraction, {"X_test":X_test, "Y_test":Y_test})
+    
+    return performance, y_preds, Y_test
+
+#%% 1) Ordinary Least Squares and friends
+    
+def featureExtractorC(model, epochs, classifier = "ols", 
+                      splits = 5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
+    
+    X = torch.tensor(X).type(dtype=torch.float)
+    X_test = torch.tensor(X_test).type(dtype=torch.float)
+    
+    predictions_train = []
+    predictions_test = []
+    
+    for i in range(splits):
+    
+        model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp7\\nodropout\model{i}.pth")))
+      
+        model.classifier = nn.Sequential(*list(model.classifier.children())[:-2]) # Remove Final layer and activation.
+
+        out_train = model(X).detach().numpy()
+        out_train = sm.add_constant(out_train) # Add intercept.
+        out_test = model(X_test).detach().numpy()
+        out_test = sm.add_constant(out_test) # Add intercept.
+
+        if classifier == "ols":
+            extractor = sm.OLS(Y, out_train) 
+            results = extractor.fit()
+            predictions_train.append(np.expand_dims(results.predict(), axis=1))
+            predictions_test.append(np.expand_dims(results.predict(out_test), axis=1))
+            
+        elif classifier == "glm":
+            print("Fitting glm with Inverse Gaussian family and log-Link.")
+            extractor = sm.GLM(Y, out_train, family=sm.families.InverseGaussian(sm.families.links.log())) 
+            results = extractor.fit()
+            predictions_train.append(np.expand_dims(results.predict(), axis=1))
+            predictions_test.append(np.expand_dims(results.predict(out_test), axis=1))
+            
+        elif classifier == "nnls":
+            theta = np.expand_dims(nnls(out_train, Y[:,0])[0], axis=1)
+            predictions_train.append(np.dot(out_train, theta))
+            predictions_test.append(np.dot(out_test, theta))
+            
+        else:
+            print("Don't know classifier.")
+            
+    mae_train = [metrics.mean_absolute_error(Y, sublist) for sublist in predictions_train]
+    mae_val = [metrics.mean_absolute_error(Y_test, sublist) for sublist in predictions_test]
+    rmse_train = [utils.rmse(Y, sublist) for sublist in predictions_train]
+    rmse_val = [utils.rmse(Y_test, sublist) for sublist in predictions_test]
+    
+    errors = [rmse_train, rmse_val, mae_train, mae_val]
+    
+    return predictions_test, errors
