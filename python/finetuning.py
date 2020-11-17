@@ -261,21 +261,26 @@ def featureExtractorA(model, typ, epochs, simsfrac,
     X_test = torch.tensor(X_test).type(dtype=torch.float)
     
     predictions = []
-    mae = []
-    rmse = []
+    mae_train = []
+    rmse_train = []
+    mae_val = []
+    rmse_val = []
 
     for i in range(splits):
         
         model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
         model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
         
-        preds = model(X_test).detach().numpy()
+        preds_test = model(X_test).detach().numpy()
+        preds_train = model(X).detach().numpy()
 
-        mae.append(metrics.mean_absolute_error(Y_test, preds))
-        rmse.append(utils.rmse(Y_test, preds))
-        predictions.append(preds)
+        mae_val.append(metrics.mean_absolute_error(Y_test, preds_test))
+        rmse_val.append(utils.rmse(Y_test, preds_test))
+        mae_train.append(metrics.mean_absolute_error(Y, preds_train))
+        rmse_train.append(utils.rmse(Y, preds_train))
+        predictions.append(preds_test)
     
-    errors = {"rmse_val":rmse, "mae_val":mae}
+    errors = [rmse_train, rmse_val, mae_train, mae_val]
 
     return predictions, errors, Y_test
 
@@ -421,6 +426,7 @@ def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
     X_test = torch.tensor(X_test).type(dtype=torch.float)
 
     errors = []
+    preds_tests = []
     
     for i in range(splits):
         
@@ -451,5 +457,6 @@ def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
                        utils.rmse(Y_test, preds_test), 
                        metrics.mean_absolute_error(Y, preds_train),
                        metrics.mean_absolute_error(Y_test, preds_test)])
+        preds_tests.append(preds_test)
         
-    return(running_losses, errors)
+    return(running_losses, errors, preds_test)
