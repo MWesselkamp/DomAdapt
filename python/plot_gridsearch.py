@@ -37,9 +37,19 @@ visualizations.hparams_optimization_errors([ rets_mlp_adapt, rets_mlp, rets_cnn,
                                            error="mae",
                                            train_val = True)
 
+#%%
+rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\simulations\grid_search_results_mlp2_adaptPool.csv"))
+rets_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\simulations\grid_search_results_cnn2.csv"))
+rets_rf = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\simulations\grid_search_results_rf2.csv"))
+rets_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\simulations\grid_search_results_lstm2.csv"))
 
+visualizations.hparams_optimization_errors([rets_mlp, rets_rf, rets_cnn, rets_lstm], 
+                                           ["mlp", "rf", "cnn", "lstm"], 
+                                           error="mae",
+                                           train_val = True)
 #%% load performance of best models
 
 best_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\mlp0\AdaptPool\dropout\selected_results.csv"))
 best_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\cnn0\selected_results.csv"))
 best_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\lstm0\selected_results.csv"))
+

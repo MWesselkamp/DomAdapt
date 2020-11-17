@@ -13,11 +13,14 @@ import visualizations
 
 #%% plot the losses of the baseline model MLP0 
 
-visualizations.losses("mlp", 0, r"noPool\relu")
-visualizations.losses("mlp", 0, r"noPool\sigmoid")
-visualizations.losses("mlp", 0, r"AdaptPool\architecture3\nodropout")
-visualizations.losses("mlp", 0, r"AdaptPool\architecture3\dropout\dropout10")
-visualizations.losses("mlp", 0, r"AdaptPool\architecture3\dropout\dropout20")
+l = visualizations.losses("mlp", 0, r"noPool\relu")
+l = visualizations.losses("mlp", 0, r"noPool\sigmoid")
+l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\nodropout\relu")
+l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\nodropout\sigmoid")
+l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dropout10\relu")
+l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dropout10\sigmoid")
+l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dropout20\relu")
+l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dropout20\sigmoid")
 
 l = visualizations.losses("mlp", 4, r"")
 l = visualizations.losses("mlp", 4, r"adaptPool\nodropout")
@@ -36,10 +39,10 @@ visualizations.losses("mlp", 6, r"paramsFix\nodropout")
 visualizations.losses("mlp", 5, r"paramsFix\dropout")
 visualizations.losses("mlp", 6, r"paramsFix\dropout")
 
-l = visualizations.losses("mlp", 7, r"nodropout")
-l = visualizations.losses("mlp", 7, r"dropout")
-l = visualizations.losses("mlp", 8, r"nodropout")
-l = visualizations.losses("mlp", 8, r"dropout")
+l = visualizations.losses("mlp", 7, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 8, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 7, r"nodropout\sims_frac50")
+l = visualizations.losses("mlp", 8, r"nodropout\sims_frac50")
 #%%
 visualizations.predictions("mlp", 0, r"noPool")
 visualizations.predictions("mlp", 0, r"AdaptPool\nodropout")

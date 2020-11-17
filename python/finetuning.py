@@ -23,15 +23,22 @@ from scipy.optimize import nnls
 import statsmodels.api as sm
 
 #%%
-def settings(model, epochs, data_dir):
+def settings(model, epochs, data_dir, sims = True):
 
-
-    gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\{model}\grid_search_results_{model}1.csv"))
-    
+    if sims:
+        gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
+    else:
+        gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\grid_search_results_{model}2.csv"))
+        
     setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
 
     dimensions = literal_eval(setup["hiddensize"])
     dimensions.append(1) # adds the output dimension!
+    
+    if sims:
+        featuresize = setup["featuresize"]
+    else:
+        featuresize = None
 
     hparams = {"batchsize": int(setup["batchsize"]), 
                "epochs":epochs, 
@@ -41,7 +48,7 @@ def settings(model, epochs, data_dir):
 
     model_design = {"dimensions":dimensions,
                     "activation":nn.ReLU,
-                    "featuresize":7}
+                    "featuresize":featuresize}
 
     X, Y = preprocessing.get_splits(sites = ['hyytiala'],
                                     years = [2001,2002,2003, 2004, 2005, 2006, 2007],
@@ -202,7 +209,7 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
              feature_extraction = None, eval_set = None,
              data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\mlp\grid_search_results_{model}1.csv"))
+    gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
     
     setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
 
@@ -245,7 +252,7 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
     return(running_losses,performance, y_tests, y_preds)
 
 #%%
-def featureExtractorA(model, typ, epochs,
+def featureExtractorA(model, typ, epochs, simsfrac,
                       splits=5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
@@ -260,7 +267,7 @@ def featureExtractorA(model, typ, epochs,
     for i in range(splits):
         
         model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
-        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\model{i}.pth")))
+        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
         
         preds = model(X_test).detach().numpy()
 
@@ -274,19 +281,19 @@ def featureExtractorA(model, typ, epochs,
 
 #%% Finetune network on finish data, Full Backprob.
 
-def featureExtractorB(model, typ, epochs, feature_extraction= None,
+def featureExtractorB(model, typ, epochs, simsfrac, feature_extraction= None,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
     
-    running_losses,performance, y_tests, y_preds = finetune(X, Y, epochs, model, typ, "nodropout", model_design["featuresize"], 
+    running_losses,performance, y_tests, y_preds = finetune(X, Y, epochs, model, typ, f"nodropout\sims_frac{simsfrac}", model_design["featuresize"], 
                                                                        False, feature_extraction, {"X_test":X_test, "Y_test":Y_test})
     
     return performance, y_preds, Y_test
 
 #%% 1) Ordinary Least Squares and friends
     
-def featureExtractorC(model, epochs, classifier = "ols", 
+def featureExtractorC(model, typ, epochs, simsfrac, classifier = "ols", 
                       splits = 5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
@@ -300,9 +307,9 @@ def featureExtractorC(model, epochs, classifier = "ols",
     for i in range(splits):
     
         model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
-        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp7\\nodropout\model{i}.pth")))
+        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
       
-        model.classifier = nn.Sequential(*list(model.classifier.children())[:-2]) # Remove Final layer and activation.
+        model.classifier = nn.Sequential(*list(model.classifier.children())[:-1]) # Remove Final layer and activation.
 
         out_train = model(X).detach().numpy()
         out_train = sm.add_constant(out_train) # Add intercept.
@@ -338,3 +345,111 @@ def featureExtractorC(model, epochs, classifier = "ols",
     errors = [rmse_train, rmse_val, mae_train, mae_val]
     
     return predictions_test, errors
+#%%
+def train_model(hparams_add, model_design_add, X, Y, X_test, Y_test, i, 
+                data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    epochs = hparams_add["epochs"]
+    
+    rmse_train = np.zeros((epochs))
+    rmse_val = np.zeros((epochs))
+    mae_train = np.zeros((epochs))
+    mae_val = np.zeros((epochs))
+    
+    # Standardize X and X_test together!!
+    #mu = np.concatenate((X, X_test), 0).mean()
+    #sigma = np.concatenate((X, X_test), 0).std()
+    #X = utils.minmax_scaler(X, [mu, sigma])
+    #X_test = utils.minmax_scaler(X_test, [mu, sigma])
+
+    X_test = torch.tensor(X_test).type(dtype=torch.float)
+    y_test = torch.tensor(Y_test).type(dtype=torch.float)
+    X_train = torch.tensor(X).type(dtype=torch.float)
+    y_train = torch.tensor(Y).type(dtype=torch.float)
+    
+    model_design_add["dimensions"].insert(0,X.shape[1])
+    
+    model = models.MLP(model_design_add["dimensions"], model_design_add["activation"])
+    optimizer = optim.Adam(model.parameters(), lr = hparams_add["learningrate"])
+    criterion = nn.MSELoss()
+    
+    for epoch in range(epochs):
+            
+            # Training
+            model.train()
+
+            x, y = utils.create_batches(X_train, y_train, hparams_add["batchsize"], hparams_add["history"])
+            
+            x = torch.tensor(x).type(dtype=torch.float)
+            y = torch.tensor(y).type(dtype=torch.float)
+                
+            output = model(x)
+            
+            # Compute training loss
+            loss = criterion(output, y)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        
+            # Evaluate current model at test set
+            model.eval()
+            
+            with torch.no_grad():
+                pred_train = model(X_train)
+                pred_test = model(X_test)
+                rmse_train[epoch] = utils.rmse(y_train, pred_train)
+                rmse_val[epoch] = utils.rmse(y_test, pred_test)
+                mae_train[epoch] = metrics.mean_absolute_error(y_train, pred_train)
+                mae_val[epoch] = metrics.mean_absolute_error(y_test, pred_test)
+    
+    torch.save(model.state_dict(), os.path.join(data_dir, f"python\outputs\models\mlp7\\nodropout\sims_frac30\\tuned\setting2\model{i}.pth"))
+    
+    running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
+    
+    return running_losses, pred_test
+
+#%%
+def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
+                      data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    
+    hparams, model_design, X, Y, X_test, Y_test = settings("mlp", None, data_dir)
+    hparams_add, model_design_add, X, Y, X_test, Y_test = settings("mlp", epochs, data_dir, sims=False)
+    
+    X = torch.tensor(X).type(dtype=torch.float)
+    X_test = torch.tensor(X_test).type(dtype=torch.float)
+
+    errors = []
+    
+    for i in range(splits):
+        
+        # Load pretrained model
+        model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        model.load_state_dict(torch.load(os.path.join(data_dir, 
+                                              f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
+        # modify classifier
+        model.classifier = nn.Sequential(*list(model.classifier.children())[:-1])
+        # extract features
+        out_train = model(X).detach().numpy()
+        out_test = model(X_test).detach().numpy()
+        # specify dimensions of model to train (architecture 2)
+        model_design_add["dimensions"].insert(0,out_train.shape[1])
+        
+        # Train mlp with extracted features as input, predicting Y.
+        running_losses, pred_test = train_model(hparams_add, model_design_add, out_train, Y, out_test, Y_test, i)
+        
+        # Evaluate model (reload it.)
+        model = models.MLP(model_design_add["dimensions"], model_design_add["activation"])
+        model.load_state_dict(torch.load(os.path.join(data_dir, 
+                                              f"python\outputs\models\mlp7\\nodropout\sims_frac30\\tuned\setting2\model{i}.pth")))
+        
+        preds_test = model(torch.tensor(out_test).type(dtype=torch.float)).detach().numpy()
+        preds_train = model(torch.tensor(out_train).type(dtype=torch.float)).detach().numpy()
+        
+        errors.append([utils.rmse(Y, preds_train), 
+                       utils.rmse(Y_test, preds_test), 
+                       metrics.mean_absolute_error(Y, preds_train),
+                       metrics.mean_absolute_error(Y_test, preds_test)])
+        
+    return(running_losses, errors)

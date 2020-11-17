@@ -191,10 +191,10 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
     if isinstance(model, list):
         if len(model) == 5:
             colors = [cols[5], cols[1], cols[3], cols[9], cols[7]]
-            models = ["MLP_ap", "MLP", "CNN", "LSTM", "RF"]
+            models = model
         else:
             colors = [cols[1], cols[3], cols[9], cols[7]]
-            models = ["MLP", "CNN", "LSTM", "RF"]
+            models = model
         for i in range(len(results)):
             ax.scatter(results[i][x], results[i][y], color=colors[i], 
                        #edgecolors = "black", 
