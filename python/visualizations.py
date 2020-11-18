@@ -53,7 +53,7 @@ def plot_running_losses(train_loss, val_loss, model):
 
 #%% SELECTED MODELS: PERFORMANCE
 
-def losses(model, typ, searchpath,
+def losses(model, typ, searchpath, plot = True,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
     data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
@@ -63,8 +63,8 @@ def losses(model, typ, searchpath,
     print(results)
     running_losses = np.load(os.path.join(data_dir,"running_losses.npy"), allow_pickle=True).item()
 
-
-    plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  model)
+    if plot:
+        plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  model)
     #visualizations.plot_nn_predictions(y_tests, y_preds)
     #return(y_tests,y_preds)
     return(results)

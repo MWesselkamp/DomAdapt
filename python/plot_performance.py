@@ -22,6 +22,9 @@ l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dro
 l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dropout20\relu")
 l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dropout20\sigmoid")
 
+l = visualizations.losses("cnn", 2, r"")
+l = visualizations.losses("lstm", 0, r"")
+
 l = visualizations.losses("mlp", 4, r"")
 l = visualizations.losses("mlp", 4, r"adaptPool\nodropout")
 l = visualizations.losses("mlp", 4, r"adaptPool\dropout")
