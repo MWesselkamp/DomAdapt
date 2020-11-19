@@ -168,20 +168,20 @@ def selected_networks_results(types, simsfrac):
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
-    #l = visualizations.losses("rf", 0, r"")
-    #df_sel = df_sel.append({"id":"RF0",
-    #           "model":"rf",
-    #           "typ":0,
-    #           "architecture":None,
-    #           "simsfrac":None,
-    #           "finetuned_type":None,
-    #           "dropout":None,
-    #           "epochs":None,
-    #           "rmse_train":l["rmse_train"][0],
-    #           "rmse_val":l["rmse_val"][0],
-    #           "mae_train":l["mae_val"][0],
-    #           "mae_val":l["mae_val"][0],
-    #           "task":"selected"}, ignore_index=True)
+    l = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\rf0\errors.npy")
+    df_sel = df_sel.append({"id":"RF0",
+               "model":"rf",
+               "typ":0,
+               "architecture":None,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":None,
+               "epochs":None,
+               "rmse_train":l[0],
+               "rmse_val":l[1],
+               "mae_train":l[2],
+               "mae_val":l[3],
+               "task":"randomforest"}, ignore_index=True)
     
     for typ in types:
         epochs = [50000,50000,60000,80000]
@@ -191,7 +191,7 @@ def selected_networks_results(types, simsfrac):
                                     "model":"mlp",
                                     "typ":typ,
                                     "architecture":3,
-                                    "simsfrac":None,
+                                    "simsfrac":simsfrac[i],
                                     "finetuned_type":None,
                                     "dropout":2,
                                     "epochs":epochs[i],

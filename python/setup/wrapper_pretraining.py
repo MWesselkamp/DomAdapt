@@ -1,0 +1,114 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 12 08:01:17 2020
+
+@author: marie
+"""
+import numpy as np
+
+import setup.dev_mlp as dev_mlp
+import setup.preprocessing as preprocessing
+
+import time
+import pandas as pd
+import os.path
+import torch
+from ast import literal_eval
+
+
+
+#%%
+    
+def set_model_parameters(model, typ, epochs, featuresize, 
+                         X, Y, data_dir = r"/home/fr/fr_fr/fr_mw263"):
+    
+    results = pd.read_csv(os.path.join(data_dir, f"output/grid_search/grid_search_results_{model}4.csv"))
+
+    best_model = results.iloc[results['mae_val'].idxmin()].to_dict()
+        
+    hidden_dims = literal_eval(best_model["hiddensize"])
+    
+    if featuresize is None:
+        dimensions = [X.shape[1]]
+    else:
+        dimensions = []
+    for hdim in hidden_dims:
+        dimensions.append(hdim)
+    dimensions.append(Y.shape[1])
+    
+    hparams = {"batchsize": int(best_model["batchsize"]), 
+               "epochs":epochs, 
+               "history": int(best_model["history"]), 
+               "hiddensize":hidden_dims,
+               "learningrate":best_model["learningrate"]}
+      
+    model_design = {"dimensions": dimensions,
+                    "activation": eval(best_model["activation"][8:-2]),
+                    "featuresize":featuresize}
+    
+    return hparams, model_design
+    
+    
+#%% Train the model with hyperparameters selected after random grid search:
+
+def pretraining(model, typ, epochs, dropout_prob, sims_fraction, q, simtype = None, featuresize = 7, 
+                  save = True, eval_set = None, data_dir = r"/home/fr/fr_fr/fr_mw263"):
+    
+    """
+    
+    Args:
+        simtype: One out of None (for models 7 and 8) or ParamsFix, normal_params, uniform_params
+    """
+    # Load the simulations
+    
+    if typ == 7:
+      X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, r"scripts/data/simulations/normal_params"), drop_parameters=False)
+    elif typ == 8:
+      X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, r"scripts/data/simulations/uniform_params"), drop_parameters=False)
+    else:
+      print("No simulations available for this model type!")
+    
+    # Use full simulations or only parts of it?
+    if not sims_fraction is None:
+        
+        ind = int(np.floor(X.shape[0]/100*sims_fraction))
+        X, Y = X[:ind], Y[:ind]
+    
+    # Set the hyperparameters and architecture of the network from preselection.
+    hparams, model_design = set_model_parameters(model, typ, epochs, featuresize, X, Y)
+    # Directory where fitted network is saved to
+    if dropout_prob == 0.0:
+      data_dir = os.path.join(data_dir, f"output/models/{model}{typ}/nodropout")
+    else:
+      data_dir = os.path.join(data_dir, f"output/models/{model}{typ}/dropout")
+     
+    # Load script from which to use train_model_CV
+    dev = __import__(f"setup.dev_{model}", fromlist=["selected"])
+    
+    # Train model
+    start = time.time()
+    
+    running_losses,performance, y_tests, y_preds = dev.train_model_CV(hparams, model_design, 
+                                                                  X, Y, 
+                                                                  eval_set, dropout_prob,
+                                                                  data_dir, save)
+    end = time.time()
+    
+    # Save: Results
+    if not simtype is None:
+      data_dir = os.path.join(data_dir, f"{simtype}")
+      
+    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
+    performance = np.mean(np.array(performance), axis=0)
+    rets = [(end-start), 
+            hparams["hiddensize"], hparams["batchsize"], hparams["learningrate"], hparams["history"], model_design["activation"], 
+            performance[0], performance[1], performance[2], performance[3]]
+    results = pd.DataFrame([rets], 
+                           columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history", "activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])
+    results.to_csv(os.path.join(data_dir, r"selected_results.csv"), index = False)
+    
+    # Save: Running losses, ytests and ypreds.
+    np.save(os.path.join(data_dir, "running_losses.npy"), running_losses)
+    np.save(os.path.join(data_dir, "y_tests.npy"), y_tests)
+    np.save(os.path.join(data_dir, "y_preds.npy"), y_preds)
+    

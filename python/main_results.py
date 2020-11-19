@@ -24,7 +24,7 @@ import seaborn
 
 import visualizations
 #%%
-subtab1, running_losses, predictions = collect_results.feature_extraction_results(types = [7,8], simsfrac = [30, 50])
+subtab1, running_losses, predictions = collect_results.feature_extraction_results(types = [7,8], simsfrac = [30, 50, 70, 100])
 
 subtab2 = collect_results.selected_networks_results(types = [7,8], simsfrac = [30,50,70,100])
 
@@ -39,16 +39,19 @@ fulltab.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\resu
 xi = [[fulltab.loc[fulltab.task =="selected"]["mae_val"]],
                    [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["mae_val"]], 
                    [fulltab.loc[fulltab.task =="pretraining"]["mae_val"]],
-                   [fulltab.loc[fulltab.task =="processmodel"]["mae_val"].item()]]
+                   [fulltab.loc[fulltab.task =="processmodel"]["mae_val"].item()],
+                   [fulltab.loc[fulltab.task =="randomforest"]["mae_val"].item()]]
 yi = [[fulltab.loc[fulltab.task =="selected"]["rmse_val"]],
                    [fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["rmse_val"]],
                    [fulltab.loc[fulltab.task =="pretraining"]["rmse_val"]],
-                   [fulltab.loc[fulltab.task =="processmodel"]["rmse_val"].item()]]
-m = ['o','x', 's', "*"]
-s = [60, 60,60, 200]
-labs = ["selected", "finetuned", "pretrained", "PRELES"]
+                   [fulltab.loc[fulltab.task =="processmodel"]["rmse_val"].item()],
+                   [fulltab.loc[fulltab.task =="randomforest"]["rmse_val"].item()]]
+m = ['o','x', 's', "*", '*']
+s = [60, 60,60, 200, 200]
+colors = ["blue", "orange", "green", "red", "yellow"]
+labs = ["selected", "finetuned", "pretrained", "PRELES", "RandomForest"]
 for i in range(len(xi)):
-    plt.scatter(xi[i], yi[i], alpha = 0.8, marker=m[i], s = s[i], label=labs[i])
+    plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
 plt.ylim(0, 2.0)    
 plt.xlim(0, 2.0)
 plt.legend()
@@ -122,8 +125,10 @@ visualizations.plot_running_losses(rl["mae_train"][:, :2000], rl["mae_val"][:, :
 
 bm = fulltab.loc[(fulltab.typ == 0)].reset_index()
 bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
+#rf = fulltab.loc[(fulltab.model == "rf")]["mae_val"].item()
 
 plt.hlines(bestmlp0, 0, 2000,colors="orange", linestyles="dashed", label="Best MLP", linewidth=1.2)
+#plt.hlines(rf, 0, 2000,colors="yellow", linestyles="dashed", label="Random Forest", linewidth=1.2)
 
 bm = fulltab.loc[(fulltab.typ == 7) & (fulltab.simsfrac == 30) & (fulltab.finetuned_type == "C-OLS")].reset_index()
 bestols = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]

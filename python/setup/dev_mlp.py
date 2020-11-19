@@ -14,23 +14,22 @@ from sklearn.model_selection import KFold
 
 import setup.models as models
 import setup.utils as utils
-#from sklearn.model_selection import train_test_split
 
-import random
 import time
 import pandas as pd
 import os.path
 
 from ast import literal_eval
 #%%
-def train_model_CV(hparams, model_design, X, Y, splits, eval_set, featuresize, dropout_prob,
-                   data_dir, save):
+def train_model_CV(hparams, model_design, X, Y, eval_set, dropout_prob,
+                   data_dir, save, splits=5):
     
     """
     
     
     """
     epochs = hparams["epochs"]
+    featuresize = model_design["featuresize"]
     
     kf = KFold(n_splits=splits, shuffle = False)
     kf.get_n_splits(X)
@@ -147,49 +146,12 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, featuresize, d
     running_losses = {"rmse_train":rmse_train, "mae_train":mae_train, "rmse_val":rmse_val, "mae_val":mae_val}
 
     return(running_losses, performance, y_tests, y_preds)
-
-
-#%% Random Grid search: Paralellized
-def _selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
-                           data_dir, q, hp_search = [], featuresize = None, dropout_prob = 0.0,
-                           eval_set = None, save = False):
-    
-    search = [random.choice(sublist) for sublist in hp_list]
-    
-    n_layers = search[5]
-    dimensions = []
-    for layer in range(n_layers):
-        # randomly pick hiddensize from hiddensize list
-        dimensions.append(random.choice(hp_list[0]))
-    dimensions.append(Y.shape[1])
-
-    # Network training
-    hparams = {"batchsize": search[1], 
-               "epochs":epochs, 
-               "history":search[3], 
-               "hiddensize":dimensions[1:-1],
-               "learningrate":search[2]}
-    model_design = {"dimensions": dimensions,
-                    "activation": search[4]}
-   
-    start = time.time()
-    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, 
-                                                                  X, Y, 
-                                                                  splits, eval_set, featuresize, dropout_prob,
-                                                                  data_dir, save)
-    end = time.time()
-    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
-    performance = np.mean(np.array(performance), axis=0)
-    hp_search.append([item for sublist in [[searchsize, (end-start)], [hparams["hiddensize"]], search[1:], performance] for item in sublist])
-
-    print("Model fitted!")
-    
-    q.put(hp_search)
     
 #%% Train the model with hyperparameters selected after random grid search:
     
-def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, dropout_prob = 0.0, data_dir = None, 
-             save = False, eval_set = None):
+def selected(X, Y, model,typ, best_model, epochs, splits, change_architecture = False,
+             traindata_perc = None, simtype = None, featuresize = None, dropout_prob = 0.0, 
+             data_dir = None, save = False, eval_set = None):
     
     """
     Takes the best found model parameters and trains a MLP with it.
@@ -208,7 +170,7 @@ def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, 
         performance (pd.DataFrame): Data frame of model parameters and final training and validation errors.\n
     """
     
-    hidden_dims = literal_eval(model_params["hiddensize"])
+    hidden_dims = literal_eval(best_model["hiddensize"])
     
     if featuresize is None:
         dimensions = [X.shape[1]]
@@ -218,18 +180,24 @@ def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, 
         dimensions.append(hdim)
     dimensions.append(Y.shape[1])
     
-    hparams = {"batchsize": int(model_params["batchsize"]), 
+    hparams = {"batchsize": int(best_model["batchsize"]), 
                "epochs":epochs, 
-               "history": int(model_params["history"]), 
+               "history": int(best_model["history"]), 
                "hiddensize":hidden_dims,
-               "learningrate":model_params["learningrate"]}
+               "learningrate":best_model["learningrate"]}
 
+    if change_architecture:
+      activation = best_model["activation"]
+    else:
+      activation = eval(best_model["activation"][8:-2])
+      
     model_design = {"dimensions": dimensions,
-                    "activation": eval(model_params["activation"][8:-2])}
+                    "activation": activation}
    
     start = time.time()
     if not data_dir is None:
         data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}{typ}")
+            
     running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, 
                                                                   X, Y, 
                                                                   splits, eval_set, featuresize, dropout_prob,
@@ -237,10 +205,27 @@ def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, 
     end = time.time()
     
     # Save: Results
+    if not simtype is None:
+      data_dir = os.path.join(data_dir, f"{simtype}")
+        
+    if not featuresize is None:
+      data_dir = os.path.join(data_dir, r"adaptive_pooling")
+
+    if dropout_prob == 0.0:
+      data_dir = os.path.join(data_dir, r"nodropout")
+    else:
+      data_dir = os.path.join(data_dir, r"dropout")
+      
+    if not traindata_perc is None:
+        data_dir = os.path.join(data_dir, f"data{traindata_perc}perc")
+    
+    if change_architecture:
+        data_dir = os.path.join(data_dir, f"sigmoidActivation")
+      
     # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
     performance = np.mean(np.array(performance), axis=0)
     rets = [(end-start), 
-            model_params["hiddensize"], model_params["batchsize"], model_params["learningrate"], model_params["history"], model_params["activation"], 
+            best_model["hiddensize"], best_model["batchsize"], best_model["learningrate"], best_model["history"], best_model["activation"], 
             performance[0], performance[1], performance[2], performance[3]]
     results = pd.DataFrame([rets], 
                            columns=["execution_time", "hiddensize", "batchsize", "learningrate", "history", "activation", "rmse_train", "rmse_val", "mae_train", "mae_val"])

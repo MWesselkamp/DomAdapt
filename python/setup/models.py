@@ -94,12 +94,11 @@ def ConvN(dimensions, dim_channels, kernel_size, length, activation = nn.ReLU):
     network.add_module("activation1", activation())
     network.add_module("max_pool1", nn.MaxPool1d(kernel_size=2, stride=1))
     
-    network.add_module("conv2", nn.Conv1d(in_channels = dim_channels[0], out_channels = dim_channels[1], kernel_size = kernel_size))
-    network.add_module("activation2", activation())
-    network.add_module("max_pool3", nn.MaxPool1d(kernel_size=2, stride=1))
-    #network.add_module("conv3", nn.Conv1d(in_channels = dim_channels[1], out_channels = dim_channels[2], kernel_size = kernel_size))
-    #network.add_module("activation3", activation())
-    #network.add_module("max_pool2", nn.MaxPool1d(kernel_size=2, stride=1))
+    if len(dim_channels) == 2:
+        network.add_module("conv2", nn.Conv1d(in_channels = dim_channels[0], out_channels = dim_channels[1], kernel_size = kernel_size))
+        network.add_module("activation2", activation())
+        network.add_module("max_pool3", nn.MaxPool1d(kernel_size=2, stride=1))
+
     network.add_module("flatten", Flatten())
     network.add_module("fc1", nn.Linear(linear_in, dimensions[1]))
     network.add_module("activation4", activation())

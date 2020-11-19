@@ -50,7 +50,6 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, eval_set = None, se
         
         if not eval_set is None:
             X_test = eval_set["X_test"]
-            X_test= utils.minmax_scaler(X_test, scaling = [X_mean, X_std])
             y_test = eval_set["Y_test"]
     
         regressor.fit(X_train, y_train.ravel())
@@ -71,11 +70,11 @@ def random_forest_CV(X, Y, splits, shuffled, n_trees, depth, eval_set = None, se
         i+= 1
     
     if selected:
-        losses = {"rmse_train":rmse_train, "rmse_val":rmse_val, "mae_train":mae_train, "mae_val":mae_val}
+        errors = [rmse_train, rmse_val, mae_train, mae_val]
     else:
-        losses = [np.mean(rmse_train), np.mean(rmse_val), np.mean(mae_train), np.mean(mae_val)]
+        errors = [np.mean(rmse_train), np.mean(rmse_val), np.mean(mae_train), np.mean(mae_val)]
         
-    return(y_preds, y_tests, losses)
+    return(y_preds, y_tests, errors)
 
 #%% Model selection
 def rf_selection(X, Y, p_list):
@@ -95,20 +94,6 @@ def rf_selection(X, Y, p_list):
     print("Best Model Run: \n", results.iloc[results['rmse_val'].idxmin()])
     
     return results.iloc[results['rmse_val'].idxmin()].to_dict() 
-#%% Model selection parallel
-
-def rf_selection_parallel(X, Y, p_list, eval_set, searchsize, q, p_search=[]):
-
-
-    search = [sublist[searchsize] for sublist in p_list]
-        
-    y_preds, y_tests, errors = random_forest_CV(X, Y, splits=search[0], shuffled = search[1], n_trees = search[2], depth = search[3], eval_set=eval_set)
-
-    p_search.append([item for sublist in [[searchsize], search, errors] for item in sublist])
-    
-    print("Rf fitted")
-    
-    q.put(p_search)
 
 #%%
 def plot_rf_cv(y_preds, y_tests, rfp, data_dir, figure = "selected", save=True):
@@ -146,51 +131,3 @@ def plot_rf_fit(fitted, figure = "", data_dir = r"OneDrive\Dokumente\Sc_Master\M
     
     plt.savefig(os.path.join(data_dir, f"_predictions_{figure}"))
     plt.close()
-
-
-#%%
-def random_forest_fit(X, Y, rfp, data="profound"):
-    
-    X = minmax_scaler(X)
-    
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, shuffle=False)
-
-    regressor = RandomForestRegressor(n_estimators=rfp['n_trees'], max_depth  = rfp['depth'], criterion = "mse")
-    
-    regressor.fit(X_train, Y_train.ravel())
-
-    y_pred_test = regressor.predict(X_test)
-    y_pred_train = regressor.predict(X_train)
-    
-    # Evaluate the algorithm
-    rmse_train=np.sqrt(metrics.mean_squared_error(Y_train, y_pred_train))
-    rmse_test=np.sqrt(metrics.mean_squared_error(Y_test, y_pred_test))
-    mae_train=metrics.mean_absolute_error(Y_train, y_pred_train)
-    mae_test=metrics.mean_absolute_error(Y_test, y_pred_test)
-    
-    Y_train = minmax_rescaler(Y_train, mu = Y_mean, sigma = Y_std)
-    Y_test = minmax_rescaler(Y_test, mu = Y_mean, sigma = Y_std)
-    
-    y_pred_train = minmax_rescaler(y_pred_train, mu = Y_mean, sigma = Y_std)
-    y_pred_test = minmax_rescaler(y_pred_test, mu = Y_mean, sigma = Y_std)
-
-    fitted = {"data":data, 
-              "depth":rfp['depth'], 
-              "n_trees":rfp['n_trees'],
-              "y_pred_train":y_pred_train,
-              "y_pred_test":y_pred_test, 
-              "Y_train":Y_train,
-              "Y_test":Y_test,
-              "rmse_train":rmse_train, 
-              "rmse_test":rmse_test, 
-              "mae_train":mae_train, 
-              "mae_test":mae_test,
-              }
-    
-    plot_rf_fit(fitted)
-    
-    return fitted
-
-
-
-

@@ -141,38 +141,7 @@ def train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir,
     else:
         return(running_losses, performance, yt_tests, y_preds)
             
-#%%
-def _selection_parallel(X, Y, hp_list, epochs, splits, searchsize, 
-                           data_dir, q, hp_search = [], 
-                           eval_set = None, save = False):
-    
-    in_features = X.shape[1]
-    out_features = Y.shape[1]
-        
-    search = [random.choice(sublist) for sublist in hp_list]
 
-    # Network training
-    hparams = {"batchsize": int(search[1]), 
-           "epochs":epochs, 
-           "history":int(search[3]), 
-           "hiddensize":int(search[0]),
-           "learningrate":search[2]}
-    model_design = {"dimensions":[in_features, int(search[0]), out_features],
-                    "activation":search[4]}
-    
-    #try: 
-    start = time.time()
-    running_losses,performance, y_tests_nn, y_preds_nn = train_model_CV(hparams, model_design, X, Y, splits, eval_set, data_dir, 
-                                                                  save)
-    end = time.time()
-    # performance returns: rmse_train, rmse_test, mae_train, mae_test in this order.
-    performance = np.mean(np.array(performance), axis=0)
-    hp_search.append([item for sublist in [[searchsize, (end-start)], search, performance] for item in sublist])
-    
-    print("Model fitted!")
-
-    q.put(hp_search)
-    
 #%%
 def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, dropout_prob = 0.0, data_dir = None, 
               save = False, eval_set = None):
@@ -190,7 +159,7 @@ def selected(X, Y, model,typ, model_params, epochs, splits, featuresize = None, 
    
     start = time.time()
     if not data_dir is None:
-        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}")
+        data_dir = os.path.join(os.path.join(data_dir, "models"), f"{model}{typ}")
     running_losses,performance, y_tests, y_preds = train_model_CV(hparams, model_design, 
                                                                   X, Y, 
                                                                   splits, eval_set,
