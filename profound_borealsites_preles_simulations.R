@@ -6,9 +6,9 @@
 library(Rpreles)
 library(ggplot2)
 
-source("preles_simulations.R")
+source("simulation_functions.R")
 
-params = get_parameters(default = FALSE)
+params = get_parameters()
 
 
 #================#
@@ -35,6 +35,21 @@ ggplot(X_full) +
 y_preles = as.data.frame(do.call(cbind, output))
 save(y_preles, file="Rdata/profound/preles_out.Rdata")
 write.table(y_preles, file="data/profound/preles_out", sep = ";",row.names = FALSE)
+#==============================#
+#Profound data: Test Year 2008 #
+#==============================#
+
+x = X[which(X$site=="hyytiala" & X$year == 2008),]
+
+load("Rdata/OptimizedParametersPreles.Rdata")
+
+output2008calib <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = par$def[1:30], returncols = c("GPP"))
+output2008def <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = pars$Value[1:30], returncols = c("GPP"))
+output2008calib = as.data.frame(output2008calib)
+output2008def = as.data.frame(output2008def)
+
+write.table(output2008calib, file="data/profound/output2008calib", sep = ";",row.names = FALSE)
+write.table(output2008def, file="data/profound/output2008def", sep = ";",row.names = FALSE)
 
 #====================#
 ## Boreal Sites data #

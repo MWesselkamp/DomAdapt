@@ -13,41 +13,97 @@ The feature extractors take the arguments:
     
 """
 
+import sys
+sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
+
 import pandas as pd
+import numpy as np
 import collect_results
 import matplotlib.pyplot as plt
 import seaborn
 
+import visualizations
 #%%
 subtab1, running_losses, predictions = collect_results.feature_extraction_results(types = [7,8], simsfrac = [30, 50])
-subtab2 = collect_results.selected_networks_results(types = [7,8], simsfrac = [30,50, 70, 100])
 
+subtab2 = collect_results.selected_networks_results(types = [7,8], simsfrac = [30,50,70,100])
+
+subtab1 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\featureextraction.csv", index_col=False)
+subtab1.drop(subtab1.columns[0], axis=1, inplace=True)
 fulltab = pd.concat([subtab1, subtab2])
 fulltab.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\results_full.xlsx")
 fulltab.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv")
 
 #%% PLOT 1
 
-xi = [[fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A")]["mae_val"]], 
-                   [fulltab.loc[fulltab.task =="selected"]["mae_val"]]]
-yi = [[fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A")]["rmse_val"]], 
-                   [fulltab.loc[fulltab.task =="selected"]["rmse_val"]]]
-m = ['x', 'o']
+xi = [[fulltab.loc[fulltab.task =="selected"]["mae_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["mae_val"]], 
+                   [fulltab.loc[fulltab.task =="pretraining"]["mae_val"]],
+                   [fulltab.loc[fulltab.task =="processmodel"]["mae_val"].item()]]
+yi = [[fulltab.loc[fulltab.task =="selected"]["rmse_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["rmse_val"]],
+                   [fulltab.loc[fulltab.task =="pretraining"]["rmse_val"]],
+                   [fulltab.loc[fulltab.task =="processmodel"]["rmse_val"].item()]]
+m = ['o','x', 's', "*"]
+s = [60, 60,60, 200]
+labs = ["selected", "finetuned", "pretrained", "PRELES"]
 for i in range(len(xi)):
-    plt.scatter(xi[i], yi[i], marker=m[i])
-plt.ylim(0, 1.5)    
-plt.xlim(0, 1.5)
+    plt.scatter(xi[i], yi[i], alpha = 0.8, marker=m[i], s = s[i], label=labs[i])
+plt.ylim(0, 2.0)    
+plt.xlim(0, 2.0)
+plt.legend()
+plt.xlabel("Mean Absolute Error")
+plt.ylabel("Root Mean Squared Error")
+plt.locator_params(axis='y', nbins=7)
+plt.locator_params(axis='x', nbins=7)
 
-#%% PLOT 1.2
+#%% Plot 1.1
+
+xi = [[fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "C-OLS")]["mae_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fb")]["mae_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fW2")]["mae_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "D-MLP2")]["mae_val"]]]
+yi = [[fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "C-OLS")]["rmse_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fb")]["rmse_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fW2")]["rmse_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "D-MLP2")]["rmse_val"]]]
+
+s = [60, 60,60, 60]
+labs = ["OLS", "Full Backpropagation", "Freeze Last Layer", "MLP"]
+for i in range(len(xi)):
+    plt.scatter(xi[i], yi[i], alpha = 0.8, marker="x", s = s[i], label=labs[i])
+plt.ylim(0, 2.0)    
+plt.xlim(0, 2.0)
+plt.legend()
+plt.xlabel("Mean Absolute Error")
+plt.ylabel("Root Mean Squared Error")
+
+#%% Plot 1.2
+xi = [[fulltab.loc[(fulltab.task =="finetuning") & (fulltab.typ == 7)]["mae_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.typ == 8)]["mae_val"]]]
+yi = [[fulltab.loc[(fulltab.task =="finetuning") & (fulltab.typ == 7)]["rmse_val"]],
+                   [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.typ == 8)]["rmse_val"]]]
+
+s = [60, 60,60, 60]
+labs = ["Normal Parameter Samples", "Uniform Parameter Samples"]
+for i in range(len(xi)):
+    plt.scatter(xi[i], yi[i], alpha = 0.8, marker="x", s = s[i], label=labs[i])
+plt.ylim(0, 2.0)    
+plt.xlim(0, 2.0)
+plt.legend()
+plt.xlabel("Mean Absolute Error")
+plt.ylabel("Root Mean Squared Error")
+
+#%% PLOT 1.3
 cols = seaborn.color_palette(palette="pastel")
 seaborn.boxplot(x = "finetuned_type",
             y = "mae_val",
             palette = "pastel",
-            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type != "A")],
+            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")],
             width=0.5,
             linewidth = 0.8)
 
-#%%
+#%% PLOT 1.4
 seaborn.boxplot(y = "mae_val", 
                 x = "simsfrac",
                 hue = "typ",
@@ -55,4 +111,42 @@ seaborn.boxplot(y = "mae_val",
                 data = fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")] ,
                 width=0.5,
                 linewidth = 0.8)
+#%% Plot 2:
+# Make sure to have the same reference full backprob model!
+bm = fulltab.loc[(fulltab.task == "finetuning") & (fulltab.finetuned_type == "B-fb")].reset_index()
+bm.iloc[bm['mae_val'].idxmin()].to_dict()
+# now load the model losses from file.
+rl = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\nodropout\sims_frac30\tuned\setting0\running_losses.npy", allow_pickle=True).item()
+
+visualizations.plot_running_losses(rl["mae_train"][:, :2000], rl["mae_val"][:, :2000], False)
+
+bm = fulltab.loc[(fulltab.typ == 0)].reset_index()
+bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
+
+plt.hlines(bestmlp0, 0, 2000,colors="orange", linestyles="dashed", label="Best MLP", linewidth=1.2)
+
+bm = fulltab.loc[(fulltab.typ == 7) & (fulltab.simsfrac == 30) & (fulltab.finetuned_type == "C-OLS")].reset_index()
+bestols = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
+posols = np.max(np.where(rl["mae_val"] > bestols))
+plt.arrow(x=posols, y=3, dx=0, dy=-(3-bestols), linewidth=0.8)
+plt.text(x=posols, y=3.1, s="OLS")
+
+bm = fulltab.loc[(fulltab.typ == 7)& (fulltab.simsfrac == 30)  & (fulltab.finetuned_type == "B-fW2")].reset_index()
+bestfw2 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
+posfw2 = np.max(np.where(rl["mae_val"] > bestfw2))
+plt.arrow(x=posfw2, y=3, dx=0, dy=-(3-bestfw2), linewidth=0.8)
+plt.text(x=posfw2, y=3.1, s="fW2")
+           
+bm = fulltab.loc[(fulltab.typ == 7)& (fulltab.simsfrac == 30)  & (fulltab.finetuned_type == "D-MLP2")].reset_index()
+bestmlp2 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
+posmlp2 = np.max(np.where(rl["mae_val"] > bestmlp2))
+plt.arrow(x=posmlp2, y=3, dx=0, dy=-(3-bestmlp2), linewidth=0.8)
+plt.text(x=posmlp2, y=3.1, s="MLP")
+
+prel = fulltab.loc[(fulltab.model == "preles")]["mae_train"].item()
+posprel = np.max(np.where(rl["mae_train"] > prel))
+plt.arrow(x=posprel, y=3, dx=0, dy=-(3-prel), linewidth=0.8)
+plt.text(x=posprel, y=3.1, s="PRELES")
+
+plt.legend()
 #%% Plot 4: plt.errorbar! linestyle='None', marker='^'

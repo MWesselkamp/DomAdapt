@@ -10,6 +10,9 @@ import numpy as np
 
 import finetuning
 import visualizations
+import setup.preprocessing as preprocessing
+import setup.utils as utils
+from sklearn import metrics
 #%%
 def selected_networks_results(types, simsfrac):
 
@@ -135,7 +138,7 @@ def selected_networks_results(types, simsfrac):
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
-    l = visualizations.losses("cnn", 0, r"")
+    l = visualizations.losses("cnn", 0, r"", plot=False)
     df_sel = df_sel.append({"id":"CNN0nP2D0R",
                "model":"cnn",
                "typ":0,
@@ -150,7 +153,7 @@ def selected_networks_results(types, simsfrac):
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
-    l = visualizations.losses("lstm", 0, r"")
+    l = visualizations.losses("lstm", 0, r"", plot=False)
     df_sel = df_sel.append({"id":"LSTM0nP2D0R",
                "model":"lstm",
                "typ":0,
@@ -165,10 +168,25 @@ def selected_networks_results(types, simsfrac):
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
+    #l = visualizations.losses("rf", 0, r"")
+    #df_sel = df_sel.append({"id":"RF0",
+    #           "model":"rf",
+    #           "typ":0,
+    #           "architecture":None,
+    #           "simsfrac":None,
+    #           "finetuned_type":None,
+    #           "dropout":None,
+    #           "epochs":None,
+    #           "rmse_train":l["rmse_train"][0],
+    #           "rmse_val":l["rmse_val"][0],
+    #           "mae_train":l["mae_val"][0],
+    #           "mae_val":l["mae_val"][0],
+    #           "task":"selected"}, ignore_index=True)
+    
     for typ in types:
         epochs = [50000,50000,60000,80000]
         for i in range(len(simsfrac)):
-            l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}")
+            l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
             df_sel = df_sel.append({"id":f"MLP{typ}D0{simsfrac[i]}P0",
                                     "model":"mlp",
                                     "typ":typ,
@@ -182,6 +200,21 @@ def selected_networks_results(types, simsfrac):
                                     "mae_train":l["mae_val"][0],
                                     "mae_val":l["mae_val"][0],
                                     "task":"pretraining"}, ignore_index=True)
+    
+    pre = preles_errors()
+    df_sel = df_sel.append({"id":"preles2008",
+                                    "model":"preles",
+                                    "typ":None,
+                                    "architecture":None,
+                                    "simsfrac":None,
+                                    "finetuned_type":None,
+                                    "dropout":None,
+                                    "epochs":None,
+                                    "rmse_train":pre[0],
+                                    "rmse_val":pre[1],
+                                    "mae_train":pre[2],
+                                    "mae_val":pre[3],
+                                    "task":"processmodel"}, ignore_index=True)
     
     
     df_sel.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\selectednetworks.xlsx")
@@ -263,3 +296,51 @@ def get_predictions(model, typ, searchpath,
     #visualizations.plot_nn_predictions(y_tests, y_preds)
     #return(y_tests,y_preds)
     return(y_preds)
+
+#%%
+def preles_errors(data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+    
+    X_test, Y_test = preprocessing.get_splits(sites = ["hyytiala"],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+    
+    prelesGPP_def =  pd.read_csv("OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\output2008def", sep=";")
+    prelesGPP_calib =  pd.read_csv("OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\output2008calib", sep=";")
+
+    rmse_train = utils.rmse(Y_test, prelesGPP_def)[0]
+    rmse_val = utils.rmse(Y_test, prelesGPP_calib)[0]
+    mae_train = metrics.mean_absolute_error(Y_test, prelesGPP_def)
+    mae_val = metrics.mean_absolute_error(Y_test, prelesGPP_calib)
+    
+    errors = [rmse_train, rmse_val, mae_train, mae_val]
+    
+    return(errors)
+    
+#%% Table 4.
+
+def analyse_basemodel_results(percentages, data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models"):
+
+    df_perc = pd.DataFrame(columns = ["id", "model", "typ", "CVfold","finetuned_type", "perc", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
+
+
+    for perc in percentages:
+    
+        rets = pd.read_csv(os.path.join(data_dir, f"mlp0\adaptive_pooling\architecture3\dropout\dropout10\data{perc}perc\selected_results.csv"))
+        df_perc = df_perc.append({"id": None,
+                              "model":"mlp",
+                              "typ":0,
+                              "CVfold":None,
+                              "finetuned_type":None,
+                              "perc":perc,
+                              "epochs":10000,
+                              "rmse_train":rets["rmse_train"],
+                              "rmse_val":rets["rmse_val"],
+                              "mae_train":rets["mae_train"],
+                              "mae_val":rets["mae_val"]})
+    
+    df_perc.to_excel(os.path.join(data_dir, r"results\featureextraction.xlsx"))
+    df_perc.to_csv(os.path.join(data_dir, r"results\tables\featureextraction.csv"))
+    
+    return(df_perc)

@@ -69,10 +69,11 @@ climate_simulator = function(seq_len, sam, zero=TRUE){
 #=====================#
 
 
-get_parameters <- function(){
+get_parameters <- function(default=FALSE){
   
   # calibrated paramters (Elisa Schneider)
   load("Rdata/OptimizedParametersPreles.Rdata")
+
 
   # Parameter default values directly taken from Rpreles GitHub repository. Merge with ES values.
   pars <- read.csv2("data/parameter_default_values.csv")

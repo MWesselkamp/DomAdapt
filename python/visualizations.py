@@ -15,7 +15,7 @@ import setup.dev_rf as dev_rf
 
 cols = sns.color_palette(palette="Paired")
 #%%
-def plot_running_losses(train_loss, val_loss, model):
+def plot_running_losses(train_loss, val_loss, legend):
 
     #if model=="mlp":
     #    colors = ["blue","lightblue"]
@@ -48,12 +48,13 @@ def plot_running_losses(train_loss, val_loss, model):
     ax.set(xlabel="Epochs", ylabel="MAE")
     plt.ylim(bottom = 0)
     plt.rcParams.update({'font.size': 14})
-    fig.legend(loc="upper left")
+    if legend:
+        fig.legend(loc="upper left")
     
 
 #%% SELECTED MODELS: PERFORMANCE
 
-def losses(model, typ, searchpath, plot = True,
+def losses(model, typ, searchpath, plot = True, legend=True,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
     data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
@@ -64,7 +65,7 @@ def losses(model, typ, searchpath, plot = True,
     running_losses = np.load(os.path.join(data_dir,"running_losses.npy"), allow_pickle=True).item()
 
     if plot:
-        plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  model)
+        plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  legend)
     #visualizations.plot_nn_predictions(y_tests, y_preds)
     #return(y_tests,y_preds)
     return(results)
