@@ -107,3 +107,54 @@ def get_simulations(data_dir, drop_parameters = False):
         
     return X.to_numpy(), Y.to_numpy()#, filenames
 
+#%%
+def get_borealsites(year, preles = False, site = ["hyytiala"],
+                    colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"]):
+
+    data_dir =  r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\borealsites"
+    X = pd.read_csv(os.path.join(data_dir, "borealsites_in"), sep=";")
+    
+    if preles:
+        preles_preds = pd.read_csv(os.path.join(data_dir, "preles_out"), sep=";")
+        
+    Y = pd.read_csv(os.path.join(data_dir, "borealsites_out"), sep=";")
+    
+    colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"]
+    
+    X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"]) # encode day of year as sinus and cosinus
+    
+    row_ind = X['site'].isin(site)
+    print(f"Returns {site} from \n", X["site"].unique())
+    X, Y = X[row_ind], Y[row_ind]
+    try:
+        preles_preds = preles_preds[row_ind]
+    except: 
+        None
+        
+    X[colnames] = utils.minmax_scaler(X[colnames])
+    X = X[colnames]
+    
+    if year == "train":
+        X = X[:365]
+        Y = Y[:365]
+        try:
+            preles_preds = preles_preds[:365]
+        except: 
+            None
+    elif year == "test":
+        X = X[365:]
+        Y = Y[365:]
+        try:
+            preles_preds = preles_preds[:365]
+        except: 
+            None
+    else:
+        pass 
+    
+    Y= Y.drop(columns=["ET"])
+    
+    if preles:
+        preles_preds = preles_preds.drop(columns=["ET", "SW"])
+        return(preles_preds.to_numpy())
+    else:
+        return(X.to_numpy(), Y.to_numpy())

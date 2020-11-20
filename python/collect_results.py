@@ -13,12 +13,17 @@ import visualizations
 import setup.preprocessing as preprocessing
 import setup.utils as utils
 from sklearn import metrics
+
+import torch
+import torch.nn as nn
+import setup.models as models
+from ast import literal_eval
 #%%
 def selected_networks_results(types, simsfrac):
 
     df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
 
-    l = visualizations.losses("mlp", 0, r"noPool\relu")
+    l = visualizations.losses("mlp", 0, r"noPool\relu", plot=False)
     df_sel = df_sel.append({"id":"MLP0nP2D0R",
                "model":"mlp",
                "typ":0,
@@ -181,7 +186,98 @@ def selected_networks_results(types, simsfrac):
                "rmse_val":l[1],
                "mae_train":l[2],
                "mae_val":l[3],
-               "task":"randomforest"}, ignore_index=True)
+               "task":"selected"}, ignore_index=True)
+    
+    l = visualizations.losses("mlp", 2, r"adaptive_pooling\dropout", plot=False)
+    df_sel = df_sel.append({"id":"MLP2aP3D1R",
+               "model":"mlp",
+               "typ":2,
+               "architecture":3,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":1,
+               "epochs":10000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_val"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"architecture_search"}, ignore_index=True)
+    
+    l = visualizations.losses("mlp", 2, r"adaptive_pooling\nodropout", plot=False)
+    df_sel = df_sel.append({"id":"MLP2aP3D0R",
+               "model":"mlp",
+               "typ":2,
+               "architecture":3,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":0,
+               "epochs":10000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_val"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"architecture_search"}, ignore_index=True)
+    
+    l = visualizations.losses("mlp", 2, r"noPool", plot=False)
+    df_sel = df_sel.append({"id":"MLP2nP2D0R",
+               "model":"mlp",
+               "typ":2,
+               "architecture":2,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":0,
+               "epochs":10000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_val"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"architecture_search"}, ignore_index=True)
+    
+    l = visualizations.losses("cnn", 2, r"nodropout", plot=False)
+    df_sel = df_sel.append({"id":"CNN2nP2D0R",
+               "model":"cnn",
+               "typ":2,
+               "architecture":2,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":0,
+               "epochs":10000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_val"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"architecture_search"}, ignore_index=True)
+    
+    l = visualizations.losses("lstm", 2, r"nodropout", plot=False)
+    df_sel = df_sel.append({"id":"LSTM2nP2D0R",
+               "model":"lstm",
+               "typ":2,
+               "architecture":2,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":0,
+               "epochs":10000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_val"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"architecture_search"}, ignore_index=True)
+    
+    l = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\rf2\errors.npy")
+    l = np.mean(l,1)
+    df_sel = df_sel.append({"id":"RF2",
+               "model":"rf",
+               "typ":2,
+               "architecture":2,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":None,
+               "epochs":None,
+               "rmse_train":l[0],
+               "rmse_val":l[1],
+               "mae_train":l[2],
+               "mae_val":l[3],
+               "task":"architecture_search"}, ignore_index=True)
     
     for typ in types:
         epochs = [50000,50000,60000,80000]
@@ -201,10 +297,10 @@ def selected_networks_results(types, simsfrac):
                                     "mae_val":l["mae_val"][0],
                                     "task":"pretraining"}, ignore_index=True)
     
-    pre = preles_errors()
-    df_sel = df_sel.append({"id":"preles2008",
+    pre = preles_errors("hyytiala")
+    df_sel = df_sel.append({"id":"preles2008hy",
                                     "model":"preles",
-                                    "typ":None,
+                                    "typ":0,
                                     "architecture":None,
                                     "simsfrac":None,
                                     "finetuned_type":None,
@@ -216,6 +312,50 @@ def selected_networks_results(types, simsfrac):
                                     "mae_val":pre[3],
                                     "task":"processmodel"}, ignore_index=True)
     
+    pre = preles_errors("bily_kriz")
+    df_sel = df_sel.append({"id":"preles2008bk",
+                                    "model":"preles",
+                                    "typ":2,
+                                    "architecture":None,
+                                    "simsfrac":None,
+                                    "finetuned_type":None,
+                                    "dropout":None,
+                                    "epochs":None,
+                                    "rmse_train":pre[0],
+                                    "rmse_val":pre[1],
+                                    "mae_train":pre[2],
+                                    "mae_val":pre[3],
+                                    "task":"processmodel"}, ignore_index=True)
+    
+    preds_er = borealsites_predictions()["mlp_prediction_errors"]
+    df_sel = df_sel.append({"id":"mlp0nP2D0Rbs",
+                                    "model":"mlp",
+                                    "typ":0,
+                                    "architecture":2,
+                                    "simsfrac":None,
+                                    "finetuned_type":None,
+                                    "dropout":None,
+                                    "epochs":None,
+                                    "rmse_train":None,
+                                    "rmse_val":preds_er[0],
+                                    "mae_train":None,
+                                    "mae_val":preds_er[1],
+                                    "task":"borealsitesprediction"}, ignore_index=True)
+    
+    preds_er = borealsites_predictions()["preles_prediction_errors"]
+    df_sel = df_sel.append({"id":"prelesbs",
+                                    "model":"preles",
+                                    "typ":None,
+                                    "architecture":None,
+                                    "simsfrac":None,
+                                    "finetuned_type":None,
+                                    "dropout":None,
+                                    "epochs":None,
+                                    "rmse_train":None,
+                                    "rmse_val":preds_er[0],
+                                    "mae_train":None,
+                                    "mae_val":preds_er[1],
+                                    "task":"borealsitesprediction"}, ignore_index=True)
     
     df_sel.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\selectednetworks.xlsx")
     df_sel.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\selectednetworks.csv")
@@ -298,16 +438,16 @@ def get_predictions(model, typ, searchpath,
     return(y_preds)
 
 #%%
-def preles_errors(data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
+def preles_errors(site, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    X_test, Y_test = preprocessing.get_splits(sites = ["hyytiala"],
+    X_test, Y_test = preprocessing.get_splits(sites = [site],
                                 years = [2008],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
     
-    prelesGPP_def =  pd.read_csv("OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\output2008def", sep=";")
-    prelesGPP_calib =  pd.read_csv("OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\output2008calib", sep=";")
+    prelesGPP_def =  pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\output{site}2008def", sep=";")
+    prelesGPP_calib =  pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\output{site}2008calib", sep=";")
 
     rmse_train = utils.rmse(Y_test, prelesGPP_def)[0]
     rmse_val = utils.rmse(Y_test, prelesGPP_calib)[0]
@@ -317,7 +457,39 @@ def preles_errors(data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\
     errors = [rmse_train, rmse_val, mae_train, mae_val]
     
     return(errors)
+#%% 
+def borealsites_predictions(data_dir="OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
+    res = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\mlp0\noPool\relu\selected_results.csv"))
+    dimensions = [7]
+    
+    for hdim in literal_eval(res["hiddensize"].item()):
+        dimensions.append(hdim)
+    dimensions.append(1)
+        
+    X, Y = preprocessing.get_borealsites(year = "both")
+    X = torch.tensor(X).type(dtype=torch.float)
+    
+    val_errors_mlp = {"rmse":[], "mae":[]}
+    for i in range(5):
+        
+        model = models.MLP(dimensions, nn.ReLU)
+        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp0\\noPool\\relu\model{i}.pth")))
+           
+        preds = model(X)
+            
+        val_errors_mlp["rmse"].append(utils.rmse(Y , preds.detach().numpy()))
+        val_errors_mlp["mae"].append(metrics.mean_absolute_error(Y, preds.detach().numpy()))
+            
+    val_errors_mlp = [np.mean(val_errors_mlp["rmse"]), np.mean(val_errors_mlp["mae"])]
+    preles_preds = preprocessing.get_borealsites(year = "both", preles=True)
+    
+    val_errors_preles = [utils.rmse(Y , preles_preds), metrics.mean_absolute_error(Y, preles_preds)]
+            
+    prediction_errors = {"mlp_prediction_errors":val_errors_mlp,
+                             "preles_prediction_errors":val_errors_preles}
+
+    return(prediction_errors)
 #%% Table 4.
 
 def analyse_basemodel_results(percentages, data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models"):

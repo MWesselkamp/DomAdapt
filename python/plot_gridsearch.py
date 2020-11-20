@@ -17,7 +17,7 @@ data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 
 #%% load GRID SEARCH results
 rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp2.csv"))
-rets_mlp_adapt = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\AdaptPool\grid_search_results_mlp2.csv"))
+rets_mlp_adapt = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\observations\mlp\AdaptPool\grid_search_results_mlp2.csv"))
 rets_mlp4 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\mlp\grid_search_results_mlp4.csv"))
 rets_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\cnn\grid_search_results_cnn2.csv"))
 rets_cnn4 = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\cnn\grid_search_results_cnn4.csv"))

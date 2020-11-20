@@ -39,7 +39,7 @@ write.table(y_preles, file="data/profound/preles_out", sep = ";",row.names = FAL
 #Profound data: Test Year 2008 #
 #==============================#
 
-x = X[which(X$site=="hyytiala" & X$year == 2008),]
+x = X[which(X$site=="bily_kriz" & X$year == 2008),]
 
 load("Rdata/OptimizedParametersPreles.Rdata")
 
@@ -48,8 +48,8 @@ output2008def <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Prec
 output2008calib = as.data.frame(output2008calib)
 output2008def = as.data.frame(output2008def)
 
-write.table(output2008calib, file="data/profound/output2008calib", sep = ";",row.names = FALSE)
-write.table(output2008def, file="data/profound/output2008def", sep = ";",row.names = FALSE)
+write.table(output2008calib, file="data/profound/outputbily_kriz2008calib", sep = ";",row.names = FALSE)
+write.table(output2008def, file="data/profound/outputbily_kriz2008def", sep = ";",row.names = FALSE)
 
 #====================#
 ## Boreal Sites data #
