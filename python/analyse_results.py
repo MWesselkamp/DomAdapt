@@ -100,3 +100,35 @@ visualizations.plot_running_losses(running_losses["mae_train"], running_losses["
 
 #%% B) predict with fitted model (architecture 2)
 prediction_errors = collect_results.borealsites_predictions()
+
+#%% C) PCA and GLM for two years of Borealsites and two years of Profound
+X_bor, Y_bor = preprocessing.get_borealsites(year = "both")
+X_prof, Y_prof = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2001,2002,2003,2005,2006],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+
+from sklearn.decomposition import PCA
+
+pca_bor = PCA(n_components = 7)
+pca_bor.fit(X_bor)
+print(pca_bor.explained_variance_ratio_)
+
+pca_prof = PCA(n_components = 7)
+pca_prof.fit(X_prof)
+print(pca_prof.explained_variance_ratio_)
+
+# colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"]
+
+import statsmodels.api as sm
+
+X_prof = sm.add_constant(X_prof) # Add intercept.
+glm_prof = sm.GLM(Y_prof, X_prof) 
+results = glm_prof.fit()
+print(results.pvalues)         
+
+X_bor = sm.add_constant(X_bor) # Add intercept.
+glm_bor = sm.GLM(Y_bor, X_bor) 
+results = glm_bor.fit()
+print(results.pvalues)  

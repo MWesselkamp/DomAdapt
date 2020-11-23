@@ -25,7 +25,7 @@ import matplotlib
 
 import visualizations
 #%%
-#subtab1, running_losses, predictions = collect_results.feature_extraction_results(types = [7,8], simsfrac = [30, 50, 70, 100])
+subtab1, running_losses, predictions = collect_results.feature_extraction_results(types = [6,7,8], simsfrac = [30, 50, 70, 100])
 
 subtab2 = collect_results.selected_networks_results(types = [7,8], simsfrac = [30,50,70,100])
 
@@ -87,7 +87,7 @@ def plot11():
                    [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "D-MLP2")]["rmse_val"]]]
 
     s = [60, 60,60, 60]
-    labs = ["OLS", "Full Backpropagation", "Freeze Last Layer", "MLP"]
+    labs = ["OLS", "Full Backpropagation", "Retrain Last Layer", "MLP"]
     for i in range(len(xi)):
         plt.scatter(xi[i], yi[i], alpha = 0.8, marker="x", s = s[i], label=labs[i])
     plt.ylim(0, 2.0)    
@@ -97,7 +97,8 @@ def plot11():
     plt.ylabel("Root Mean Squared Error")
     plt.locator_params(axis='y', nbins=7)
     plt.locator_params(axis='x', nbins=7)
-
+#%%
+plot11()
 #%% Plot 1.2
 def plot12():
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
@@ -117,6 +118,8 @@ def plot12():
     plt.ylabel("Root Mean Squared Error")
     plt.locator_params(axis='y', nbins=7)
     plt.locator_params(axis='x', nbins=7)
+#%%
+plot12()
 
 #%% PLOT 1.3
 def plot13():
@@ -132,6 +135,9 @@ def plot13():
     plt.xlabel("Type of finetuning")
     plt.ylabel("Mean Absolute Error")
     plt.ylim(0,1.2)
+#%%
+plot13()
+    
 #%% PLOT 1.4
 def plot14():
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
@@ -150,45 +156,70 @@ def plot14():
     plt.xlabel("Percentage of simulations used for training")
     plt.ylabel("Mean Absolute Error")
     plt.ylim(0,1.2)
-    
+#%%
+plot14()
+
 #%% Plot 2:
 # Make sure to have the same reference full backprob model!
 bm = fulltab.loc[(fulltab.task == "finetuning") & (fulltab.finetuned_type == "B-fb")].reset_index()
 bm.iloc[bm['mae_val'].idxmin()].to_dict()
 # now load the model losses from file.
-rl = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\nodropout\sims_frac30\tuned\setting0\running_losses.npy", allow_pickle=True).item()
+rl = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp6\nodropout\sims_frac30\tuned\setting0\running_losses.npy", allow_pickle=True).item()
 
-visualizations.plot_running_losses(rl["mae_train"][:, :2000], rl["mae_val"][:, :2000], False)
+visualizations.plot_running_losses(rl["mae_train"][:, :1000], rl["mae_val"][:, :1000], False)
 
 bm = fulltab.loc[(fulltab.typ == 0)].reset_index()
 bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
 #rf = fulltab.loc[(fulltab.model == "rf")]["mae_val"].item()
 
-plt.hlines(bestmlp0, 0, 2000,colors="orange", linestyles="dashed", label="Best MLP", linewidth=1.2)
+plt.hlines(bestmlp0, 0, 1000,colors="orange", linestyles="dashed", label="Best MLP", linewidth=1.2)
 #plt.hlines(rf, 0, 2000,colors="yellow", linestyles="dashed", label="Random Forest", linewidth=1.2)
 
 bm = fulltab.loc[(fulltab.typ == 7) & (fulltab.simsfrac == 30) & (fulltab.finetuned_type == "C-OLS")].reset_index()
 bestols = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
 posols = np.max(np.where(rl["mae_val"] > bestols))
-plt.arrow(x=posols, y=3, dx=0, dy=-(3-bestols), linewidth=0.8)
-plt.text(x=posols, y=3.1, s="OLS")
+plt.arrow(x=posols, y=1.7, dx=0, dy=-(1.7-bestols), linewidth=0.8)
+plt.text(x=posols, y=1.75, s="OLS")
 
 bm = fulltab.loc[(fulltab.typ == 7)& (fulltab.simsfrac == 30)  & (fulltab.finetuned_type == "B-fW2")].reset_index()
 bestfw2 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
 posfw2 = np.max(np.where(rl["mae_val"] > bestfw2))
-plt.arrow(x=posfw2, y=3, dx=0, dy=-(3-bestfw2), linewidth=0.8)
-plt.text(x=posfw2, y=3.1, s="fW2")
+plt.arrow(x=posfw2, y=2, dx=0, dy=-(2-bestfw2), linewidth=0.8)
+plt.text(x=posfw2, y=2.1, s="fW2")
            
 bm = fulltab.loc[(fulltab.typ == 7)& (fulltab.simsfrac == 30)  & (fulltab.finetuned_type == "D-MLP2")].reset_index()
 bestmlp2 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
 posmlp2 = np.max(np.where(rl["mae_val"] > bestmlp2))
-plt.arrow(x=posmlp2, y=3, dx=0, dy=-(3-bestmlp2), linewidth=0.8)
-plt.text(x=posmlp2, y=3.1, s="MLP")
+plt.arrow(x=posmlp2, y=2, dx=0, dy=-(2-bestmlp2), linewidth=0.8)
+plt.text(x=posmlp2, y=2.1, s="MLP")
 
 prel = fulltab.loc[(fulltab.model == "preles") & (fulltab.typ == 0)]["mae_train"].item()
 posprel = np.max(np.where(rl["mae_train"] > prel))
-plt.arrow(x=posprel, y=3, dx=0, dy=-(3-prel), linewidth=0.8)
-plt.text(x=posprel, y=3.1, s="PRELES")
+plt.arrow(x=posprel, y=1.5, dx=0, dy=-(1.5-prel), linewidth=0.8)
+plt.text(x=posprel, y=1.55, s="PRELES")
 
 plt.legend()
 #%% Plot 4: plt.errorbar! linestyle='None', marker='^'
+df = collect_results.analyse_basemodel_results([10,15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95])
+
+#%%
+import setup.preprocessing as preprocessing
+data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2001,2002,2003,2004,2005,2006, 2007],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+
+rets = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\\adaptive_pooling\\architecture3\\nodropout\sigmoid\data15perc\selected_results.csv")
+rls = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\\adaptive_pooling\\architecture3\\nodropout\sigmoid\data15perc\running_losses.npy", allow_pickle=True).item()
+visualizations.plot_running_losses(rls["mae_train"], rls["mae_val"], True)
+
+def subset_data(data, perc):
+    
+    n_subset = int(np.floor(data.shape[0]/100*perc))
+    subset = data[:n_subset,:]
+    
+    return(subset)
+    
+X_subset, Y_subset = subset_data(X, 95), subset_data(Y, 95)

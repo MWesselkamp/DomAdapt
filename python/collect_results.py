@@ -279,6 +279,28 @@ def selected_networks_results(types, simsfrac):
                "mae_val":l[3],
                "task":"architecture_search"}, ignore_index=True)
     
+    for dropout in ["nodropout", "dropout"]:
+        if dropout == "nodropout":
+            do = 0
+        else:
+            do = 1
+        epochs = [10000,20000,30000,40000]
+        for i in range(len(simsfrac)):
+            l = visualizations.losses("mlp", 6, f"{dropout}\sims_frac{simsfrac[i]}", plot=False)
+            df_sel = df_sel.append({"id":f"MLP6D{do}{simsfrac[i]}P0",
+                                    "model":"mlp",
+                                    "typ":6,
+                                    "architecture":3,
+                                    "simsfrac":simsfrac[i],
+                                    "finetuned_type":None,
+                                    "dropout":do,
+                                    "epochs":epochs[i],
+                                    "rmse_train":l["rmse_train"][0],
+                                    "rmse_val":l["rmse_val"][0],
+                                    "mae_train":l["mae_train"][0],
+                                    "mae_val":l["mae_val"][0],
+                                    "task":"pretraining"}, ignore_index=True)
+    
     for typ in types:
         epochs = [50000,50000,60000,80000]
         for i in range(len(simsfrac)):
@@ -293,9 +315,10 @@ def selected_networks_results(types, simsfrac):
                                     "epochs":epochs[i],
                                     "rmse_train":l["rmse_train"][0],
                                     "rmse_val":l["rmse_val"][0],
-                                    "mae_train":l["mae_val"][0],
+                                    "mae_train":l["mae_train"][0],
                                     "mae_val":l["mae_val"][0],
                                     "task":"pretraining"}, ignore_index=True)
+    
     
     pre = preles_errors("hyytiala")
     df_sel = df_sel.append({"id":"preles2008hy",
@@ -393,9 +416,9 @@ def feature_extraction_results(types, simsfrac):
             #visualizations.plot_prediction(Y_test, predictions_nnls, "Non-negative least squares")
             
             #3) MLP with architecture 2 as Classifier
-            rl, errors, predictions_mlp2 = finetuning.featureExtractorD("mlp", typ, 500, frac)
+            rl, errors, predictions_mlp2 = finetuning.featureExtractorD("mlp", typ, 1000, frac)
             errors = np.mean(np.array(errors),0)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FD", "mlp", typ,5, frac, "D-MLP2", 0, 500, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}FD", "mlp", typ,5, frac, "D-MLP2", 0, 1000, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             running_losses["D-MLP2"] = rl
             domadapt_predictions["D-MLP2"] = predictions_mlp2
             
@@ -403,14 +426,14 @@ def feature_extraction_results(types, simsfrac):
             ## LOADING RESULTS ##
             
             #4) Full Backprob with pretrained weights
-            rets_fb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\\nodropout\sims_frac{frac}\\tuned\setting0\selected_results.csv")
-            rl_fb = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\\nodropout\sims_frac{frac}\\tuned\setting0\\running_losses.npy", allow_pickle=True)
+            rets_fb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\selected_results.csv")
+            rl_fb = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\\running_losses.npy", allow_pickle=True)
             domadapt_errors.append([f"MLP{typ}D0{frac}FB1", "mlp", typ, 5, frac, "B-fb", 0, rets_fb["epochs"][0],rets_fb["rmse_train"][0], rets_fb["rmse_val"][0],rets_fb["mae_train"][0], rets_fb["mae_val"][0], "finetuning"])
             running_losses["B-full_backprop"] = rl_fb
             
             #5) Backprop only last layer.
-            rets_hb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\\nodropout\sims_frac{frac}\\tuned\setting1\selected_results.csv")
-            rl_fw2 = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\\nodropout\sims_frac{frac}\\tuned\setting1\\running_losses.npy", allow_pickle=True)
+            rets_hb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\selected_results.csv")
+            rl_fw2 = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\\running_losses.npy", allow_pickle=True)
             domadapt_errors.append([f"MLP{typ}D0{frac}FB2", "mlp", typ, 5, frac, "B-fW2", 0, rets_hb["epochs"][0],rets_hb["rmse_train"][0], rets_hb["rmse_val"][0],rets_hb["mae_train"][0], rets_hb["mae_val"][0], "finetuning"])
             running_losses["B-freezeW2"] = rl_fw2
             
@@ -492,14 +515,14 @@ def borealsites_predictions(data_dir="OneDrive\Dokumente\Sc_Master\Masterthesis\
     return(prediction_errors)
 #%% Table 4.
 
-def analyse_basemodel_results(percentages, data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models"):
+def analyse_basemodel_results(percentages, data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
 
     df_perc = pd.DataFrame(columns = ["id", "model", "typ", "CVfold","finetuned_type", "perc", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
 
 
     for perc in percentages:
     
-        rets = pd.read_csv(os.path.join(data_dir, f"mlp0\adaptive_pooling\architecture3\dropout\dropout10\data{perc}perc\selected_results.csv"))
+        rets = pd.read_csv(os.path.join(data_dir, f"python\outputs\models\mlp0\\adaptive_pooling\\architecture3\\nodropout\sigmoid\data{perc}perc\selected_results.csv"))
         df_perc = df_perc.append({"id": None,
                               "model":"mlp",
                               "typ":0,
@@ -507,12 +530,13 @@ def analyse_basemodel_results(percentages, data_dir = r"OneDrive\Dokumente\Sc_Ma
                               "finetuned_type":None,
                               "perc":perc,
                               "epochs":10000,
-                              "rmse_train":rets["rmse_train"],
-                              "rmse_val":rets["rmse_val"],
-                              "mae_train":rets["mae_train"],
-                              "mae_val":rets["mae_val"]})
+                              "rmse_train":rets["rmse_train"].item(),
+                              "rmse_val":rets["rmse_val"].item(),
+                              "mae_train":rets["mae_train"].item(),
+                              "mae_val":rets["mae_val"].item()}, ignore_index=True)
     
-    df_perc.to_excel(os.path.join(data_dir, r"results\featureextraction.xlsx"))
-    df_perc.to_csv(os.path.join(data_dir, r"results\tables\featureextraction.csv"))
+    df_perc.to_excel(os.path.join(data_dir, r"results\analyse_basemodel.xlsx"))
+    df_perc.to_csv(os.path.join(data_dir, r"results\tables\analyse_basemodel.csv"))
     
     return(df_perc)
+
