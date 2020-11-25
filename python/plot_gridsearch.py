@@ -53,3 +53,6 @@ best_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\mlp0\Adapt
 best_cnn = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\cnn0\selected_results.csv"))
 best_lstm = pd.read_csv(os.path.join(data_dir, r"python\outputs\models\lstm0\selected_results.csv"))
 
+
+#%% Grid Search Sparse
+rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\sparse\grid_search\grid_search_sparse1_mlp2.csv"))

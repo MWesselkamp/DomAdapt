@@ -15,7 +15,7 @@ import setup.dev_rf as dev_rf
 
 cols = sns.color_palette(palette="Paired")
 #%%
-def plot_running_losses(train_loss, val_loss, legend):
+def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
 
     #if model=="mlp":
     #    colors = ["blue","lightblue"]
@@ -26,7 +26,7 @@ def plot_running_losses(train_loss, val_loss, legend):
     #else:
     colors=["blue", "lightblue"]
     
-    fig, ax = plt.subplots(figsize=(10,6))
+    fig, ax = plt.subplots(figsize=(7,7))
 
     if train_loss.shape[0] > 1:
         ci_train = np.quantile(train_loss, (0.05,0.95), axis=0)
@@ -34,19 +34,21 @@ def plot_running_losses(train_loss, val_loss, legend):
         train_loss = np.mean(train_loss, axis=0)
         val_loss = np.mean(val_loss, axis=0)
         
-        ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color=colors[1], alpha=0.3)
+        if plot_train_loss:
+            ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color=colors[1], alpha=0.3)
         ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="lightgreen", alpha=0.3)
     
     else: 
         train_loss = train_loss.reshape(-1,1)
         val_loss = val_loss.reshape(-1,1)
     
-    ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=0.8)
+    if plot_train_loss:
+        ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=0.8)
     ax.plot(val_loss, color="green", label = "Validation loss", linewidth=0.8)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
-    ax.set(xlabel="Epochs", ylabel="MAE")
-    plt.ylim(bottom = 0)
+    ax.set(xlabel="Epochs", ylabel="Mean Absolute Error")
+    plt.ylim(bottom = 0.3)
     plt.rcParams.update({'font.size': 14})
     if legend:
         fig.legend(loc="upper left")

@@ -40,7 +40,7 @@ fulltab.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\resu
 fulltab = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv", index_col=False)
 
 #%% PLOT 1
-def plot1(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "blue"] ):
+def plot1(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "blue"], log=False):
     
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
 
@@ -48,35 +48,38 @@ def plot1(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "b
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["mae_val"]], 
-                [fulltab.loc[fulltab.task =="pretraining"]["mae_val"]],
-                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_train"].item()],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") ]["mae_val"]],
+                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["mae_val"].item()]]
     yi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["rmse_val"]],
-                [fulltab.loc[fulltab.task =="pretraining"]["rmse_val"]],
-                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["rmse_train"].item()],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") ]["rmse_val"]],
+                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["rmse_val"].item()]]
     m = ['o','o', 'o', 'x', 's', "*", '*', 'o']
     s = [60, 60, 60, 60, 60, 200, 200, 60]
     labs = ["selected", None,None, "finetuned", "pretrained", "PRELES", "RandomForest", None]
     for i in range(len(xi)):
-        plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
-        plt.ylim(0, 2.0)    
-        plt.xlim(0, 2.0)
-        plt.legend(loc="upper right")
-        plt.xlabel("Mean Absolute Error")
-        plt.ylabel("Root Mean Squared Error")
+        if log:
+            plt.scatter(np.log(xi[i]), np.log(yi[i]), alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
+            plt.xlabel("Log(Mean Absolute Error)")
+            plt.ylabel("Log(Root Mean Squared Error)")
+        else:
+            plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
+            plt.xlabel("Mean Absolute Error")
+            plt.ylabel("Root Mean Squared Error")
+        plt.legend(loc="lower right")
         plt.locator_params(axis='y', nbins=7)
         plt.locator_params(axis='x', nbins=7)
 #%%
-plot1() 
-plot1(colors = ["lightgrey", "lightgrey", "lightgrey", "orange", "lightgrey", "lightgrey", "lightgrey"])    
-plot1(colors = ["blue", "blue", "blue", "lightgrey", "lightgrey", "lightgrey", "lightgrey"])  
-plot1(colors = ["blue", "red", "red", "lightgrey", "lightgrey", "lightgrey", "lightgrey"])  
+plot1(log=True) 
+#plot1(colors = ["lightgrey", "lightgrey", "lightgrey", "orange", "lightgrey", "lightgrey", "lightgrey"])    
+#plot1(colors = ["blue", "blue", "blue", "lightgrey", "lightgrey", "lightgrey", "lightgrey"])  
+#plot1(colors = ["blue", "red", "red", "lightgrey", "lightgrey", "lightgrey", "lightgrey"])  
 
 #%% PLOT 1A
 def plot1A(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "blue"] ):
@@ -87,7 +90,7 @@ def plot1A(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["mae_val"]], 
-                [fulltab.loc[fulltab.task =="pretraining"]["mae_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") ]["mae_val"]],
                 [fulltab.loc[(fulltab.task =="borealsitesprediction")& (fulltab.model =="preles")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="borealsitesprediction")& (fulltab.model =="mlp")]["mae_val"].item()]]
@@ -95,7 +98,7 @@ def plot1A(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["rmse_val"]],
-                [fulltab.loc[fulltab.task =="pretraining"]["rmse_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") ]["rmse_val"]],
                 [fulltab.loc[(fulltab.task =="borealsitesprediction") & (fulltab.model =="preles")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["rmse_val"].item()],
                  [fulltab.loc[(fulltab.task =="borealsitesprediction") & (fulltab.model =="mlp")]["rmse_val"].item()]]
@@ -166,7 +169,6 @@ plot12()
 #%% PLOT 1.3
 def plot13():
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
-    cols = seaborn.color_palette(palette="pastel")
     seaborn.boxplot(x = "finetuned_type",
             y = "mae_val",
             hue = "typ",
@@ -176,7 +178,11 @@ def plot13():
             linewidth = 0.8)
     plt.xlabel("Type of finetuning")
     plt.ylabel("Mean Absolute Error")
-    plt.ylim(0,1.2)
+    plt.ylim(0.4,1.0)
+    
+    bm = fulltab.loc[(fulltab.typ == 0)].reset_index()
+    bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
+    plt.hlines(bestmlp0, -1, 4,colors="orange", linestyles="dashed", label="Best MLP", linewidth=1.2)
 #%%
 plot13()
     
@@ -197,18 +203,19 @@ def plot14():
                            "markersize":"6"})
     plt.xlabel("Percentage of simulations used for training")
     plt.ylabel("Mean Absolute Error")
-    plt.ylim(0,1.2)
+    plt.ylim(0.4,1.2)
 #%%
 plot14()
 
 #%% Plot 2:
 # Make sure to have the same reference full backprob model!
+
 bm = fulltab.loc[(fulltab.task == "finetuning") & (fulltab.finetuned_type == "C-OLS")].reset_index()
 bm.iloc[bm['mae_val'].idxmin()].to_dict()
 # now load the model losses from file.
 rl = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp6\nodropout\sims_frac30\tuned\setting0\running_losses.npy", allow_pickle=True).item()
 
-visualizations.plot_running_losses(rl["mae_train"][:, :1000], rl["mae_val"][:, :1000], False)
+visualizations.plot_running_losses(rl["mae_train"][:, :1000], rl["mae_val"][:, :1000], False, False)
 
 bm = fulltab.loc[(fulltab.typ == 0)].reset_index()
 bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
