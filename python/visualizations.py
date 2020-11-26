@@ -48,7 +48,7 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
     ax.set(xlabel="Epochs", ylabel="Mean Absolute Error")
-    plt.ylim(bottom = 0.3)
+    plt.ylim(bottom = 0)
     plt.rcParams.update({'font.size': 14})
     if legend:
         fig.legend(loc="upper left")
@@ -56,11 +56,15 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
 
 #%% SELECTED MODELS: PERFORMANCE
 
-def losses(model, typ, searchpath, error = "mae", plot = True, legend=True,
+def losses(model, typ, searchpath, error = "mae", plot = True, legend=True, sparse =False, plot_train_loss=True,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
     
-    data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
-    data_dir = os.path.join(data_dir, searchpath)
+    if sparse:
+        data_dir = os.path.join(data_dir, f"outputs\sparse\models\{model}{typ}")
+        data_dir = os.path.join(data_dir, searchpath)
+    else:
+        data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
+        data_dir = os.path.join(data_dir, searchpath)
 
     results = pd.read_csv(os.path.join(data_dir, "selected_results.csv"))
     print(results)
@@ -68,9 +72,9 @@ def losses(model, typ, searchpath, error = "mae", plot = True, legend=True,
 
     if plot:
         if error =="mae":
-            plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  legend)
+            plot_running_losses(running_losses["mae_train"], running_losses["mae_val"],  legend, plot_train_loss)
         else:
-            plot_running_losses(running_losses["rmse_train"], running_losses["rmse_val"],  legend)
+            plot_running_losses(running_losses["rmse_train"], running_losses["rmse_val"],  legend, plot_train_loss)
     #visualizations.plot_nn_predictions(y_tests, y_preds)
     #return(y_tests,y_preds)
     return(results)
@@ -175,7 +179,7 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
     else:
         data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\plots\data_quality_evaluation"
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(7,7))
     
     custom_xlim = (0, 4)
     custom_ylim = (0, 4)

@@ -42,6 +42,8 @@ visualizations.losses("mlp", 6, r"paramsFix\nodropout")
 visualizations.losses("mlp", 5, r"paramsFix\dropout")
 visualizations.losses("mlp", 6, r"paramsFix\dropout")
 
+l = visualizations.losses("mlp", 5, r"nodropout\sims_frac30")
+
 l = visualizations.losses("mlp", 6, r"nodropout\sims_frac30\tuned\setting0")
 l = visualizations.losses("mlp", 6, r"nodropout\sims_frac50\tuned\setting0")
 l = visualizations.losses("mlp", 6, r"nodropout\sims_frac70\tuned\setting0")

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct 19 11:48:58 2020
+
 @author: marie
 """
 
@@ -22,8 +23,7 @@ from scipy.optimize import nnls
 import statsmodels.api as sm
 
 #%%
-def settings(model, epochs, data_dir, sims = True,
-             years = [2001,2002,2003, 2004, 2005, 2006, 2007]):
+def settings(model, epochs, data_dir, sims = True):
 
     if sims:
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
@@ -51,7 +51,7 @@ def settings(model, epochs, data_dir, sims = True,
                     "featuresize":featuresize}
 
     X, Y = preprocessing.get_splits(sites = ['hyytiala'],
-                                    years = years,
+                                    years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                                     datadir = os.path.join(data_dir, "data"), 
                                     dataset = "profound",
                                     simulations = None)
@@ -253,10 +253,9 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
 
 #%%
 def featureExtractorA(model, typ, epochs, simsfrac,
-                      years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       splits=5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -288,10 +287,9 @@ def featureExtractorA(model, typ, epochs, simsfrac,
 #%% Finetune network on finish data, Full Backprob.
 
 def featureExtractorB(model, typ, epochs, simsfrac, feature_extraction= None,
-                      years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
     
     running_losses,performance, y_tests, y_preds = finetune(X, Y, epochs, model, typ, f"nodropout\sims_frac{simsfrac}", model_design["featuresize"], 
                                                                        False, feature_extraction, {"X_test":X_test, "Y_test":Y_test})
@@ -301,10 +299,9 @@ def featureExtractorB(model, typ, epochs, simsfrac, feature_extraction= None,
 #%% 1) Ordinary Least Squares and friends
     
 def featureExtractorC(model, typ, epochs, simsfrac, classifier = "ols", 
-                      years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       splits = 5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -419,12 +416,11 @@ def train_model(hparams_add, model_design_add, X, Y, X_test, Y_test, i,
 
 #%%
 def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
-                      years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     
-    hparams, model_design, X, Y, X_test, Y_test = settings("mlp", None, data_dir, years = years)
-    hparams_add, model_design_add, X, Y, X_test, Y_test = settings("mlp", epochs, data_dir, years = years, sims=False)
+    hparams, model_design, X, Y, X_test, Y_test = settings("mlp", None, data_dir)
+    hparams_add, model_design_add, X, Y, X_test, Y_test = settings("mlp", epochs, data_dir, sims=False)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
