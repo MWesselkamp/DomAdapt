@@ -12,7 +12,9 @@ import pandas as pd
 from pylab import *
 
 import setup.dev_rf as dev_rf
+from collections import OrderedDict
 
+cmaps = OrderedDict()
 cols = sns.color_palette(palette="Paired")
 #%%
 def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
@@ -181,11 +183,11 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
 
     fig, ax = plt.subplots(figsize=(7,7))
     
-    custom_xlim = (0, 4)
-    custom_ylim = (0, 4)
+    custom_xlim = (0, 2.8)
+    custom_ylim = (0, 2.8)
 
     # Setting the values for all axes.
-    plt.setp(ax, xlim=custom_xlim, ylim=custom_ylim)
+    plt.setp(ax, xlim=custom_xlim, ylim = custom_ylim)
 
     if train_val:
         x = f"{error}_val"
@@ -197,22 +199,18 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         y = "mae_val"
         #fig.suptitle(f"Hyperparameter Optimization\n Validation Errors")
         data_dir = os.path.join(data_dir, f"_val_errors_")
-        
+    
+    cols = ["green","orange", "red", "yellow", "blue"]
     if isinstance(model, list):
-        if len(model) == 5:
-            colors = [cols[5], cols[1], cols[3], cols[9], cols[7]]
-            models = model
-        else:
-            colors = [cols[1], cols[3], cols[9], cols[7]]
-            models = model
+        colors = [cols[0], cols[1], cols[2], cols[3], cols[4]]
+        models = model
         for i in range(len(results)):
-            ax.scatter(results[i][x], results[i][y], color=colors[i], 
-                       #edgecolors = "black", 
+            ax.scatter(results[i][x], results[i][y], color=colors[i],
                        alpha = 0.8, label=models[i])
     else:
         ax.scatter(results[x], results[y])
     
-    plt.legend()
+    plt.legend(loc="upper left")
     if error == "rmse":
         error="RMSE"
     else:

@@ -17,7 +17,7 @@ import multiprocessing as mp
     
 #%%
 
-typ = 5
+typ = 10
 dropout_prob = [0.0, 0.0, 0.0, 0.0]
 sims_frac = [30, 50, 70, None]
 epochs = [10000, 20000, 30000, 40000]
@@ -32,6 +32,8 @@ if __name__ == '__main__':
     rets =[]
     
     for i in range(len(sims_frac)):
-        p = mp.Process(target=wp.pretraining, args=("mlp", 5, epochs[i], dropout_prob[i], sims_frac[i], q))
+        p = mp.Process(target=wp.pretraining, args=("mlp", 10, epochs[i], dropout_prob[i], sims_frac[i], q))
         processes.append(p)
         p.start()
+
+

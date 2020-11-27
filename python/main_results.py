@@ -16,6 +16,7 @@ The feature extractors take the arguments:
 import sys
 sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
 
+import os.path
 import pandas as pd
 import numpy as np
 import collect_results
@@ -65,18 +66,22 @@ def plot1(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "b
     labs = ["selected", None,None, "finetuned", "pretrained", "PRELES", "RandomForest", None]
     for i in range(len(xi)):
         if log:
-            plt.scatter(np.log(xi[i]), np.log(yi[i]), alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
-            plt.xlabel("Log(Mean Absolute Error)")
-            plt.ylabel("Log(Root Mean Squared Error)")
+            plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
+            plt.yscale("log")
+            plt.xscale("log")
+            plt.xlabel("log(MAE)")
+            plt.ylabel("log(RMSE)")
         else:
             plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
             plt.xlabel("Mean Absolute Error")
             plt.ylabel("Root Mean Squared Error")
+            plt.locator_params(axis='y', nbins=7)
+            plt.locator_params(axis='x', nbins=7)
+
         plt.legend(loc="lower right")
-        plt.locator_params(axis='y', nbins=7)
-        plt.locator_params(axis='x', nbins=7)
 #%%
 plot1(log=True) 
+plot1(log=False)
 #plot1(colors = ["lightgrey", "lightgrey", "lightgrey", "orange", "lightgrey", "lightgrey", "lightgrey"])    
 #plot1(colors = ["blue", "blue", "blue", "lightgrey", "lightgrey", "lightgrey", "lightgrey"])  
 #plot1(colors = ["blue", "red", "red", "lightgrey", "lightgrey", "lightgrey", "lightgrey"])  
@@ -252,23 +257,21 @@ plt.legend()
 df = collect_results.analyse_basemodel_results([10,15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95])
 
 #%%
-import setup.preprocessing as preprocessing
-data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-X, Y = preprocessing.get_splits(sites = ['hyytiala'],
-                                years = [2001,2002,2003,2004,2005,2006, 2007],
-                                datadir = os.path.join(data_dir, "data"), 
-                                dataset = "profound",
-                                simulations = None)
+params = pd.read_csv(os.path.join(data_dir, r"data\parameter_default_values.csv"), sep =";", names=["name", "value"])
+#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
+def plot4(parameter):
+    
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    si_n = pd.read_csv(os.path.join(data_dir, r"data\simulations\normal_params\sims_in.csv"), sep =";")
+    si_u = pd.read_csv(os.path.join(data_dir, r"data\simulations\uniform_params\sims_in.csv"), sep =";")
+    
+    fig, ax = plt.subplots(figsize=(7,7))
+    plt.hist(si_u[parameter], bins=50, histtype="stepfilled", density=True, color="lightblue",alpha=0.7, linewidth=1.2, label="uniform")
+    plt.hist(si_n[parameter], bins=50, histtype="stepfilled", density=True, color="lightgreen", alpha=0.7, linewidth=1.2, label="truncated normal")
+    plt.xlabel(parameter, fontsize=18)
+    plt.ylabel("Density", fontsize=18)
+    plt.tick_params(axis='both', which='major', labelsize=16)
+    plt.ylim(0,1)
+    plt.legend(prop={"size":14})
 
-rets = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\\adaptive_pooling\\architecture3\\nodropout\sigmoid\data25perc\selected_results.csv")
-rls = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\\adaptive_pooling\\architecture3\\nodropout\sigmoid\data25perc\running_losses.npy", allow_pickle=True).item()
-visualizations.plot_running_losses(rls["mae_train"], rls["mae_val"], True)
-
-def subset_data(data, perc):
-    
-    n_subset = int(np.floor(data.shape[0]/100*perc))
-    subset = data[:n_subset,:]
-    
-    return(subset)
-    
-X_subset, Y_subset = subset_data(X, 95), subset_data(Y, 95)
+plot4("beta")

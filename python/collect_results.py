@@ -513,6 +513,78 @@ def borealsites_predictions(data_dir="OneDrive\Dokumente\Sc_Master\Masterthesis\
                              "preles_prediction_errors":val_errors_preles}
 
     return(prediction_errors)
+    
+#%%
+def sparse_networks_results(sparses):
+
+    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "sparse", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
+    
+    for sparse in sparses:
+        l = visualizations.losses("mlp", 0, f"sparse{sparse}",sparse=True, plot=False)
+        df_sel = df_sel.append({"id":f"MLP0{sparse}1D0",
+               "model":"mlp",
+               "typ":0,
+               "architecture":6,
+               "sparse":sparse,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":0,
+               "epochs":1000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_val"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"sparse_selected"}, ignore_index=True)
+    
+    settings=["B-fb","B-fW2"]
+    epochs = [5000, 40000]
+    for i in range(len(settings)):
+        for typ in [6,7,8]:
+            for sparse in [1,2,3]:
+                l = visualizations.losses("mlp", typ, f"sparse1\setting{i}", sparse=True, plot=False)
+                df_sel = df_sel.append({"id":f"MLP0S{sparse}D0",
+                                        "model":"mlp",
+                                        "typ":typ,
+                                        "architecture":6,
+                                        "sparse":sparse,
+                                        "simsfrac":30,
+                                        "finetuned_type":settings[i],
+                                        "dropout":0,
+                                        "epochs":epochs[i],
+                                        "rmse_train":l["rmse_train"][0],
+                                        "rmse_val":l["rmse_val"][0],
+                                        "mae_train":l["mae_val"][0],
+                                        "mae_val":l["mae_val"][0],
+                                        "task":"sparse_finetuning"}, ignore_index=True)
+    
+    years_list = [[2006], [2005, 2006], [2004,2005,2006], [2003,2004,2005,2006], [2001, 2003,2004,2005,2006]]
+    for typ in [6,7,8]:
+        for i in range(len(years_list)):
+            predictions_test, errors = finetuning.featureExtractorC("mlp", 7, None, 30, classifier = "ols", 
+                      years = years_list[i])
+            errors = np.mean(np.array(errors), axis=1)
+            df_sel = df_sel.append({"id":f"MLP0S{i+1}D0",
+                                        "model":"mlp",
+                                        "typ":typ,
+                                        "architecture":6,
+                                        "sparse":i+1,
+                                        "simsfrac":30,
+                                        "finetuned_type":"C-OLS",
+                                        "dropout":0,
+                                        "epochs":None,
+                                        "rmse_train":errors[0],
+                                        "rmse_val":errors[1],
+                                        "mae_train":errors[2],
+                                        "mae_val":errors[3],
+                                        "task":"sparse_finetuning"}, ignore_index=True)
+                
+    
+    df_sel.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\sparsenetworks.xlsx")
+    df_sel.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\sparsenetworks.csv")
+    
+    return(df_sel)
+
+    
 #%% Table 4.
 
 def analyse_basemodel_results(percentages, data_dir = r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
