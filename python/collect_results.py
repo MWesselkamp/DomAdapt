@@ -19,7 +19,7 @@ import torch.nn as nn
 import setup.models as models
 from ast import literal_eval
 #%%
-def selected_networks_results(types, simsfrac):
+def selected_networks_results(simsfrac):
 
     df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
 
@@ -290,7 +290,7 @@ def selected_networks_results(types, simsfrac):
             df_sel = df_sel.append({"id":f"MLP6D{do}{simsfrac[i]}P0",
                                     "model":"mlp",
                                     "typ":6,
-                                    "architecture":3,
+                                    "architecture":4,
                                     "simsfrac":simsfrac[i],
                                     "finetuned_type":None,
                                     "dropout":do,
@@ -301,17 +301,36 @@ def selected_networks_results(types, simsfrac):
                                     "mae_val":l["mae_val"][0],
                                     "task":"pretraining"}, ignore_index=True)
     
-    for typ in types:
+    for typ in [7,8]:
         epochs = [50000,50000,60000,80000]
         for i in range(len(simsfrac)):
             l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
             df_sel = df_sel.append({"id":f"MLP{typ}D0{simsfrac[i]}P0",
                                     "model":"mlp",
                                     "typ":typ,
-                                    "architecture":3,
+                                    "architecture":4,
                                     "simsfrac":simsfrac[i],
                                     "finetuned_type":None,
                                     "dropout":2,
+                                    "epochs":epochs[i],
+                                    "rmse_train":l["rmse_train"][0],
+                                    "rmse_val":l["rmse_val"][0],
+                                    "mae_train":l["mae_train"][0],
+                                    "mae_val":l["mae_val"][0],
+                                    "task":"pretraining"}, ignore_index=True)
+    
+    
+    for typ in [9, 10]:
+        epochs = [10000,20000,30000,40000]
+        for i in range(len(simsfrac)):
+            l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
+            df_sel = df_sel.append({"id":f"MLP{typ}DD0{simsfrac[i]}P0",
+                                    "model":"mlp",
+                                    "typ":typ,
+                                    "architecture":2,
+                                    "simsfrac":simsfrac[i],
+                                    "finetuned_type":None,
+                                    "dropout":0.0,
                                     "epochs":epochs[i],
                                     "rmse_train":l["rmse_train"][0],
                                     "rmse_val":l["rmse_val"][0],
@@ -394,49 +413,58 @@ def feature_extraction_results(types, simsfrac):
     running_losses = {}
 
     for typ in types:
+        if ((typ==9)|(typ==10)):
+            architecture = 2
+        else: 
+            architecture = 4
         for frac in simsfrac:
     
             predictions, errors, Y_test = finetuning.featureExtractorA("mlp", typ, None, frac)
             errors = np.mean(np.array(errors), 1)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FA", "mlp", typ, 5, frac, "A", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}FA", "mlp", typ, architecture, frac, "A", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             domadapt_predictions["A-None"] = predictions
             
             # 1) Ordinary Least Squares as Classifier
             predictions_ols, errors = finetuning.featureExtractorC("mlp",typ, None, frac, "ols")
             errors = np.mean(np.array(errors), axis=1)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FC1", "mlp", typ,5,frac, "C-OLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}FC1", "mlp", typ,architecture,frac, "C-OLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             domadapt_predictions["C-OLS"] = predictions_ols
             #visualizations.plot_prediction(Y_test, predictions_ols, "OLS")
             
             # 2) Non-negative Least Squares as Classifier
             predictions_nnls, errors = finetuning.featureExtractorC("mlp", typ, None,  frac, "nnls")
             errors = np.mean(np.array(errors), axis=1)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FC2", "mlp", typ, 5, frac, "C-NNLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}FC2", "mlp", typ, architecture, frac, "C-NNLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             domadapt_predictions["C-NNLS"] = predictions_nnls
             #visualizations.plot_prediction(Y_test, predictions_nnls, "Non-negative least squares")
             
             #3) MLP with architecture 2 as Classifier
-            rl, errors, predictions_mlp2 = finetuning.featureExtractorD("mlp", typ, 1000, frac)
+            rl, errors, predictions_mlp2 = finetuning.featureExtractorD("mlp", typ, 5000, frac)
             errors = np.mean(np.array(errors),0)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FD", "mlp", typ,5, frac, "D-MLP2", 0, 1000, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}FD", "mlp", typ,architecture, frac, "D-MLP2", 0, 5000, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             running_losses["D-MLP2"] = rl
             domadapt_predictions["D-MLP2"] = predictions_mlp2
             
             ## Feature Extractor B due to computation time only used on cluster! ##
             ## LOADING RESULTS ##
+            try:
+                #4) Full Backprob with pretrained weights
+                rets_fb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\selected_results.csv")
+                rl_fb = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\\running_losses.npy", allow_pickle=True)
+                domadapt_errors.append([f"MLP{typ}D0{frac}FB1", "mlp", typ, architecture, frac, "B-fb", 0, rets_fb["epochs"][0],rets_fb["rmse_train"][0], rets_fb["rmse_val"][0],rets_fb["mae_train"][0], rets_fb["mae_val"][0], "finetuning"])
+                running_losses["B-full_backprop"] = rl_fb
+            except:
+                print("No fb results available for this pretraining.")
             
-            #4) Full Backprob with pretrained weights
-            rets_fb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\selected_results.csv")
-            rl_fb = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\\running_losses.npy", allow_pickle=True)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FB1", "mlp", typ, 5, frac, "B-fb", 0, rets_fb["epochs"][0],rets_fb["rmse_train"][0], rets_fb["rmse_val"][0],rets_fb["mae_train"][0], rets_fb["mae_val"][0], "finetuning"])
-            running_losses["B-full_backprop"] = rl_fb
-            
-            #5) Backprop only last layer.
-            rets_hb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\selected_results.csv")
-            rl_fw2 = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\\running_losses.npy", allow_pickle=True)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FB2", "mlp", typ, 5, frac, "B-fW2", 0, rets_hb["epochs"][0],rets_hb["rmse_train"][0], rets_hb["rmse_val"][0],rets_hb["mae_train"][0], rets_hb["mae_val"][0], "finetuning"])
-            running_losses["B-freezeW2"] = rl_fw2
-            
+            try:
+                #5) Backprop only last layer.
+                rets_hb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\selected_results.csv")
+                rl_fw2 = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\\running_losses.npy", allow_pickle=True)
+                domadapt_errors.append([f"MLP{typ}D0{frac}FB2", "mlp", typ, architecture, frac, "B-fW2", 0, rets_hb["epochs"][0],rets_hb["rmse_train"][0], rets_hb["rmse_val"][0],rets_hb["mae_train"][0], rets_hb["mae_val"][0], "finetuning"])
+                running_losses["B-freezeW2"] = rl_fw2
+            except:
+                print("No fw2 results available for this pretraining.")
+                
     domadapt_results = pd.DataFrame(domadapt_errors,
                         columns = ["id", "model", "typ", "architecture", "simsfrac", "finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
     

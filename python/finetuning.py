@@ -25,6 +25,17 @@ import statsmodels.api as sm
 def settings(model, epochs, data_dir, sims = True,
              years = [2001,2002,2003, 2004, 2005, 2006, 2007]):
 
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                    years = years,
+                                    datadir = os.path.join(data_dir, "data"), 
+                                    dataset = "profound",
+                                    simulations = None)
+    X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
+                                              years = [2008],
+                                              datadir = os.path.join(data_dir, "data"), 
+                                              dataset = "profound",
+                                              simulations = None)
+    
     if sims:
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
     else:
@@ -32,8 +43,14 @@ def settings(model, epochs, data_dir, sims = True,
         
     setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
 
-    dimensions = literal_eval(setup["hiddensize"])
-    dimensions.append(1) # adds the output dimension!
+    if sims:
+        dimensions = literal_eval(setup["hiddensize"])
+        dimensions.append(1) # adds the output dimension!
+    else:
+        dimensions = [X.shape[1]]
+        for dim in literal_eval(setup["hiddensize"]):
+            dimensions.append(dim)
+        dimensions.append(Y.shape[1])
     
     if sims:
         featuresize = setup["featuresize"]
@@ -50,17 +67,7 @@ def settings(model, epochs, data_dir, sims = True,
                     "activation":nn.ReLU,
                     "featuresize":featuresize}
 
-    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
-                                    years = years,
-                                    datadir = os.path.join(data_dir, "data"), 
-                                    dataset = "profound",
-                                    simulations = None)
-    X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
-                                              years = [2008],
-                                              datadir = os.path.join(data_dir, "data"), 
-                                              dataset = "profound",
-                                              simulations = None)
-    
+      
     return hparams, model_design, X, Y, X_test, Y_test
 
 #%%
@@ -255,8 +262,11 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
 def featureExtractorA(model, typ, epochs, simsfrac,
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       splits=5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
-    
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+    if ((typ == 9)| (typ == 10)):
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years, sims=False)
+        model_design["featuresize"] = None
+    else:
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -269,7 +279,10 @@ def featureExtractorA(model, typ, epochs, simsfrac,
 
     for i in range(splits):
         
-        model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        if ((typ == 9)| (typ == 10)):
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+        else:
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
         model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
         
         preds_test = model(X_test).detach().numpy()
@@ -291,7 +304,11 @@ def featureExtractorB(model, typ, epochs, simsfrac, feature_extraction= None,
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+    if ((typ == 9)| (typ == 10)):
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years, sims=False)
+        model_design["featuresize"] = None
+    else:
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
     
     running_losses,performance, y_tests, y_preds = finetune(X, Y, epochs, model, typ, f"nodropout\sims_frac{simsfrac}", model_design["featuresize"], 
                                                                        False, feature_extraction, {"X_test":X_test, "Y_test":Y_test})
@@ -304,7 +321,11 @@ def featureExtractorC(model, typ, epochs, simsfrac, classifier = "ols",
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       splits = 5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+    if ((typ == 9)| (typ == 10)):
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years, sims=False)
+        model_design["featuresize"] = None
+    else:
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -314,10 +335,17 @@ def featureExtractorC(model, typ, epochs, simsfrac, classifier = "ols",
     
     for i in range(splits):
     
-        model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        if ((typ == 9)| (typ == 10)):
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+        else:
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+            
         model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
-      
-        model.classifier = nn.Sequential(*list(model.classifier.children())[:-1]) # Remove Final layer and activation.
+        
+        if ((typ == 9)| (typ == 10)):
+            model = model[:-1]
+        else:
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-1]) # Remove Final layer and activation.
 
         out_train = model(X).detach().numpy()
         out_train = sm.add_constant(out_train) # Add intercept.
@@ -423,8 +451,13 @@ def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     
-    hparams, model_design, X, Y, X_test, Y_test = settings("mlp", None, data_dir, years = years)
-    hparams_add, model_design_add, X, Y, X_test, Y_test = settings("mlp", epochs, data_dir, years = years, sims=False)
+    if ((typ == 9)| (typ == 10)):
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years, sims=False)
+        model_design["featuresize"] = None
+    else:
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years)
+        
+    hparams_add, model_design_add, X, Y, X_test, Y_test = settings(model, epochs, data_dir, years = years, sims=False)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -435,11 +468,19 @@ def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
     for i in range(splits):
         
         # Load pretrained model
-        model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        if ((typ == 9)| (typ == 10)):
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+        else:
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+            
         model.load_state_dict(torch.load(os.path.join(data_dir, 
                                               f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
         # modify classifier
-        model.classifier = nn.Sequential(*list(model.classifier.children())[:-1])
+        if ((typ == 9)| (typ == 10)):
+            model = model[:-1]
+        else:
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-1]) # Remove Final layer and activation.
+            
         # extract features
         out_train = model(X).detach().numpy()
         out_test = model(X_test).detach().numpy()
