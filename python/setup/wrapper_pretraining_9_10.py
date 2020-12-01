@@ -22,9 +22,13 @@ from ast import literal_eval
 def set_model_parameters(model, typ, epochs, featuresize, 
                          X, Y, data_dir = r"/home/fr/fr_fr/fr_mw263"):
     
-    results = pd.read_csv(os.path.join(data_dir, f"output/grid_search/adaptive_pooling/grid_search_results_{model}2.csv"))
+    results = pd.read_csv(os.path.join(data_dir, f"output/grid_search/grid_search_results_{model}2.csv"))
 
     best_model = results.iloc[results['mae_val'].idxmin()].to_dict()
+    try:
+        featuresize = best_model["featuresize"]
+    except:
+        featuresize = None
         
     hidden_dims = literal_eval(best_model["hiddensize"])
     
@@ -44,7 +48,7 @@ def set_model_parameters(model, typ, epochs, featuresize,
       
     model_design = {"dimensions": dimensions,
                     "activation": eval(best_model["activation"][8:-2]),
-                    "featuresize":best_model["featuresize"]}
+                    "featuresize":featuresize}
     
     return hparams, model_design
     
@@ -63,14 +67,17 @@ def pretraining(model, typ, epochs, dropout_prob, sims_fraction, q, simtype = No
     
     if typ == 7:
       X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, r"scripts/data/simulations/normal_params"), drop_parameters=False)
-    elif typ == 8:
+    if typ == 8:
       X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, r"scripts/data/simulations/uniform_params"), drop_parameters=False)
-    elif typ ==6:
+    if typ ==6:
       X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, f"scripts/data/simulations/paramsFix"), drop_parameters=True)
-    elif typ == 5:
+    # Architectures selected for Observations.
+    if typ == 5:
       X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, f"scripts/data/simulations/paramsFix"), drop_parameters=True)
-    else:
-      print("No simulations available for this model type!")
+    if typ == 9:
+      X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, f"scripts/data/simulations/paramsFix"), drop_parameters=True)
+    if typ == 10:
+      X, Y = preprocessing.get_simulations(data_dir = os.path.join(data_dir, f"scripts/data/simulations/uniform_params"), drop_parameters=True)
     
     # Use full simulations or only parts of it?
     if not sims_fraction is None:
