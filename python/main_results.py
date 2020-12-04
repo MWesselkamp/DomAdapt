@@ -74,8 +74,8 @@ def plot1(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "b
             plt.ylabel("log(RMSE)")
         else:
             plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
-            plt.xlabel("Mean Absolute Error")
-            plt.ylabel("Root Mean Squared Error")
+            plt.xlabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
+            plt.ylabel("Root Mean Squared Error [g C m$^{-2}$ day$^{-1}$]")
             plt.locator_params(axis='y', nbins=7)
             plt.locator_params(axis='x', nbins=7)
 
@@ -116,8 +116,8 @@ def plot1A(colors = ["blue","blue","blue", "orange", "green", "red", "yellow", "
         plt.ylim(0, 2.0)    
         plt.xlim(0, 2.0)
         plt.legend(loc="upper right")
-        plt.xlabel("Mean Absolute Error")
-        plt.ylabel("Root Mean Squared Error")
+        plt.xlabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
+        plt.ylabel("Root Mean Squared Error [g C m$^{-2}$ day$^{-1}$]")
         plt.locator_params(axis='y', nbins=7)
         plt.locator_params(axis='x', nbins=7)
 #%%
@@ -142,8 +142,8 @@ def plot11():
     plt.ylim(0, 2.0)    
     plt.xlim(0, 2.0)
     plt.legend()
-    plt.xlabel("Mean Absolute Error")
-    plt.ylabel("Root Mean Squared Error")
+    plt.xlabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
+    plt.ylabel("Root Mean Squared Error [g C m$^{-2}$ day$^{-1}$]")
     plt.locator_params(axis='y', nbins=7)
     plt.locator_params(axis='x', nbins=7)
 #%%
@@ -169,8 +169,8 @@ def plot12(finetuned_type):
     #plt.ylim(0, 2.0)    
     #plt.xlim(0, 2.0)
     plt.legend()
-    plt.xlabel("Mean Absolute Error")
-    plt.ylabel("Root Mean Squared Error")
+    plt.xlabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
+    plt.ylabel("Root Mean Squared Error [g C m$^{-2}$ day$^{-1}$]")
     plt.locator_params(axis='y', nbins=7)
     plt.locator_params(axis='x', nbins=7)
 #%%
@@ -189,7 +189,7 @@ def plot13(fulltab):
             width=0.7,
             linewidth = 0.8)
     plt.xlabel("Type of finetuning")
-    plt.ylabel("Mean Absolute Error")
+    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
     plt.ylim(0.4,1.1)
     
     bm = fulltab.loc[(fulltab.typ == 0)].reset_index()
@@ -218,7 +218,7 @@ def plot14(fulltab):
                            "markeredgecolor":"black",
                            "markersize":"6"})
     plt.xlabel("Percentage of simulations used for training")
-    plt.ylabel("Mean Absolute Error")
+    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
     plt.ylim(0.4,1.2)
     
 #%%
