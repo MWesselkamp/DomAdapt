@@ -34,7 +34,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -49,7 +49,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -64,7 +64,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -79,7 +79,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -94,7 +94,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -109,7 +109,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -124,7 +124,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
 
@@ -139,7 +139,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
@@ -154,7 +154,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
@@ -169,7 +169,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"selected"}, ignore_index=True)
     
@@ -199,7 +199,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"architecture_search"}, ignore_index=True)
     
@@ -214,7 +214,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"architecture_search"}, ignore_index=True)
     
@@ -229,7 +229,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"architecture_search"}, ignore_index=True)
     
@@ -244,7 +244,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"architecture_search"}, ignore_index=True)
     
@@ -259,7 +259,7 @@ def selected_networks_results(simsfrac):
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
-               "mae_train":l["mae_val"][0],
+               "mae_train":l["mae_train"][0],
                "mae_val":l["mae_val"][0],
                "task":"architecture_search"}, ignore_index=True)
     
@@ -545,7 +545,7 @@ def borealsites_predictions(data_dir="OneDrive\Dokumente\Sc_Master\Masterthesis\
 #%%
 def sparse_networks_results(sparses):
 
-    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "sparse", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
+    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
     
     for sparse in sparses:
         l = visualizations.losses("mlp", 0, f"sparse{sparse}",sparse=True, plot=False)
@@ -553,7 +553,7 @@ def sparse_networks_results(sparses):
                "model":"mlp",
                "typ":0,
                "architecture":6,
-               "sparse":sparse,
+               #"sparse":sparse,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -568,34 +568,34 @@ def sparse_networks_results(sparses):
     epochs = [5000, 40000]
     for i in range(len(settings)):
         for typ in [6,7,8]:
-            for sparse in [1,2,3]:
+            for sparse in sparses:
                 l = visualizations.losses("mlp", typ, f"sparse1\setting{i}", sparse=True, plot=False)
                 df_sel = df_sel.append({"id":f"MLP0S{sparse}D0",
                                         "model":"mlp",
                                         "typ":typ,
                                         "architecture":6,
-                                        "sparse":sparse,
+                                        #"sparse":sparse,
                                         "simsfrac":30,
                                         "finetuned_type":settings[i],
                                         "dropout":0,
                                         "epochs":epochs[i],
                                         "rmse_train":l["rmse_train"][0],
                                         "rmse_val":l["rmse_val"][0],
-                                        "mae_train":l["mae_val"][0],
+                                        "mae_train":l["mae_train"][0],
                                         "mae_val":l["mae_val"][0],
                                         "task":"sparse_finetuning"}, ignore_index=True)
     
-    years_list = [[2006], [2005, 2006], [2004,2005,2006], [2003,2004,2005,2006], [2001, 2003,2004,2005,2006]]
+    years_list = [[2006]] #, [2005, 2006], [2004,2005,2006], [2003,2004,2005,2006], [2001, 2003,2004,2005,2006]]
     for typ in [6,7,8]:
         for i in range(len(years_list)):
-            predictions_test, errors = finetuning.featureExtractorC("mlp", 7, None, 30, classifier = "ols", 
+            predictions_test, errors = finetuning.featureExtractorC("mlp", typ, None, 30, classifier = "ols", 
                       years = years_list[i])
             errors = np.mean(np.array(errors), axis=1)
             df_sel = df_sel.append({"id":f"MLP0S{i+1}D0",
                                         "model":"mlp",
                                         "typ":typ,
                                         "architecture":6,
-                                        "sparse":i+1,
+                                        #"sparse":i+1,
                                         "simsfrac":30,
                                         "finetuned_type":"C-OLS",
                                         "dropout":0,

@@ -34,7 +34,7 @@ def load_data(dataset, data_dir, simulations):
     
     return X, Y
 
-def get_splits(sites, years, datadir, dataset = "profound", simulations = None, drop_cols = False, standardized = True,
+def get_splits(sites, years, datadir, dataset = "profound", simulations = None, drop_cols = True, standardized = True,
     colnames = ["PAR", "TAir", "VPD", "Precip", "fAPAR", "DOY_sin", "DOY_cos"],
     to_numpy = True):
     

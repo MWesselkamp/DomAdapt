@@ -35,6 +35,10 @@ subtab1.drop(subtab1.columns[0], axis=1, inplace=True)
 #subtab2 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\selectednetworks.csv", index_col=False)
 #subtab2.drop(subtab2.columns[0], axis=1, inplace=True)
 fulltab = pd.concat([subtab1, subtab2])
+
+subtab3 = collect_results.sparse_networks_results([1,2,3, 4, 5])
+fulltab = pd.concat([fulltab, subtab3])
+
 fulltab.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\results_full.xlsx")
 fulltab.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv")
 #
@@ -274,8 +278,16 @@ plot2(7,50, 2000)
 plot2(9,50, 2000)    
 plot2(10,50, 2000)    
 #%% Plot 4: plt.errorbar! linestyle='None', marker='^'
-df = collect_results.analyse_basemodel_results([10,15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95])
+df = collect_results.sparse_networks_results([1])
+df = df.loc[(df.sparse == 1)]
 
+visualizations.losses("mlp", 0, "sparse1", sparse=True)
+visualizations.losses("mlp", 6, "sparse1", sparse=True)
+visualizations.losses("mlp", 6, "sparse1\setting0", sparse=True)
+visualizations.losses("mlp", 6, "sparse1\setting1", sparse=True)
+visualizations.losses("mlp", 8, "sparse1", sparse=True)
+visualizations.losses("mlp", 8, "sparse1\setting0", sparse=True)
+visualizations.losses("mlp", 8, "sparse1\setting1", sparse=True)
 #%%
 data_dir = 'OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt'
 params = pd.read_csv(os.path.join(data_dir, r"data\parameter_default_values.csv"), sep =";", names=["name", "value"])

@@ -28,6 +28,7 @@ likelihood <- function(pValues){
   predicted<- PRELES(DOY=profound_in$DOY,PAR=profound_in$PAR,TAir=profound_in$TAir,VPD=profound_in$VPD,Precip=profound_in$Precip,
                      CO2=profound_in$CO2,fAPAR=profound_in$fAPAR,p=p[1:30])
   diff_GPP <- predicted$GPP-profound_out
+  # mäkälä
   llvalues <- sum(dnorm(predicted$GPP, mean = profound_out, sd = p[31], log=T)) ###   llvalues <- sum(dnorm(diff_GPP, sd = p[31], log=T))
   #llvalues <- sum(dexp(abs(diff_GPP),rate = 1/(p[31]+p[32]*predicted$GPP),log=T))
   return(llvalues)

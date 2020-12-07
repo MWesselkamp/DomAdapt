@@ -10,17 +10,17 @@ sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\pyth
 import os.path
 import pandas as pd
 import numpy as np
-import collect_results
+from sklearn import metrics
 import matplotlib.pyplot as plt
 import seaborn
-import matplotlib
+import finetuning
 
 import visualizations
-
+import setup.preprocessing as preprocessing
 #%%
 fulltab = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv", index_col=False)
 fulltab.drop(fulltab.columns[0], axis=1, inplace=True)
-#%%
+
 plt.rcParams.update({'font.size': 14})
 #%%
 def plot1a(colors = ["blue","blue","blue", "blue", "red", "yellow"], log=False):
@@ -65,11 +65,11 @@ def plot1a(colors = ["blue","blue","blue", "blue", "red", "yellow"], log=False):
 #%%
 plot1a(log=False) 
 #%%
-def plot1b(colors = ["blue","blue","blue",  "green", "blue", "red", "yellow"], log=False):
+def plot1b(colors = ["blue","blue",  "green", "blue", "red", "yellow"], log=False):
     
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
 
-    xi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
+    xi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
                 #[fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["mae_val"]], 
@@ -77,7 +77,7 @@ def plot1b(colors = ["blue","blue","blue",  "green", "blue", "red", "yellow"], l
                 [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()]]
-    yi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
+    yi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["rmse_val"].item()],
                 #[fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")]["rmse_val"]],
@@ -86,9 +86,9 @@ def plot1b(colors = ["blue","blue","blue",  "green", "blue", "red", "yellow"], l
                 [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["rmse_val"].item()]]
                 
-    m = ['o','o', 'o',  's', 'o', "*", '*']
-    s = [60, 60, 60, 60,  60, 200, 200]
-    labs = ["Selected", None,None,"Pretrained",None, "PRELES", "RandomForest"]
+    m = ['o', 'o',  's', 'o', "*", '*']
+    s = [ 60, 60, 60,  60, 200, 200]
+    labs = ["Reference NN",None,"Pretrained NN",None, "PRELES", "RandomForest"]
     for i in range(len(xi)):
         if log:
             plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
@@ -117,11 +117,11 @@ def plot1b(colors = ["blue","blue","blue",  "green", "blue", "red", "yellow"], l
 plot1b(log=True)    
 
 #%%
-def plot1c(colors = ["blue","blue","blue", "orange", "green", "blue", "red", "yellow"], log=False):
+def plot1c(colors = ["blue","blue", "orange", "green", "blue", "red", "yellow"], log=False):
     
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
 
-    xi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
+    xi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fb") ]["mae_val"]],
@@ -129,7 +129,7 @@ def plot1c(colors = ["blue","blue","blue", "orange", "green", "blue", "red", "ye
                 [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()]]
-    yi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
+    yi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fb")]["rmse_val"]],
@@ -138,9 +138,9 @@ def plot1c(colors = ["blue","blue","blue", "orange", "green", "blue", "red", "ye
                 [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["rmse_val"].item()]]
                 
-    m = ['o','o', 'o', 'x', 's', 'o', "*", '*']
-    s = [60, 60, 60, 60, 60, 60, 200, 200]
-    labs = ["Selected", None,None, "Finetuned", "Pretrained",None, "PRELES", "RandomForest"]
+    m = ['o', 'o', 'x', 's', 'o', "*", '*']
+    s = [ 60, 60, 60, 60, 60, 200, 200]
+    labs = ["Reference NN", None, "Finetuned", "Pretrained",None, "PRELES", "RandomForest"]
     for i in range(len(xi)):
         if log:
             plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
@@ -279,11 +279,11 @@ def plot1e(colors = ["blue","blue","blue", "orange","orange","orange", "green", 
 plot1e(log=True)
 
 #%%
-def plot1f(colors = ["blue","blue","blue", "orange","orange","orange","orange", "green", "blue", "red", "yellow"], log=False):
+def plot1f(colors = ["blue","blue", "orange","orange","orange","orange", "green", "blue", "red", "yellow"], log=False):
     
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
 
-    xi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
+    xi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fb") ]["mae_val"]],
@@ -294,7 +294,7 @@ def plot1f(colors = ["blue","blue","blue", "orange","orange","orange","orange", 
                 [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()]]
-    yi = [[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
+    yi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "B-fb")]["rmse_val"]],
@@ -306,9 +306,9 @@ def plot1f(colors = ["blue","blue","blue", "orange","orange","orange","orange", 
                 [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["rmse_val"].item()],
                 [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["rmse_val"].item()]]
                 
-    m = ['o','o', 'o', 'x','x','x', 'x', 's', 'o', "*", '*']
-    s = [60, 60, 60, 60, 60,60,60,60, 60, 200, 200]
-    labs = ["Selected", None,None, "Finetuned",None, None,None,"Pretrained",None, "PRELES", "RandomForest"]
+    m = ['o', 'o', 'x','x','x', 'x', 's', 'o', "*", '*']
+    s = [ 60, 60, 60, 60,60,60,60, 60, 200, 200]
+    labs = ["Reference NN",None, "Finetuned NN",None, None,None,"Pretrained NN",None, "PRELES", "RandomForest"]
     for i in range(len(xi)):
         if log:
             plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
@@ -335,17 +335,73 @@ def plot1f(colors = ["blue","blue","blue", "orange","orange","orange","orange", 
 
 #%%
 plot1f(log=True)
-
-#%%
-plot1f(colors = ["lightgrey", "lightgrey", "lightgrey", "orange","orange","orange","orange","lightgrey", "lightgrey", "lightgrey", "lightgrey"], 
+plot1f(colors = ["lightgrey", "lightgrey", "lightgrey", "orange","orange","lightgrey","lightgrey","lightgrey", "lightgrey", "lightgrey", "lightgrey"], 
        log=True)
 
+
+#%%
+def plot1g(colors = ["blue","blue", "orange", "orange", "green", "green", "blue", "red", "yellow"], log=False):
+    
+    plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
+
+    xi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
+                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
+                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS") ]["mae_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")  & ((fulltab.typ == 8) | (fulltab.typ == 10)) ]["mae_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") ]["mae_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") & ((fulltab.typ == 8) | (fulltab.typ == 10))]["mae_val"]], 
+                [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["mae_val"].item()],
+                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_val"].item()],
+                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()]]
+    yi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["rmse_val"]],
+                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["rmse_val"].item()],
+                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["rmse_val"].item()],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A")& (fulltab.finetuned_type != "C-NNLS")]["rmse_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")  & ((fulltab.typ == 8) | (fulltab.typ == 10)) ]["rmse_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") ]["rmse_val"]],
+                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") & ((fulltab.typ == 8) | (fulltab.typ == 10))]["rmse_val"]],
+                [fulltab.loc[(fulltab.id =="MLP0nP2D0S")]["rmse_val"].item()],
+                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["rmse_val"].item()],
+                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["rmse_val"].item()]]
+                
+    m = ['o', 'o', 'x','x', 's','s', 'o', "*", '*']
+    s = [60, 60, 60, 60,60, 60,60, 200, 200]
+    labs = ["Selected", None, "Finetuned",None, "Pretrained",None, None,  "PRELES", "RandomForest"]
+    for i in range(len(xi)):
+        if log:
+            plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
+            plt.yscale("log")
+            plt.xscale("log")
+            plt.xlabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
+            plt.ylabel("Root Mean Squared Error [g C m$^{-2}$ day$^{-1}$]")
+        else:
+            plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
+            plt.xlabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
+            plt.ylabel("Root Mean Squared Error [g C m$^{-2}$ day$^{-1}$]")
+            plt.locator_params(axis='y', nbins=7)
+            plt.locator_params(axis='x', nbins=7)
+
+        plt.legend(loc="lower right")
+    
+    if log:
+        xlocs, xlabels = plt.xticks() 
+        xlocs[1] = 0.5           # Get locations and labels
+        plt.xticks(xlocs[1:4], [0.5,1, 10])
+        ylocs, ylabels = plt.yticks() 
+        ylocs[1] = 0.5           # Get locations and labels
+        plt.yticks(ylocs[1:4], [0.5,1, 10])
+        
+#%%
+plot1g(colors = ["lightgrey", "lightgrey", "lightgrey", "orange", "lightgrey", "green", "lightgrey", "lightgrey", "lightgrey"],
+       log=True)
+        
 #%% PLOT 1.3
 def plot13(fulltab):
     
     fulltab = fulltab[:155].astype({'typ':'int64'})
-    fulltab = fulltab.loc[(fulltab.typ != 6)]# & (fulltab.finetuned_type != "D-MLP2")]
-    plt.figure(num=None, figsize=(10,7), facecolor='w', edgecolor='k')
+    fulltab = fulltab.loc[(fulltab.typ != 6) & (fulltab.typ != 7) & (fulltab.typ != 9)]# & (fulltab.finetuned_type != "D-MLP2")]
+    plt.figure(num=None, figsize=(7,7), facecolor='w', edgecolor='k')
     seaborn.boxplot(x = "finetuned_type",
             y = "mae_val",
             hue = "typ",
@@ -356,7 +412,7 @@ def plot13(fulltab):
     plt.xlabel("")
     plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
     locs, labels = plt.xticks()
-    plt.xticks(locs, ["OLS", "Add. \nlayer", "Full \nback-prop.", "Feature \nextraction"])
+    plt.xticks(locs, ["OLS", "MLP", "Full \nbackprop", "Feature \nextraction"])
     plt.ylim(0.4,1.1)
     
     bm = fulltab.loc[(fulltab.typ == 0) & (fulltab.architecture == 2)].reset_index()
@@ -364,11 +420,11 @@ def plot13(fulltab):
     plt.hlines(bestmlp0, -1, 4,colors="orange", linestyles="dashed", label="best MLP", linewidth=1.2)
     L=plt.legend(loc="upper left")
     #L.get_texts()[0].set_text("A1 Fixed")
-    L.get_texts()[0].set_text("A1 normal (exp)")
-    L.get_texts()[1].set_text("A1 uniform (exp)")
-    L.get_texts()[2].set_text("A0 fixed")
-    L.get_texts()[3].set_text("A0 uniform (imp)")
-    L.get_texts()[4].set_text("A0 best MLP")
+    #L.get_texts()[0].set_text("A1 normal (exp)")
+    L.get_texts()[0].set_text("Explicit parameters (A1)")
+    #L.get_texts()[2].set_text("A0 fixed")
+    L.get_texts()[1].set_text("Implicit parameters (A0)")
+    L.get_texts()[2].set_text("Best MLP (A0)")
 #%%
 plot13(fulltab)
 
@@ -420,7 +476,7 @@ def plot2(typ, frac, epochs = 2000):
     bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
     #rf = fulltab.loc[(fulltab.model == "rf")]["mae_val"].item()
     
-    plt.hlines(bestmlp0, 0, epochs,colors="orange", linestyles="dashed", label="Best MLP", linewidth=1.2)
+    plt.hlines(bestmlp0, 0, epochs,colors="orange", linestyles="dashed", label="Best selected network", linewidth=1.2)
     #plt.hlines(rf, 0, 2000,colors="yellow", linestyles="dashed", label="Random Forest", linewidth=1.2)
     
     bm = fulltab.loc[(fulltab.typ == typ) & (fulltab.simsfrac == frac) & (fulltab.finetuned_type == "C-OLS")].reset_index()
@@ -442,7 +498,7 @@ def plot2(typ, frac, epochs = 2000):
     bestmlp2 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
     posmlp2 = np.max(np.where(rl["mae_val"][:, :epochs] > bestmlp2))
     plt.arrow(x=posmlp2, y=1.2, dx=0, dy=-(1.2-bestmlp2), linewidth=0.8, color="gray")
-    plt.text(x=posmlp2, y=1.25, s="Add. \nlayer", fontstyle="italic")
+    plt.text(x=posmlp2, y=1.25, s="MLP", fontstyle="italic")
 
     prel = fulltab.loc[(fulltab.model == "preles") & (fulltab.typ == 0)]["mae_train"].item()
     posprel = np.max(np.where(rl["mae_val"][:, :epochs] > prel))
@@ -452,4 +508,133 @@ def plot2(typ, frac, epochs = 2000):
     plt.legend()
     #plt.text(x= 50, y= 3.5, s=f"MAE = {np.round(bm.iloc[bm['mae_val'].idxmin()]['mae_val'],4)}")
 #%%
-plot2(6,50, 1500) 
+plot2(10,50, 1500) 
+
+#%%
+def plot3a():
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+
+    #Y_preles = pd.read_csv(os.path.join(data_dir ,r"data\profound\outputhyytiala2008def"), sep=";")
+    #Y_preles_calib = pd.read_csv(os.path.join(data_dir ,r"data\profound\outputhyytiala2008calib"), sep=";")
+
+    fig, ax = plt.subplots(figsize=(7,7))
+    fig.suptitle("Hyytiälä (2008)")
+    ax.plot(Y, color="green", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='green', markersize=4)
+    #ax.plot(Y_preles, color="blue", label="PRELES \nPredictions", marker = "", alpha=0.5)
+    #ax.plot(Y_preles_calib, color="green", label="PRELES \nPredictions", marker = "", alpha=0.5)
+    ax.set(xlabel="Day of Year", ylabel="GPP [g C m$^{-2}$ day$^{-1}$]")
+    plt.legend()
+#%%
+plot3a()
+#%%
+def plot3b():
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+
+    #Y_preles = pd.read_csv(os.path.join(data_dir ,r"data\profound\outputhyytiala2008def"), sep=";")
+    Y_preles_calib = pd.read_csv(os.path.join(data_dir ,r"data\profound\outputhyytiala2008calib"), sep=";")
+    
+    fig, ax = plt.subplots(figsize=(7,7))
+    fig.suptitle("Hyytiälä (2008)")
+    ax.plot(Y, color="lightgrey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
+    #ax.plot(Y_preles, color="blue", label="PRELES \nPredictions", marker = "", alpha=0.5)
+    ax.plot(Y_preles_calib, color="green", label="PRELES \nPredictions", marker = "", alpha=0.5)
+    ax.set(xlabel="Day of Year", ylabel="GPP [g C m$^{-2}$ day$^{-1}$]")
+    plt.legend(loc="upper right")
+    
+    mae = metrics.mean_absolute_error(Y, Y_preles_calib)
+    plt.text(10,10, f"MAE = {np.round(mae, 4)}")
+#%%
+plot3b()
+
+#%%
+def plot3c(sparse = False):
+    
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+    if sparse:
+        Y_preds = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\sparse\models\mlp0\sparse1\y_preds.npy", allow_pickle=True)
+    else:
+        Y_preds = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\noPool\sigmoid\y_preds.npy", allow_pickle=True)
+    visualizations.plot_prediction(Y, Y_preds, "Hyytiälä (2008)")
+    plt.legend(loc="upper right")
+    
+    mae = metrics.mean_absolute_error(Y, np.mean(Y_preds, axis = 0))
+    plt.text(10,10, f"MAE = {np.round(mae, 4)}")
+#%%
+plot3c(sparse=True)
+plot3c(sparse=False)
+
+#%%
+def plot3d(sparse = False):
+    
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+    Y_preds = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\sparse\models\mlp8\sparse1\setting1\y_preds.npy", allow_pickle=True)
+    
+    visualizations.plot_prediction(Y, Y_preds, "Hyytiälä (2008)")
+    plt.legend(loc="upper right")
+#%%
+plot3d()
+
+#%%
+def plot3e(sparse = False):
+    
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+    Y_preds = np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\lstm0\y_preds.npy", allow_pickle=True)
+    
+    visualizations.plot_prediction(Y, Y_preds, "Hyytiälä (2008)")
+    plt.legend(loc="upper right")
+    
+    mae = metrics.mean_absolute_error(Y[:Y_preds.shape[1]], np.mean(Y_preds, 0))
+    plt.text(10,10, f"MAE = {np.round(mae, 4)}")
+#%%
+plot3e()
+
+#%%
+def plot3f(years=[2001,2002,2003, 2004, 2005, 2006, 2007]):
+    
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+    
+    predictions_test, errors = finetuning.featureExtractorC("mlp", 10, None, 50,
+                      years = years)
+    Y_preds = np.array(predictions_test)
+    
+    visualizations.plot_prediction(Y, Y_preds, "Hyytiälä (2008)")
+    plt.legend(loc="upper right")
+    
+    mae = metrics.mean_absolute_error(Y, np.mean(Y_preds, 0))
+    plt.text(10,10, f"MAE = {np.round(mae, 4)}")
+#%%
+plot3f()
+plot3f(years = [2003, 2004, 2005, 2006])
+plot3f(years = [2004, 2005, 2006])
+plot3f(years = [2005, 2006])
+plot3f(years = [2004])

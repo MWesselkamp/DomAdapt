@@ -48,11 +48,11 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
         ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=0.8)
         ax.plot(val_loss, color="green", label = "Validation loss", linewidth=0.8)
     else:
-        ax.plot(val_loss, color="green", label = "Full back-prop. \nvalidation loss", linewidth=0.8)
+        ax.plot(val_loss, color="green", label = "Full backprop \nvalidation loss", linewidth=0.8)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
     ax.set(xlabel="Epochs", ylabel="Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    plt.ylim(bottom = 0)
+    plt.ylim(bottom = 0.3)
     plt.rcParams.update({'font.size': 14})
     if legend:
         fig.legend(loc="upper left")
@@ -151,10 +151,10 @@ def plot_prediction(y_tests, predictions, suptitle):
     
     """
     
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(7,7))
     fig.suptitle(suptitle)
     
-    ax.plot(y_tests, color="grey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
+    ax.plot(y_tests, color="lightgrey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
 
     ci_preds = np.quantile(np.array(predictions)[:,:,0], (0.05,0.95), axis=0)
     m_preds = np.mean(np.array(predictions)[:,:,0], axis=0)
