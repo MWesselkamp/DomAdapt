@@ -45,17 +45,17 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
         val_loss = val_loss.reshape(-1,1)
     
     if plot_train_loss:
-        ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=0.8)
-        ax.plot(val_loss, color="green", label = "Validation loss", linewidth=0.8)
+        ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=1.2)
+        ax.plot(val_loss, color="green", label = "Test loss", linewidth=1.2)
     else:
-        ax.plot(val_loss, color="green", label = "Full backprop \nvalidation loss", linewidth=0.8)
+        ax.plot(val_loss, color="green", label = "Test loss\nfull back-prop", linewidth=1.2)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
     ax.set(xlabel="Epochs", ylabel="Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    plt.ylim(bottom = 0.3)
-    plt.rcParams.update({'font.size': 14})
+    plt.ylim(bottom = 0.0)
+    plt.rcParams.update({'font.size': 20})
     if legend:
-        fig.legend(loc="upper left")
+        fig.legend(loc="upper right")
     
 
 #%% SELECTED MODELS: PERFORMANCE
@@ -185,11 +185,19 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
 
     fig, ax = plt.subplots(figsize=(7,7))
     
-    custom_xlim = (0, 2.8)
-    custom_ylim = (0, 2.8)
+    if train_val:
+        custom_xlim = (0, 2.5)
+        custom_ylim = (0, 2.5)
 
-    # Setting the values for all axes.
-    plt.setp(ax, xlim=custom_xlim, ylim = custom_ylim)
+        #Setting the values for all axes.
+        plt.setp(ax, xlim=custom_xlim, ylim = custom_ylim)
+    else:
+        
+        custom_xlim = (1.2, 3.5)
+        custom_ylim = (1.2, 3.5)
+
+        #Setting the values for all axes.
+        plt.setp(ax, xlim=custom_xlim, ylim = custom_ylim)
 
     if train_val:
         x = f"{error}_val"
@@ -202,24 +210,35 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         #fig.suptitle(f"Hyperparameter Optimization\n Validation Errors")
         data_dir = os.path.join(data_dir, f"_val_errors_")
     
-    cols = ["green","orange", "red", "yellow", "blue"]
+    cols = ["green","orange", "red", "blue", "yellow", "purple"]
+    markers = ['o', 'o', 'o', 'o', 'o', '*']
     if isinstance(model, list):
-        colors = [cols[0], cols[1], cols[2], cols[3], cols[4]]
+        colors = [cols[0], cols[1], cols[2], cols[3], cols[4], cols[5]]
         models = model
         for i in range(len(results)):
-            ax.scatter(results[i][x], results[i][y], color=colors[i],
-                       alpha = 0.8, label=models[i])
+            ax.scatter(results[i][x], results[i][y], color=colors[i],marker =markers[i],
+                       alpha = 0.8, label=models[i], s=50)
     else:
         ax.scatter(results[x], results[y])
     
-    plt.legend(loc="upper left")
-    if error == "rmse":
-        error="RMSE"
-    else:
-        error="MAE"
+    if train_val:
+        plt.legend(loc="upper left", ncol=1)
+        if error == "rmse":
+            error="RMSE"
+        else:
+            error="MAE"
         
-    plt.xlabel(f"Validation {error}")
-    plt.ylabel(f"Training {error}")
+        plt.xlabel(f"Test {error}")
+        plt.ylabel(f"Training {error}")
+    else:
+        plt.legend(loc="upper left", ncol=2)
+        if error == "rmse":
+            error="RMSE"
+        else:
+            error="MAE"
+        
+        plt.xlabel(f"Test RMSE")
+        plt.ylabel(f"Test MAE")
     #plt.savefig(data_dir)
     #plt.close()
     

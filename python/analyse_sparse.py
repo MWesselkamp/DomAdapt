@@ -98,6 +98,15 @@ def plot1(colors = ["blue", "red"], log=False):
         plt.locator_params(axis='y', nbins=7)
         plt.locator_params(axis='x', nbins=7)    
 #%%
-
-
 plot1()
+#%%
+import finetuning
+import matplotlib.pyplot as plt
+
+predictions_test, errors = finetuning.featureExtractorC("mlp", 10, None, 50, classifier = "ols", 
+                      years = [2005, 2006], sparse=2)
+
+preds = np.array(predictions_test).squeeze(2)
+plt.plot(np.transpose(preds))
+
+errors = np.mean(np.array(errors), axis=1)

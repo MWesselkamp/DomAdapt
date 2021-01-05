@@ -10,6 +10,7 @@ sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\pyth
 import os.path
 import pandas as pd
 import numpy as np
+from numpy.polynomial.polynomial import polyfit
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import seaborn
@@ -638,3 +639,147 @@ plot3f(years = [2003, 2004, 2005, 2006])
 plot3f(years = [2004, 2005, 2006])
 plot3f(years = [2005, 2006])
 plot3f(years = [2004])
+#%%
+def plot4(w, model, years=[2001,2002,2003, 2004, 2005, 2006, 2007]):
+    
+    def moving_average(x, w):
+        return np.convolve(x, np.ones(w), 'valid') / w
+
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+    Y_preles = pd.read_csv(os.path.join(data_dir ,r"data\profound\outputhyytiala2008calib"), sep=";")
+    Y_nn = np.transpose(np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\noPool\sigmoid\y_preds.npy", allow_pickle=True).squeeze(2))
+    predictions_test, errors = finetuning.featureExtractorC("mlp", 10, None, 50,
+                      years = years)
+    Y_nn_f = np.transpose(np.array(predictions_test).squeeze(2))
+    
+    mt = moving_average(Y.squeeze(1), w)
+    mp = moving_average(Y_preles.squeeze(1), w)
+    mn = moving_average(np.mean(Y_nn, axis=1), w)
+    mnf = moving_average(np.mean(Y_nn_f, axis=1), w)
+    
+    plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
+    plt.plot(mt, label="Groundtruth", color="lightgrey")
+    if model=="preles":
+        plt.plot(mp, label="PRELES \npredictions", color="green")
+        maep = metrics.mean_absolute_error(mt, mp)
+        plt.text(10,9, f"MAE = {np.round(maep, 4)}")
+    elif model=="mlp0":
+        plt.plot(mn, label="MLP \npredictions", color="green")
+        maen = metrics.mean_absolute_error(mt, mn)
+        plt.text(10,9, f"MAE = {np.round(maen, 4)}")
+    elif model=="mlp10":
+        plt.plot(mnf, label="Finetuned MLP \npredictions", color="green")
+        maen = metrics.mean_absolute_error(mt, mnf)
+        plt.text(10,9, f"MAE = {np.round(maen, 4)}")
+    plt.xlabel("Day of Year")
+    plt.ylabel("Average GPP over 7 days [g C m$^{-2}$ day$^{-1}$]")
+    plt.legend()
+    
+#%%
+plot4(w = 7, model= "preles")
+plot4(w = 7, model= "mlp10")
+plot4(w = 7, model= "mlp0")
+#%%
+# Polynomial Regression
+def rsquared(x, y, degree):
+    results = {}
+
+    coeffs = np.polyfit(x, y, degree)
+
+     # Polynomial Coefficients
+    results['polynomial'] = coeffs.tolist()
+
+    # r-squared
+    p = np.poly1d(coeffs)
+    # fit values, and mean
+    yhat = p(x)                         # or [p(z) for z in x]
+    ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
+    ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
+    sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
+    results['determination'] = ssreg / sstot
+
+    return results
+
+def plot5(model, w = None, years=[2001,2002,2003, 2004, 2005, 2006, 2007]):
+    
+    def moving_average(x, w):
+        return np.convolve(x, np.ones(w), 'valid') / w
+    
+    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],   
+                                years = [2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None)
+
+    Y_preles = pd.read_csv(os.path.join(data_dir ,r"data\profound\outputhyytiala2008calib"), sep=";")
+    Y_nn = np.transpose(np.load(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp0\noPool\sigmoid\y_preds.npy", allow_pickle=True).squeeze(2))
+    predictions_test, errors = finetuning.featureExtractorC("mlp", 10, None, 50,
+                      years = years)
+    Y_nn_f = np.transpose(np.array(predictions_test).squeeze(2))
+    
+    if not w is None:
+        Y = moving_average(Y.squeeze(1), w)
+        Y_preles = moving_average(Y_preles.squeeze(1), w)
+        Y_nn = moving_average(np.mean(Y_nn, axis=1), w)
+        Y_nn_f = moving_average(np.mean(Y_nn_f, axis=1), w)
+    else:
+        Y = Y.squeeze(1)
+        Y_preles = Y_preles.squeeze(1)
+        Y_nn = np.mean(Y_nn, axis=1)
+        Y_nn_f = np.mean(Y_nn_f, axis=1)
+
+    plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
+    if model == "preles":
+        plt.scatter(Y_preles, Y, color="darkblue")
+        # Fit with polyfit
+        b, m = polyfit(Y_preles, Y,  1)
+        r2_p = rsquared(Y_preles, Y,  1)["determination"]
+        plt.plot(Y_preles, b + m * Y_preles, '-', color="darkred", label = "y = a + b $\hat{y}$ ")
+        maep = metrics.mean_absolute_error(Y, Y_preles)
+        plt.text(0,10, f"MAE = {np.round(maep, 4)}")
+        plt.text(0,9, f"R$^2$ = {np.round(r2_p, 4)}")
+    elif model == "mlp0":
+        plt.scatter(Y_nn, Y, color="darkblue")
+        # Fit with polyfit
+        b, m = polyfit(Y_nn, Y, 1)
+        r2_nn = rsquared(Y_nn, Y,  1)["determination"]
+        plt.plot(Y_nn, b + m *Y_nn, '-', color="darkred", label = "y = a + b $\hat{y}$ ")
+        maen = metrics.mean_absolute_error(Y, Y_nn)
+        plt.text(0,10, f"MAE = {np.round(maen, 4)}")
+        plt.text(0,9, f"R$^2$ = {np.round(r2_nn, 4)}")
+    elif model == "mlp10":
+        plt.scatter(Y_nn_f, Y, color="darkblue")
+        b, m = polyfit(Y_nn_f, Y, 1)
+        r2_nnf = rsquared(Y_nn_f, Y,  1)["determination"]
+        plt.plot(Y_nn_f, b + m * Y_nn_f, '-', color="darkred", label = "y = a + b $\hat{y}$ ")
+        maenf = metrics.mean_absolute_error(Y, Y_nn_f)
+        plt.text(0,10, f"MAE = {np.round(maenf, 4)}")
+        plt.text(0,9, f"R$^2$ = {np.round(r2_nnf, 4)}")
+    
+    plt.plot(np.arange(11), 0 + 1 *np.arange(11), '--', color="gray", label = "y = $\hat{y}$")
+    plt.xlim((-1,11))
+    plt.ylim((-1,11))
+    plt.ylabel("True GPP Test [g C m$^{-2}$ day$^{-1}$]")
+    plt.xlabel("Estimated GPP Test [g C m$^{-2}$ day$^{-1}$]")
+    
+    plt.legend(loc="lower right")
+
+#%%
+plot5("preles", w=7)
+plot5("mlp10", w=7)
+plot5("mlp0", w=7)
+
+#%%
+sl0s = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\sparse\models\mlp0\sparse1\selected_results.csv")
+sl5 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp5\nodropout\sims_frac100\selected_results.csv")
+sl6 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp6\nodropout\sims_frac100\selected_results.csv")
+sl7 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp7\nodropout\sims_frac100\selected_results.csv")
+sl8 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp8\nodropout\sims_frac100\selected_results.csv")
+sl9 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp9\nodropout\sims_frac100\selected_results.csv")
+sl10 = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp10\nodropout\sims_frac100\selected_results.csv")

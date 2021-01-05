@@ -21,13 +21,12 @@ from ast import literal_eval
 #%%
 def selected_networks_results(simsfrac):
 
-    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
+    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
 
     l = visualizations.losses("mlp", 0, r"noPool\relu", plot=False)
     df_sel = df_sel.append({"id":"MLP0nP2D0R",
                "model":"mlp",
                "typ":0,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -42,7 +41,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0nP2D0S",
                "model":"mlp",
                "typ":0,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -57,7 +55,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0aP3D0R",
                "model":"mlp",
                "typ":0,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -72,7 +69,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0aP3D0S",
                "model":"mlp",
                "typ":0,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -87,7 +83,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0aP3D1R",
                "model":"mlp",
                "typ":0,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":1,
@@ -102,7 +97,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0aP3D1S",
                "model":"mlp",
                "typ":0,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":1,
@@ -117,7 +111,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0aP3D2R",
                "model":"mlp",
                "typ":0,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":2,
@@ -132,10 +125,23 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP0aP3D2S",
                "model":"mlp",
                "typ":0,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":2,
+               "epochs":10000,
+               "rmse_train":l["rmse_train"][0],
+               "rmse_val":l["rmse_val"][0],
+               "mae_train":l["mae_train"][0],
+               "mae_val":l["mae_val"][0],
+               "task":"selected"}, ignore_index=True)
+    
+    l = visualizations.losses("mlp", 4, r"relu", plot=False)
+    df_sel = df_sel.append({"id":"MLP4nP1D0R",
+               "model":"mlp",
+               "typ":4,
+               "simsfrac":None,
+               "finetuned_type":None,
+               "dropout":0,
                "epochs":10000,
                "rmse_train":l["rmse_train"][0],
                "rmse_val":l["rmse_val"][0],
@@ -147,7 +153,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"CNN0nP2D0R",
                "model":"cnn",
                "typ":0,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -162,7 +167,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"LSTM0nP2D0R",
                "model":"lstm",
                "typ":0,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -177,7 +181,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"RF0",
                "model":"rf",
                "typ":0,
-               "architecture":None,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":None,
@@ -192,7 +195,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP2aP3D1R",
                "model":"mlp",
                "typ":2,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":1,
@@ -207,7 +209,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP2aP3D0R",
                "model":"mlp",
                "typ":2,
-               "architecture":3,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -222,7 +223,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"MLP2nP2D0R",
                "model":"mlp",
                "typ":2,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -237,7 +237,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"CNN2nP2D0R",
                "model":"cnn",
                "typ":2,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -252,7 +251,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"LSTM2nP2D0R",
                "model":"lstm",
                "typ":2,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -268,7 +266,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"RF2",
                "model":"rf",
                "typ":2,
-               "architecture":2,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":None,
@@ -279,39 +276,50 @@ def selected_networks_results(simsfrac):
                "mae_val":l[3],
                "task":"architecture_search"}, ignore_index=True)
     
-    for dropout in ["nodropout", "dropout"]:
-        if dropout == "nodropout":
-            do = 0
-        else:
-            do = 1
-        epochs = [10000,20000,30000,40000]
-        for i in range(len(simsfrac)):
-            l = visualizations.losses("mlp", 6, f"{dropout}\sims_frac{simsfrac[i]}", plot=False)
-            df_sel = df_sel.append({"id":f"MLP6D{do}{simsfrac[i]}P0",
-                                    "model":"mlp",
-                                    "typ":6,
-                                    "architecture":4,
-                                    "simsfrac":simsfrac[i],
-                                    "finetuned_type":None,
-                                    "dropout":do,
-                                    "epochs":epochs[i],
-                                    "rmse_train":l["rmse_train"][0],
-                                    "rmse_val":l["rmse_val"][0],
-                                    "mae_train":l["mae_train"][0],
-                                    "mae_val":l["mae_val"][0],
-                                    "task":"pretraining"}, ignore_index=True)
+    
+    epochs = [5000,10000,20000,30000]
+    for i in range(len(simsfrac)):
+        l = visualizations.losses("mlp", 5, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
+        df_sel = df_sel.append({"id":f"MLP5DD0{simsfrac[i]}P0",
+                                "model":"mlp",
+                                "typ":5,
+                                "simsfrac":simsfrac[i],
+                                "finetuned_type":None,
+                                "dropout":0.0,
+                                "epochs":epochs[i],
+                                "rmse_train":l["rmse_train"][0],
+                                "rmse_val":l["rmse_val"][0],
+                                "mae_train":l["mae_train"][0],
+                                "mae_val":l["mae_val"][0],
+                                "task":"pretraining"}, ignore_index=True)
+    
+    
+    epochs = [10000,20000,30000,40000]
+    for i in range(len(simsfrac)):
+        l = visualizations.losses("mlp", 6, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
+        df_sel = df_sel.append({"id":f"MLP6D0{simsfrac[i]}P0",
+                                "model":"mlp",
+                                 "typ":6,
+                                 "simsfrac":simsfrac[i],
+                                 "finetuned_type":None,
+                                 "dropout":0.0,
+                                 "epochs":epochs[i],
+                                 "rmse_train":l["rmse_train"][0],
+                                 "rmse_val":l["rmse_val"][0],
+                                 "mae_train":l["mae_train"][0],
+                                 "mae_val":l["mae_val"][0],
+                                 "task":"pretraining"}, ignore_index=True)
     
     for typ in [7,8]:
-        epochs = [50000,50000,60000,80000]
+        epochs = [100000,100000,200000,200000]
         for i in range(len(simsfrac)):
             l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
             df_sel = df_sel.append({"id":f"MLP{typ}D0{simsfrac[i]}P0",
                                     "model":"mlp",
                                     "typ":typ,
-                                    "architecture":4,
                                     "simsfrac":simsfrac[i],
                                     "finetuned_type":None,
-                                    "dropout":2,
+                                    "dropout":0.0,
                                     "epochs":epochs[i],
                                     "rmse_train":l["rmse_train"][0],
                                     "rmse_val":l["rmse_val"][0],
@@ -321,13 +329,29 @@ def selected_networks_results(simsfrac):
     
     
     for typ in [9, 10]:
-        epochs = [10000,20000,30000,40000]
+        epochs = [5000,10000,10000,20000]
         for i in range(len(simsfrac)):
             l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
             df_sel = df_sel.append({"id":f"MLP{typ}DD0{simsfrac[i]}P0",
                                     "model":"mlp",
                                     "typ":typ,
-                                    "architecture":2,
+                                    "simsfrac":simsfrac[i],
+                                    "finetuned_type":None,
+                                    "dropout":0.0,
+                                    "epochs":epochs[i],
+                                    "rmse_train":l["rmse_train"][0],
+                                    "rmse_val":l["rmse_val"][0],
+                                    "mae_train":l["mae_train"][0],
+                                    "mae_val":l["mae_val"][0],
+                                    "task":"pretraining"}, ignore_index=True)
+    
+    for typ in [11, 12]:
+        epochs = [5000,10000,10000,20000]
+        for i in range(len(simsfrac)):
+            l = visualizations.losses("mlp", typ, f"nodropout\sims_frac{simsfrac[i]}", plot=False)
+            df_sel = df_sel.append({"id":f"MLP{typ}DD0{simsfrac[i]}P0",
+                                    "model":"mlp",
+                                    "typ":typ,
                                     "simsfrac":simsfrac[i],
                                     "finetuned_type":None,
                                     "dropout":0.0,
@@ -343,7 +367,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"preles2008hy",
                                     "model":"preles",
                                     "typ":0,
-                                    "architecture":None,
                                     "simsfrac":None,
                                     "finetuned_type":None,
                                     "dropout":None,
@@ -358,7 +381,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"preles2008bk",
                                     "model":"preles",
                                     "typ":2,
-                                    "architecture":None,
                                     "simsfrac":None,
                                     "finetuned_type":None,
                                     "dropout":None,
@@ -373,7 +395,6 @@ def selected_networks_results(simsfrac):
     df_sel = df_sel.append({"id":"mlp0nP2D0Rbs",
                                     "model":"mlp",
                                     "typ":0,
-                                    "architecture":2,
                                     "simsfrac":None,
                                     "finetuned_type":None,
                                     "dropout":None,
@@ -387,8 +408,7 @@ def selected_networks_results(simsfrac):
     preds_er = borealsites_predictions()["preles_prediction_errors"]
     df_sel = df_sel.append({"id":"prelesbs",
                                     "model":"preles",
-                                    "typ":None,
-                                    "architecture":None,
+                                    "typ":3,
                                     "simsfrac":None,
                                     "finetuned_type":None,
                                     "dropout":None,
@@ -413,35 +433,32 @@ def feature_extraction_results(types, simsfrac):
     running_losses = {}
 
     for typ in types:
-        if ((typ==9)|(typ==10)):
-            architecture = 2
-        else: 
-            architecture = 4
+
         for frac in simsfrac:
     
             predictions, errors, Y_test = finetuning.featureExtractorA("mlp", typ, None, frac)
             errors = np.mean(np.array(errors), 1)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FA", "mlp", typ, architecture, frac, "A", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}A", "mlp", typ,  frac, "A", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             domadapt_predictions["A-None"] = predictions
             
             # 1) Ordinary Least Squares as Classifier
             predictions_ols, errors = finetuning.featureExtractorC("mlp",typ, None, frac, "ols")
             errors = np.mean(np.array(errors), axis=1)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FC1", "mlp", typ,architecture,frac, "C-OLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}C1", "mlp", typ,frac, "C-OLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             domadapt_predictions["C-OLS"] = predictions_ols
             #visualizations.plot_prediction(Y_test, predictions_ols, "OLS")
             
             # 2) Non-negative Least Squares as Classifier
             predictions_nnls, errors = finetuning.featureExtractorC("mlp", typ, None,  frac, "nnls")
             errors = np.mean(np.array(errors), axis=1)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FC2", "mlp", typ, architecture, frac, "C-NNLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}C2", "mlp", typ,  frac, "C-NNLS", 0, None, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             domadapt_predictions["C-NNLS"] = predictions_nnls
             #visualizations.plot_prediction(Y_test, predictions_nnls, "Non-negative least squares")
             
             #3) MLP with architecture 2 as Classifier
-            rl, errors, predictions_mlp2 = finetuning.featureExtractorD("mlp", typ, 5000, frac)
+            rl, errors, predictions_mlp2 = finetuning.featureExtractorD("mlp", typ, 10, frac)
             errors = np.mean(np.array(errors),0)
-            domadapt_errors.append([f"MLP{typ}D0{frac}FD", "mlp", typ,architecture, frac, "D-MLP2", 0, 5000, errors[0], errors[1],errors[2], errors[3], "finetuning"])
+            domadapt_errors.append([f"MLP{typ}D0{frac}D", "mlp", typ, frac, "D-MLP2", 0, 10, errors[0], errors[1],errors[2], errors[3], "finetuning"])
             running_losses["D-MLP2"] = rl
             domadapt_predictions["D-MLP2"] = predictions_mlp2
             
@@ -451,7 +468,7 @@ def feature_extraction_results(types, simsfrac):
                 #4) Full Backprob with pretrained weights
                 rets_fb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\selected_results.csv")
                 rl_fb = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting0\\running_losses.npy", allow_pickle=True)
-                domadapt_errors.append([f"MLP{typ}D0{frac}FB1", "mlp", typ, architecture, frac, "B-fb", 0, rets_fb["epochs"][0],rets_fb["rmse_train"][0], rets_fb["rmse_val"][0],rets_fb["mae_train"][0], rets_fb["mae_val"][0], "finetuning"])
+                domadapt_errors.append([f"MLP{typ}D0{frac}B1", "mlp", typ, frac, "B-fb", 0, rets_fb["epochs"][0],rets_fb["rmse_train"][0], rets_fb["rmse_val"][0],rets_fb["mae_train"][0], rets_fb["mae_val"][0], "finetuning"])
                 running_losses["B-full_backprop"] = rl_fb
             except:
                 print("No fb results available for this pretraining.")
@@ -460,13 +477,13 @@ def feature_extraction_results(types, simsfrac):
                 #5) Backprop only last layer.
                 rets_hb = pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\selected_results.csv")
                 rl_fw2 = np.load(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models\mlp{typ}\\nodropout\sims_frac{frac}\\tuned\setting1\\running_losses.npy", allow_pickle=True)
-                domadapt_errors.append([f"MLP{typ}D0{frac}FB2", "mlp", typ, architecture, frac, "B-fW2", 0, rets_hb["epochs"][0],rets_hb["rmse_train"][0], rets_hb["rmse_val"][0],rets_hb["mae_train"][0], rets_hb["mae_val"][0], "finetuning"])
+                domadapt_errors.append([f"MLP{typ}D0{frac}B2", "mlp", typ,  frac, "B-fW2", 0, rets_hb["epochs"][0],rets_hb["rmse_train"][0], rets_hb["rmse_val"][0],rets_hb["mae_train"][0], rets_hb["mae_val"][0], "finetuning"])
                 running_losses["B-freezeW2"] = rl_fw2
             except:
                 print("No fw2 results available for this pretraining.")
                 
     domadapt_results = pd.DataFrame(domadapt_errors,
-                        columns = ["id", "model", "typ", "architecture", "simsfrac", "finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
+                        columns = ["id", "model", "typ", "simsfrac", "finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
     
     domadapt_results.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\featureextraction.xlsx")
     domadapt_results.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\featureextraction.csv")
@@ -545,15 +562,13 @@ def borealsites_predictions(data_dir="OneDrive\Dokumente\Sc_Master\Masterthesis\
 #%%
 def sparse_networks_results(sparses):
 
-    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "architecture", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
+    df_sel = pd.DataFrame(columns = ["id", "model", "typ", "simsfrac","finetuned_type","dropout", "epochs", "rmse_train", "rmse_val", "mae_train", "mae_val", "task"])
     
     for sparse in sparses:
         l = visualizations.losses("mlp", 0, f"sparse{sparse}",sparse=True, plot=False)
         df_sel = df_sel.append({"id":f"MLP0{sparse}1D0",
                "model":"mlp",
                "typ":0,
-               "architecture":6,
-               #"sparse":sparse,
                "simsfrac":None,
                "finetuned_type":None,
                "dropout":0,
@@ -573,8 +588,6 @@ def sparse_networks_results(sparses):
                 df_sel = df_sel.append({"id":f"MLP0S{sparse}D0",
                                         "model":"mlp",
                                         "typ":typ,
-                                        "architecture":6,
-                                        #"sparse":sparse,
                                         "simsfrac":30,
                                         "finetuned_type":settings[i],
                                         "dropout":0,
@@ -586,16 +599,14 @@ def sparse_networks_results(sparses):
                                         "task":"sparse_finetuning"}, ignore_index=True)
     
     years_list = [[2006]] #, [2005, 2006], [2004,2005,2006], [2003,2004,2005,2006], [2001, 2003,2004,2005,2006]]
-    for typ in [6,7,8]:
+    for typ in [5,6,7,8,9,10]:
         for i in range(len(years_list)):
             predictions_test, errors = finetuning.featureExtractorC("mlp", typ, None, 30, classifier = "ols", 
-                      years = years_list[i])
+                      years = years_list[i], sparse=1)
             errors = np.mean(np.array(errors), axis=1)
             df_sel = df_sel.append({"id":f"MLP0S{i+1}D0",
                                         "model":"mlp",
                                         "typ":typ,
-                                        "architecture":6,
-                                        #"sparse":i+1,
                                         "simsfrac":30,
                                         "finetuned_type":"C-OLS",
                                         "dropout":0,
@@ -605,6 +616,23 @@ def sparse_networks_results(sparses):
                                         "mae_train":errors[2],
                                         "mae_val":errors[3],
                                         "task":"sparse_finetuning"}, ignore_index=True)
+    
+    for typ in [5,6,7,8,9,10]:
+        predictions_test, errors = finetuning.featureExtractorC("mlp", typ, None, 30, classifier = "ols", 
+                      years = [2006], random_days=30)
+        errors = np.mean(np.array(errors), axis=1)
+        df_sel = df_sel.append({"id":f"MLP0S0D0",
+                            "model":"mlp",
+                            "typ":typ,
+                            "simsfrac":30,
+                            "finetuned_type":"C-OLS",
+                            "dropout":0,
+                            "epochs":None,
+                            "rmse_train":errors[0],
+                            "rmse_val":errors[1],
+                            "mae_train":errors[2],
+                            "mae_val":errors[3],
+                            "task":"sparse_finetuning"}, ignore_index=True)
                 
     
     df_sel.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\sparsenetworks.xlsx")

@@ -4,6 +4,8 @@ Created on Thu Nov 12 12:32:31 2020
 
 @author: marie
 """
+import sys
+sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python')
 
 import numpy as np
 import pandas as pd
@@ -104,7 +106,7 @@ prediction_errors = collect_results.borealsites_predictions()
 #%% C) PCA and GLM for two years of Borealsites and two years of Profound
 X_bor, Y_bor = preprocessing.get_borealsites(year = "both")
 X_prof, Y_prof = preprocessing.get_splits(sites = ['hyytiala'],
-                                years = [2001,2002,2003,2005,2006],
+                                years = [2001,2002,2003,2004, 2005,2006],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
@@ -132,3 +134,20 @@ X_bor = sm.add_constant(X_bor) # Add intercept.
 glm_bor = sm.GLM(Y_bor, X_bor) 
 results = glm_bor.fit()
 print(results.pvalues)  
+
+#%% Correlation of source and target domain.
+from scipy.stats.stats import pearsonr   
+X_prof, Y_prof = preprocessing.get_splits(sites = ['hyytiala'],
+                                years = [2001,2002,2003,2004,2005,2006,2008],
+                                datadir = os.path.join(data_dir, "data"), 
+                                dataset = "profound",
+                                simulations = None,
+                                standardized = False)
+X_sims, Y_sims = preprocessing.get_simulations(data_dir = os.path.join(data_dir, r"data\simulations\uniform_params"), 
+                                               drop_parameters=True,
+                                               standardized = False)
+idx = np.random.randint(X_sims.shape[0], size=X_prof.shape[0])
+X_sims = X_sims[idx]
+
+for i in range(7):
+    print(pearsonr(X_sims[:,i],X_prof[:,i]))

@@ -10,8 +10,12 @@ sys.path.append('OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\pyth
 import setup.preprocessing as preprocessing
 import visualizations
 
-
 #%% plot the losses of the baseline model MLP0 
+l = visualizations.losses("mlp", 0,"sparse0", sparse=True)
+l = visualizations.losses("mlp", 0,"sparse1", sparse=True)
+l = visualizations.losses("mlp", 0,"sparse2", sparse=True)
+l = visualizations.losses("mlp", 0,"sparse3", sparse=True)
+l = visualizations.losses("mlp", 0,"sparse0", sparse=True)
 
 l = visualizations.losses("mlp", 0, r"noPool\relu")
 l = visualizations.losses("mlp", 0, r"noPool\sigmoid")
@@ -25,9 +29,13 @@ l = visualizations.losses("mlp", 0, r"adaptive_pooling\architecture3\dropout\dro
 l = visualizations.losses("cnn", 2, r"")
 l = visualizations.losses("lstm", 0, r"")
 
-l = visualizations.losses("mlp", 4, r"")
-l = visualizations.losses("mlp", 4, r"adaptPool\nodropout")
-l = visualizations.losses("mlp", 4, r"adaptPool\dropout")
+l = visualizations.losses("mlp", 4, r"relu")
+l = visualizations.losses("mlp", 4, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 4, r"nodropout\sims_frac50")
+l = visualizations.losses("mlp", 4, r"nodropout\sims_frac100")
+l = visualizations.losses("mlp", 4, r"nodropout\sims_frac100\tuned\setting0")
+l = visualizations.losses("mlp", 4, r"nodropout\sims_frac30\tuned\setting1")
+
 
 l = visualizations.losses("mlp", 2, r"bilykriz\adaptPool\dropout")
 l = visualizations.losses("mlp", 2, r"bilykriz\adaptPool\nodropout")
@@ -38,17 +46,24 @@ l = visualizations.losses("lstm", 2, r"nodropout")
 
 
 l = visualizations.losses("mlp", 5, r"nodropout\sims_frac30")
-l = visualizations.losses("mlp", 5, r"nodropout\sims_frac70")
+l = visualizations.losses("mlp", 5, r"nodropout\sims_frac100")
+l = visualizations.losses("mlp", 5, r"nodropout\sims_frac30\tuned\setting0")
+l = visualizations.losses("mlp", 5, r"nodropout\sims_frac30\tuned\setting1")
+l = visualizations.losses("mlp", 5, r"nodropout\sims_frac100\tuned\setting0")
+l = visualizations.losses("mlp", 5, r"nodropout\sims_frac100\tuned\setting1")
 
+l = visualizations.losses("mlp", 6, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 6, r"nodropout\sims_frac100")
 l = visualizations.losses("mlp", 6, r"nodropout\sims_frac30\tuned\setting0")
 l = visualizations.losses("mlp", 6, r"nodropout\sims_frac50\tuned\setting0")
-l = visualizations.losses("mlp", 6, r"nodropout\sims_frac70\tuned\setting0")
 l = visualizations.losses("mlp", 6, r"nodropout\sims_frac100\tuned\setting0")
+l = visualizations.losses("mlp", 6, r"nodropout\sims_frac100\tuned\setting1")
 
 # Compare Loss Curves for MAE and RMSE
 l = visualizations.losses("mlp", 7, r"nodropout\sims_frac30", "mae")
 l = visualizations.losses("mlp", 7, r"nodropout\sims_frac30", "rmse")
-l = visualizations.losses("mlp", 8, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 7, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 7, r"nodropout\sims_frac100")
 l = visualizations.losses("mlp", 7, r"nodropout\sims_frac100", "mae")
 l = visualizations.losses("mlp", 7, r"nodropout\sims_frac100", "rmse")
 l = visualizations.losses("mlp", 8, r"nodropout\sims_frac100", "mae")
@@ -56,26 +71,38 @@ l = visualizations.losses("mlp", 8, r"nodropout\sims_frac100", "rmse")
 
 l = visualizations.losses("mlp", 7, r"nodropout\sims_frac50\\tuned\setting1")
 l = visualizations.losses("mlp", 8, r"nodropout\sims_frac50")
+l = visualizations.losses("mlp", 8, r"nodropout\sims_frac30")
 l = visualizations.losses("mlp", 8, r"nodropout\sims_frac100")
-l = visualizations.losses("mlp", 8, r"nodropout\sims_frac50\\tuned\setting1")
-l = visualizations.losses("mlp", 7, r"nodropout\sims_frac70\tuned\setting1")
-l = visualizations.losses("mlp", 8, r"nodropout\sims_frac70\tuned\setting1")
+l = visualizations.losses("mlp", 8, r"dropout\sims_frac100")
+l = visualizations.losses("mlp", 8, r"nodropout\sims_frac30\\tuned\setting1")
+l = visualizations.losses("mlp", 7, r"nodropout\sims_frac100\tuned\setting0")
+l = visualizations.losses("mlp", 8, r"nodropout\sims_frac100\tuned\setting0")
 l = visualizations.losses("mlp", 7, r"nodropout\sims_frac100\tuned\setting1")
 l = visualizations.losses("mlp", 8, r"nodropout\sims_frac100\tuned\setting1")
 
 
-l = visualizations.losses("mlp", 9, r"nodropout\sims_frac30")
-l = visualizations.losses("mlp", 9, r"nodropout\sims_frac70")
+l = visualizations.losses("mlp", 9, r"nodropout\sims_frac50")
+l = visualizations.losses("mlp", 9, r"nodropout\sims_frac100")
 l = visualizations.losses("mlp", 9, r"nodropout\sims_frac30\tuned\setting0")
 l = visualizations.losses("mlp", 9, r"nodropout\sims_frac70\tuned\setting0")
 
 l = visualizations.losses("mlp", 10, r"nodropout\sims_frac30")
 l = visualizations.losses("mlp", 10, r"nodropout\sims_frac100")
 l = visualizations.losses("mlp", 10, r"nodropout\sims_frac30\tuned\setting0")
-l = visualizations.losses("mlp", 10, r"nodropout\sims_frac70\tuned\setting0")
+l = visualizations.losses("mlp", 10, r"nodropout\sims_frac100\tuned\setting0")
 
+l = visualizations.losses("mlp", 11, r"nodropout\sims_frac50")
+l = visualizations.losses("mlp", 11, r"nodropout\sims_frac100")
+l = visualizations.losses("mlp", 11, r"nodropout\sims_frac30\tuned\setting0")
+l = visualizations.losses("mlp", 11, r"nodropout\sims_frac100\tuned\setting0")
+l = visualizations.losses("mlp", 11, r"nodropout\sims_frac100\tuned\setting1")
+
+l = visualizations.losses("mlp", 12, r"nodropout\sims_frac30")
+l = visualizations.losses("mlp", 12, r"nodropout\sims_frac100")
+l = visualizations.losses("mlp", 12, r"nodropout\sims_frac100\tuned\setting0")
+l = visualizations.losses("mlp", 12, r"nodropout\sims_frac100\tuned\setting1")
 #%%
-visualizations.predictions("mlp", 0, r"noPool")
+visualizations.predictions("mlp", 0, r"noPool\sigmoid")
 visualizations.predictions("mlp", 0, r"AdaptPool\nodropout")
 visualizations.predictions("mlp", 0, r"AdaptPool\dropout")
 
@@ -91,6 +118,7 @@ visualizations.predictions("rf", 2)
 
 visualizations.predictions("mlp", 5, r"paramsFix\nodropout")
 visualizations.predictions("mlp", 6, r"paramsFix\nodropout")
+
 #%%
 visualizations.performance_boxplots(typ=2)
 

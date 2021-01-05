@@ -13,18 +13,18 @@ import multiprocessing as mp
 import pandas as pd
 import numpy as np
 
-#%% Load Data: Profound in and out.
-data_dir = r"/home/fr/fr_fr/fr_mw263"
+#%%
+data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 
 X, Y = preprocessing.get_splits(sites = ['hyytiala'],
                                 years = [2001,2002,2003,2004,2005,2006, 2007],
-                                datadir = os.path.join(data_dir, "scripts/data"), 
+                                datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
 
 X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
                                 years = [2008],
-                                datadir = os.path.join(data_dir, "scripts/data"), 
+                                datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
 
