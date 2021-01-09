@@ -17,7 +17,9 @@ from collections import OrderedDict
 cmaps = OrderedDict()
 cols = sns.color_palette(palette="Paired")
 #%%
-def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
+def plot_running_losses(train_loss, val_loss, legend, plot_train_loss,
+                        colors=["blue", "lightblue"],
+                        colors_test_loss = ["green","lightgreen"]):
 
     #if model=="mlp":
     #    colors = ["blue","lightblue"]
@@ -26,7 +28,7 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
     #elif model=="lstm":
     #    colors = ["blueviolet", "thistle"]
     #else:
-    colors=["blue", "lightblue"]
+
     
     fig, ax = plt.subplots(figsize=(7,7))
 
@@ -38,7 +40,7 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
         
         if plot_train_loss:
             ax.fill_between(np.arange(len(train_loss)), ci_train[0],ci_train[1], color=colors[1], alpha=0.3)
-        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color="lightgreen", alpha=0.3)
+        ax.fill_between(np.arange(len(train_loss)), ci_val[0],ci_val[1], color=colors_test_loss[1], alpha=0.3)
     
     else: 
         train_loss = train_loss.reshape(-1,1)
@@ -48,11 +50,16 @@ def plot_running_losses(train_loss, val_loss, legend, plot_train_loss):
         ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=1.2)
         ax.plot(val_loss, color="green", label = "Test loss", linewidth=1.2)
     else:
-        ax.plot(val_loss, color="green", label = "Test loss\nfull back-prop", linewidth=1.2)
+        ax.plot(val_loss, color=colors_test_loss[0], label = "Test loss\nfull re-training", linewidth=1.2)
     #ax[1].plot(train_loss, color="green", linewidth=0.8)
     #ax[1].plot(val_loss, color="blue", linewidth=0.8)
-    ax.set(xlabel="Epochs", ylabel="Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    plt.ylim(bottom = 0.0)
+    ax.set_ylabel("Mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20)
+    ax.set_xlabel("Epochs", size=20)
+    #plt.ylim(bottom = 0.0)
+    for tick in ax.xaxis.get_major_ticks():
+                    tick.label.set_fontsize(18) 
+    for tick in ax.yaxis.get_major_ticks():
+                    tick.label.set_fontsize(18) 
     plt.rcParams.update({'font.size': 20})
     if legend:
         fig.legend(loc="upper right")
@@ -186,8 +193,8 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
     fig, ax = plt.subplots(figsize=(7,7))
     
     if train_val:
-        custom_xlim = (0, 2.5)
-        custom_ylim = (0, 2.5)
+        custom_xlim = (0, 3.0)
+        custom_ylim = (0, 3.0)
 
         #Setting the values for all axes.
         plt.setp(ax, xlim=custom_xlim, ylim = custom_ylim)
@@ -217,28 +224,32 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         models = model
         for i in range(len(results)):
             ax.scatter(results[i][x], results[i][y], color=colors[i],marker =markers[i],
-                       alpha = 0.8, label=models[i], s=50)
+                       alpha = 0.8, label=models[i], s=70)
     else:
         ax.scatter(results[x], results[y])
     
     if train_val:
-        plt.legend(loc="upper left", ncol=1)
+        plt.legend(loc="upper left", ncol=1, prop= {'size':22, 'family':'Palatino Linotype'})
         if error == "rmse":
             error="RMSE"
         else:
             error="MAE"
         
-        plt.xlabel(f"Test {error}")
-        plt.ylabel(f"Training {error}")
+        plt.xlabel(f"Test mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=22, family='Palatino Linotype')
+        plt.ylabel(f"Train mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=22, family='Palatino Linotype')
+        plt.xticks(size=22, family='Palatino Linotype')
+        plt.yticks(size=22, family='Palatino Linotype')
     else:
-        plt.legend(loc="upper left", ncol=2)
+        plt.legend(loc="upper left", ncol=2 , prop= {'size':22, 'family':'Palatino Linotype'})
         if error == "rmse":
             error="RMSE"
         else:
             error="MAE"
         
-        plt.xlabel(f"Test RMSE")
-        plt.ylabel(f"Test MAE")
+        plt.xlabel(f"Test RMSE", size=22, family='Palatino Linotype')
+        plt.ylabel(f"Test MAE", size =22, family='Palatino Linotype')
+        plt.xticks(size=22, family='Palatino Linotype')
+        plt.yticks(size=22, family='Palatino Linotype')
     #plt.savefig(data_dir)
     #plt.close()
     

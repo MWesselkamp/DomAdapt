@@ -89,7 +89,7 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
 
 
 #%%
-def get_simulations(data_dir, drop_parameters = False):
+def get_simulations(data_dir, standardized = True, drop_parameters = False):
 
     
     path_in = os.path.join(data_dir, f"sims_in.csv")
@@ -102,6 +102,9 @@ def get_simulations(data_dir, drop_parameters = False):
     
     if drop_parameters:
         X = X.drop(columns=["beta","X0", "gamma", "alpha", "chi"])
+        
+    if standardized:
+        X = utils.minmax_scaler(X)
 
     Y = pd.read_csv(path_out, sep=";")
         

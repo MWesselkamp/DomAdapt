@@ -22,7 +22,7 @@ from scipy.optimize import nnls
 import statsmodels.api as sm
 
 #%%
-def settings(model, typ, epochs, data_dir, 
+def settings(model, typ, epochs, data_dir, sparse = None,
              years = [2001,2002,2003, 2004, 2005, 2006, 2007],
              random_days = None):
 
@@ -39,7 +39,10 @@ def settings(model, typ, epochs, data_dir,
     if not random_days is None:
         ind = np.random.choice(X.shape[0], random_days)
         X, Y = X[ind], Y[ind]
-    
+    if not sparse is None:
+        ind = np.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\relu\sparse\\{sparse}\ind.npy"))
+        X, Y = X[ind], Y[ind]
+        
     if ((typ == 6) | (typ==7) | (typ==8)) :
         #gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\\7features\grid_search_results_{model}2_np.csv"))
@@ -269,14 +272,14 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
     return(running_losses,performance, y_tests, y_preds)
 
 #%%
-def featureExtractorA(model, typ, epochs, simsfrac,
-                      years = [2001,2002,2003, 2004, 2005, 2006, 2007],random_days=None,
+def featureExtractorA(model, typ, epochs, simsfrac, sparse = None,
+                      years = [2001,2002,2003, 2004, 2005, 2006, 2007],random_days=None, 
                       splits=5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     if ((typ==4) | (typ == 9)| (typ == 10)):
-        hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, years = years,  random_days= random_days)
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, years = years,  random_days= random_days)
         model_design["featuresize"] = None
     else:
-        hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir,  random_days= random_days, years = years)
+        hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, random_days= random_days, years = years)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -310,11 +313,11 @@ def featureExtractorA(model, typ, epochs, simsfrac,
 
 #%% Finetune network on finish data, Full Backprob.
 
-def featureExtractorB(model, typ, epochs, simsfrac, feature_extraction= None,
+def featureExtractorB(model, typ, epochs, simsfrac, sparse = None, feature_extraction= None,
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, years = years)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, years = years)
 
     running_losses,performance, y_tests, y_preds = finetune(X, Y, epochs, model, typ, f"nodropout\sims_frac{simsfrac}", model_design["featuresize"], 
                                                                        False, feature_extraction, {"X_test":X_test, "Y_test":Y_test})
@@ -323,11 +326,11 @@ def featureExtractorB(model, typ, epochs, simsfrac, feature_extraction= None,
 
 #%% 1) Ordinary Least Squares and friends
     
-def featureExtractorC(model, typ, epochs, simsfrac, classifier = "ols", 
+def featureExtractorC(model, typ, epochs, simsfrac, sparse = None, classifier = "ols", 
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007], random_days = None, 
                       splits = 5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, years = years, random_days= random_days)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, years = years, random_days= random_days)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -449,14 +452,14 @@ def train_model(hparams_add, model_design_add, X, Y, X_test, Y_test, i,
     return running_losses, pred_test
 
 #%%
-def featureExtractorD(model, typ, epochs, simsfrac, splits = 5,
+def featureExtractorD(model, typ, epochs, simsfrac, sparse = None, splits = 5,
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007],random_days=None,
                       data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, years = years, random_days= random_days)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, years = years, random_days= random_days)
 
-    hparams_add, model_design_add, X, Y, X_test, Y_test = settings(model, 10, epochs, data_dir, years = years, random_days= random_days)
+    hparams_add, model_design_add, X, Y, X_test, Y_test = settings(model, 10, epochs, data_dir, sparse, years = years, random_days= random_days)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
