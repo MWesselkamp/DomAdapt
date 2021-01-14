@@ -309,7 +309,7 @@ def featureExtractorA(model, typ, epochs, simsfrac, sparse = None,
     
     errors = [rmse_train, rmse_val, mae_train, mae_val]
 
-    return predictions, errors, Y_test
+    return predictions, errors
 
 #%% Finetune network on finish data, Full Backprob.
 

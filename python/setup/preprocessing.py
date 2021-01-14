@@ -89,7 +89,7 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
 
 
 #%%
-def get_simulations(data_dir, standardized = True, drop_parameters = False):
+def get_simulations(data_dir, standardized = True, DOY=False, to_numpy = True, drop_parameters = False):
 
     
     path_in = os.path.join(data_dir, f"sims_in.csv")
@@ -98,7 +98,10 @@ def get_simulations(data_dir, standardized = True, drop_parameters = False):
     X = pd.read_csv(path_in, sep=";")
     X["DOY_sin"], X["DOY_cos"] = utils.encode_doy(X["DOY"])
     
-    X = X.drop(columns=["DOY","sample", "year", "CO2"])
+    if DOY:
+        X = X.drop(columns=["sample", "year", "CO2"])
+    else:
+        X = X.drop(columns=["DOY","sample", "year", "CO2"])
     
     if drop_parameters:
         X = X.drop(columns=["beta","X0", "gamma", "alpha", "chi"])
@@ -107,8 +110,11 @@ def get_simulations(data_dir, standardized = True, drop_parameters = False):
         X = utils.minmax_scaler(X)
 
     Y = pd.read_csv(path_out, sep=";")
-        
-    return X.to_numpy(), Y.to_numpy()#, filenames
+    
+    if to_numpy:
+        return X.to_numpy(), Y.to_numpy()#, filenames
+    else:
+        return X, Y
 
 #%%
 def get_borealsites(year, preles = False, site = ["hyytiala"],

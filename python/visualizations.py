@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd 
 from pylab import *
+from sklearn import metrics
 
 import setup.dev_rf as dev_rf
 from collections import OrderedDict
@@ -151,7 +152,7 @@ def predictions(model, typ, searchpath,
     
     
 #%%
-def plot_prediction(y_tests, predictions, suptitle):
+def plot_prediction(y_tests, predictions, mae, suptitle):
     
     """
     Plot Model Prediction Error (root mean squared error).
@@ -162,14 +163,30 @@ def plot_prediction(y_tests, predictions, suptitle):
     fig.suptitle(suptitle)
     
     ax.plot(y_tests, color="lightgrey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
-
-    ci_preds = np.quantile(np.array(predictions)[:,:,0], (0.05,0.95), axis=0)
-    m_preds = np.mean(np.array(predictions)[:,:,0], axis=0)
+    try:
+        ci_preds = np.quantile(np.array(predictions), (0.05,0.95), axis=0)
+        m_preds = np.mean(np.array(predictions), axis=0)
     
-    ax.fill_between(np.arange(len(ci_preds[0])), ci_preds[0],ci_preds[1], color="lightgreen", alpha=0.9)
-    ax.plot(m_preds, color="green", label="Predictions", marker = "", alpha=0.5)
+        ax.fill_between(np.arange(len(ci_preds[0])), ci_preds[0],ci_preds[1], color="lightgreen", alpha=0.9)
+        ax.plot(m_preds, color="green", label="Predictions", marker = "", alpha=0.5)
+    except:
+        print("Plotting Preles Predictions.")
+        ax.plot(predictions, color="green", label="Predictions", marker = "", alpha=0.5)
+        mae = metrics.mean_absolute_error(y_tests, predictions)
+        
+    ax.set_xlabel("Day of Year", size=20, family='Palatino Linotype')
+    ax.set_ylabel("Gross Primary Produdction [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20) 
+        tick.label.set_fontfamily('Palatino Linotype') 
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20) 
+        tick.label.set_fontfamily('Palatino Linotype') 
     
-    ax.set(xlabel="Day of Year", ylabel="GPP [g C m$^{-2}$ day$^{-1}$]")
+    ax.legend(loc="upper left", prop={'size':20, 'family':'Palatino Linotype'})
+    ax.set_ylim((-1,12.5))
+    
+    plt.text(250, 11.5, f"MAE = {np.round(mae,4)}", family='Palatino Linotype', size=20)
     
     
 #%%
