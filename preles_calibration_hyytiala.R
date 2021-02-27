@@ -60,3 +60,28 @@ correlationPlot(chainDE, parametersOnly = TRUE, start = 2000)
 par$calib = par$def
 par$calib[parind] = par.opt$parametersMAP
 save(par, file = "~/Sc_Master/Masterthesis/Project/DomAdapt/Rdata/CalibratedParametersHytProf.Rdata")
+
+#==================#
+# Check PERFORMANCE#
+#==================#
+
+library(Rpreles)
+
+load("Rdata/profound/profound_in.Rdata") # X
+load("Rdata/profound/profound_out.Rdata") # y
+
+x_train = X[which((X$site=="hyytiala") &  (X$year!=2008)),]
+y_train = y[which((X$site=="hyytiala") &  (X$year!=2008)),]
+x_test = X[which((X$site=="hyytiala") &  (X$year==2008)),]
+y_test = y[which((X$site=="hyytiala") &  (X$year==2008)),]
+
+preds_train <- PRELES(TAir = x_train$TAir, PAR = x_train$PAR, VPD = x_train$VPD, Precip = x_train$Precip, fAPAR = x_train$fAPAR, CO2 = x_train$CO2,  p = par$calib[1:30], returncols = c("GPP"))
+preds_test <- PRELES(TAir = x_test$TAir, PAR = x_test$PAR, VPD = x_test$VPD, Precip = x_test$Precip, fAPAR = x_test$fAPAR, CO2 = x_test$CO2,  p = par$calib[1:30], returncols = c("GPP"))
+mae <- function(error)
+{
+  mean(abs(error))
+}
+
+plot(preds_test$GPP, type = "l")
+mae(y_train-preds_train$GPP)
+mae(y_test-preds_test$GPP)

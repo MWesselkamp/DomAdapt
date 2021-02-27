@@ -40,21 +40,16 @@ write.table(y_preles, file="data/profound/preles_out", sep = ";",row.names = FAL
 #Profound data: Test Year 2008 #
 #==============================#
 
-for (site in c("hyyitala", "bily_kriz")){
 
-  x = X[which(X$site=="hyytiala" & X$year == 2008),]
+load("Rdata/CalibratedParametersHytProf.Rdata")
+output <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = par$calib[1:30], returncols = c("GPP"))
+output2008calib <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = par$calib[1:30], returncols = c("GPP"))
+output2008def <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = pars$Value[1:30], returncols = c("GPP"))
+output2008calib = as.data.frame(output2008calib)
+output2008def = as.data.frame(output2008def)
+write.table(output2008calib, file=paste0("data/profound/output", site, "2008calib"), sep = ";",row.names = FALSE)
+write.table(output2008def, file=paste0("data/profound/output", site, "2008def"), sep = ";",row.names = FALSE)
 
-  load("Rdata/CalibratedParametersHytProf.Rdata")
-
-  output2008calib <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = par$calib[1:30], returncols = c("GPP"))
-  output2008def <- PRELES(TAir = x$TAir, PAR = x$PAR, VPD = x$VPD, Precip = x$Precip, fAPAR = x$fAPAR, CO2 = x$CO2,  p = pars$Value[1:30], returncols = c("GPP"))
-  output2008calib = as.data.frame(output2008calib)
-  output2008def = as.data.frame(output2008def)
-
-  write.table(output2008calib, file=paste0("data/profound/output", site, "2008calib"), sep = ";",row.names = FALSE)
-  write.table(output2008def, file=paste0("data/profound/output", site, "2008def"), sep = ";",row.names = FALSE)
-
-}
 
 #====================#
 ## Boreal Sites data #

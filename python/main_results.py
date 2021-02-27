@@ -26,28 +26,14 @@ import visualizations
 import finetuning
 from sklearn import metrics
 import setup.preprocessing as preprocessing
+import torch
+import setup.models as models
 
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams.update({'font.size': 18})
 
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-#%%
-subtab1, running_losses, predictions = collect_results.feature_extraction_results(types = [5,6, 7,8,9,10,11,12], simsfrac = [30, 50, 70, 100])
-subtab2 = collect_results.selected_networks_results(simsfrac = [30,50,70,100])
-fulltab = pd.concat([subtab1, subtab2])
 
-subtab3 = collect_results.sparse_networks_results([0, 1,2,3, 4, 5])
-fulltab = pd.concat([fulltab, subtab3])
-
-fulltab.to_excel(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\results_full.xlsx")
-fulltab.to_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv")
-#
-fulltab = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv", index_col=False)
-fulltab.drop(fulltab.columns[0], axis=1, inplace=True)
-#fulltab = fulltab[:155].astype({'typ':'int64'})
-
-
-#%%
 X, Y = preprocessing.get_splits(sites = ['hyytiala'],
                                 years = [2001,2002,2003, 2004, 2005, 2006, 2007],
                                 datadir = os.path.join(data_dir, "data"), 
@@ -59,56 +45,76 @@ X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
                                 datadir = os.path.join(data_dir, "data"), 
                                 dataset = "profound",
                                 simulations = None)
-maes = []
-model = []
-y_preds_mlp0 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp0\\noPool\\relu\y_preds.npy")).squeeze(2)
-mae_mean = []
-for i in range(5):
-    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp0)[:,i]))
-    mae_mean.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp0)[:,i]))
-    model.append("mlp0")
-visualizations.plot_prediction(Y_test,y_preds_mlp0, np.mean(mae_mean),"")
-y_preds_mlp4 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp4\\relu\y_preds.npy")).squeeze(2)
-mae_mean = []
-for i in range(5):
-    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp4)[:,i]))
-    mae_mean.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp4)[:,i]))
-    model.append("mlp4")
-visualizations.plot_prediction(Y_test,y_preds_mlp4, np.mean(mae_mean), "")
-y_preds_mlp5 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp5\\relu\y_preds.npy")).squeeze(2)
-mae_mean = []
-for i in range(5):
-    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp5)[:,i]))
-    mae_mean.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp5)[:,i]))
-    model.append("mlp5")
-visualizations.plot_prediction(Y_test,y_preds_mlp5, np.mean(mae_mean), "")
-#y_preds_cnn0 = np.load(os.path.join(data_dir, f"python\outputs\models\cnn0\y_preds.npy"), allow_pickle=True)
-#for i in range(5):
-#    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_cnn0)[i,]))
-#    model.append("cnn0")
-#y_preds_lstm0 = np.load(os.path.join(data_dir, f"python\outputs\models\lstm0\y_preds.npy"), allow_pickle=True)
-#for i in range(5):
-#    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_lstm0)[i,]))
-#    model.append("lstm0")
-y_preds_rf0 = np.load(os.path.join(data_dir, f"python\outputs\models\\rf0\y_preds.npy"))
-mae_mean = []
-for i in range(5):
-    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
-    mae_mean.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
-    model.append("rf0")
-visualizations.plot_prediction(Y_test,y_preds_rf0, np.mean(mae_mean), "")
+#%%
+subtab2 = collect_results.selected_networks_results(simsfrac = [30,50,70,100])
 
-prelesGPP_calib =  pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\outputhyyitala2008calib", sep=";")
-visualizations.plot_prediction(Y_test,prelesGPP_calib, None, "")
+#fulltab = pd.read_csv(r"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\results\tables\results_full.csv", index_col=False)
+#fulltab.drop(fulltab.columns[0], axis=1, inplace=True)
+#fulltab = fulltab[:155].astype({'typ':'int64'})
 
-df = pd.DataFrame(list(zip(maes, model)),
-                  columns=["maes", "model"]) 
+#%% REFERENCE MODELS: BOXPLOTS
 
+def base_predictions(mods, architectures=None, types = None, dummies = False,  rf = False):
+
+    maes = []
+    typ = []
+    archs = []
+    
+    j = 0
+    
+    for mod in mods:
+        
+        hparams, model_design, X, Y, X_test, Y_test = finetuning.settings("mlp", mod, None, data_dir, dummies)
+    
+        X_test = torch.tensor(X_test).type(dtype=torch.float)
+        y_test = torch.tensor(Y_test).type(dtype=torch.float)
+        
+        if ((mod > 7) | (mod == 0) | (mod == 4)):
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+        else:
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+
+        for i in range(5):
+        
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{mod}\\relu\model{i}.pth")))
+    
+            pred_test = model(X_test)#
+            with torch.no_grad():
+                maes.append(metrics.mean_absolute_error(y_test, pred_test))
+            if not types is None:
+                typ.append(types)
+            else:
+                typ.append(f"mlp{mod}")
+            if not architectures is None:
+                archs.append(architectures[j])
+        
+        j += 1
+            
+    if rf:
+        y_preds_rf0 = np.load(os.path.join(data_dir, f"python\outputs\models\\rf0\y_preds.npy"))
+        for i in range(5):
+            maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
+            typ.append("rf0")
+            archs.append("rf")
+
+
+    df = pd.DataFrame(list(zip(typ, maes)),
+                 columns=["typ", "mae_val"]) 
+    
+    if not architectures is None:
+        df["archs"] = archs
+        
+    return(df)
+
+#%%
+df = base_predictions([0, 4, 5], architectures=None, types = None, dummies = False, rf = True)
+df.groupby("typ")["mae_val"].std()*2
+df.groupby("typ")["mae_val"].mean()
 #%%
 fig, ax = plt.subplots(figsize=(7,7))
 
 bplot = seaborn.boxplot(y="maes", 
-                x="model", 
+                x="typ", 
                 data=df,
                 width=0.6,
                 showmeans=True,
@@ -133,37 +139,94 @@ for tick in ax.xaxis.get_major_ticks():
     tick.label.set_fontfamily('Palatino Linotype') 
 ax.set_xticklabels(labels = ["MLP\n(A1 - wide)", "MLP\n(A2 - deep)","MLP\n(A3 - AP)", "Random\nForest"], size=20, family='Palatino Linotype')
 #ax.set_ylim(bottom=0.5, top = 1.2)
+#%%
+maes = []
+model = []
+y_preds_mlp8 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp8\\relu\y_preds.npy")).squeeze(2)
+mae_mean = []
+for i in range(5):
+    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp8)[:,i]))
+    mae_mean.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_mlp8)[:,i]))
+    model.append("mlp0")
+visualizations.plot_prediction(Y_test,y_preds_mlp8, np.mean(mae_mean),"")
+
+y_preds_rf0 = np.load(os.path.join(data_dir, f"python\outputs\models\\rf0\y_preds.npy"))
+mae_mean = []
+for i in range(5):
+    maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
+    mae_mean.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
+    model.append("rf0")
+visualizations.plot_prediction(Y_test,y_preds_rf0, np.mean(mae_mean), "")
+
+#prelesGPP_calib =  pd.read_csv(f"OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\data\profound\outputhyyitala2008calib", sep=";")
+#visualizations.plot_prediction(Y_test,prelesGPP_calib, None, "")
+
+df = pd.DataFrame(list(zip(maes, model)),
+                  columns=["maes", "model"]) 
+
+#%%
+fig, ax = plt.subplots(figsize=(7,7))
+
+bplot = seaborn.boxplot(y="maes", 
+                x="model", 
+                data=df,
+                width=0.6,
+                showmeans=True,
+                meanprops={"marker":"o",
+                           "markerfacecolor":"black", 
+                           "markeredgecolor":"black",
+                           "markersize":"12"})
+
+cols= ["grey", "red"]
+for i in range(2):
+        mybox = bplot.artists[i]
+        mybox.set_facecolor(cols[i])
+        mybox.set_edgecolor("black")
+        
+ax.set_ylabel("Mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+ax.set_xlabel("", size=20, family='Palatino Linotype')
+for tick in ax.yaxis.get_major_ticks():
+    tick.label.set_fontsize(20) 
+    tick.label.set_fontfamily('Palatino Linotype') 
+for tick in ax.xaxis.get_major_ticks():
+    tick.label.set_fontsize(20) 
+    tick.label.set_fontfamily('Palatino Linotype') 
+ax.set_xticklabels(labels = ["MLP\n(A4 - AP)", "Random\nForest"], size=20, family='Palatino Linotype')
+
 #%% PLOT 1
 def plot1(colors, log=False):
     
     plt.figure(num=None, figsize=(7, 7), facecolor='w', edgecolor='k')
 
     
-    xi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_val"]],
-                #[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_val"].item()],
-                #[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_val"].item()],
-                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")  & (fulltab.finetuned_type != "D-MLP2") & (fulltab.simsfrac == 100) ]["mae_val"]], 
-                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A")& (fulltab.simsfrac == 100) ]["mae_val"]],
-                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_val"].item()],
-                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_val"].item()],
-                [fulltab.loc[(fulltab.id =="MLP4nP1D0R")]["mae_val"].item()]]
-    yi = [#[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "mlp")]["mae_train"]],
-                #[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "cnn")]["mae_train"].item()],
-                #[fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "lstm")]["mae_train"].item()],
-                [fulltab.loc[(fulltab.task =="finetuning")& (fulltab.finetuned_type != "A") & (fulltab.finetuned_type != "C-NNLS")& (fulltab.finetuned_type != "D-MLP2")& (fulltab.simsfrac == 100)]["mae_train"]],
-                [fulltab.loc[(fulltab.task =="finetuning") & (fulltab.finetuned_type == "A") & (fulltab.simsfrac == 100)]["mae_train"]],
-                [fulltab.loc[(fulltab.task =="processmodel") & (fulltab.typ == 0)]["mae_train"].item()],
-                [fulltab.loc[(fulltab.task =="selected") & (fulltab.model == "rf")]["mae_train"].item()],
-                [fulltab.loc[(fulltab.id =="MLP4nP1D0R")]["mae_train"].item()]]
+    xi = [[subtab2.loc[(subtab2.id =="MLP0base")]["mae_val"].item()],
+                [subtab2.loc[(subtab2.id =="MLP4base")]["mae_val"].item()],
+                [subtab2.loc[(subtab2.id =="MLP5base")]["mae_val"].item()],
+                [subtab2.loc[(subtab2.task =="pretraining_A")& (subtab2.simsfrac == 100)]["mae_val"]],
+                [subtab2.loc[(subtab2.task =="finetuning") & (subtab2.finetuned_type != "A") & (subtab2.simsfrac == 100) ]["mae_val"]], 
+                [subtab2.loc[(subtab2.task =="finetuning") & (subtab2.finetuned_type == "A")& (subtab2.simsfrac == 100) ]["mae_val"]],
+                [subtab2.loc[(subtab2.task =="processmodel") & (subtab2.typ == 0)]["mae_val"].item()],
+                [subtab2.loc[(subtab2.task =="selected") & (subtab2.model == "rf")]["mae_val"].item()]
+                ]
+    yi = [[subtab2.loc[(subtab2.id =="MLP0base")]["rmse_val"].item()],
+                [subtab2.loc[(subtab2.id =="MLP4base")]["rmse_val"].item()],
+                [subtab2.loc[(subtab2.id =="MLP5base")]["rmse_val"].item()],
+                [subtab2.loc[(subtab2.task =="pretraining_A")& (subtab2.simsfrac == 100)]["rmse_val"]],
+                [subtab2.loc[(subtab2.task =="finetuning")& (subtab2.finetuned_type != "A") & (subtab2.simsfrac == 100)]["rmse_val"]],
+                [subtab2.loc[(subtab2.task =="finetuning") & (subtab2.finetuned_type == "A") & (subtab2.simsfrac == 100)]["rmse_val"]],
+                [subtab2.loc[(subtab2.task =="processmodel") & (subtab2.typ == 0)]["rmse_val"].item()],
+                [subtab2.loc[(subtab2.task =="selected") & (subtab2.model == "rf")]["rmse_val"].item()]
+                ]
     #m = ['o','o', 'o', 'x', 's', "*", '*', 'o']
-    m = ['s', 's', "*", '*', 'o']
+    m = [ 'o', 'o', 'o','o', 'o','o', "*", '*']
     #s = [60, 60, 60, 60, 60, 200, 200, 60]
-    s = [ 100, 100, 280, 280, 100]
+    s = [100, 100, 100, 100, 100, 100, 250, 250]
+    a = [1,1,1,0.8, 0.6, 0.8, 0.8, 0.8]
     # labs = ["selected", None,None, "finetuned", "pretrained", "PRELES", "RandomForest", None]
-    labs = ["Fine-tuned", "Pretrained", "PRELES", "RandomForest", "Best MLP"]
+    labs = [ "Base", "", "","Pre-trained", "Fine-tuned", "", "PRELES", "RandomForest"]
     for i in range(len(xi)):
         if log:
-            plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
+            plt.scatter(xi[i], yi[i], alpha = a[i], color = colors[i], marker=m[i], s = s[i], label=labs[i])
             plt.yscale("log")
             plt.xscale("log")
             plt.yticks(fontsize=18)
@@ -173,150 +236,19 @@ def plot1(colors, log=False):
         else:
             plt.rcParams.update({'font.size': 20})
             plt.scatter(xi[i], yi[i], alpha = 0.8, color = colors[i], marker=m[i], s = s[i], label=labs[i])
-            plt.xlabel("MAE Test [g C m$^{-2}$ day$^{-1}$]", size=20)
-            plt.ylabel("MAE Training [g C m$^{-2}$ day$^{-1}$]", size=20)
-            plt.ylim(0,8.5)
-            plt.xlim(0,8.5)
+            plt.xlabel("Mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20)
+            plt.ylabel("Root mean squared error [g C m$^{-2}$ day$^{-1}$]", size=20)
+            #plt.ylim(bottom=0)
+            #plt.xlim(bottom = 0)
             plt.locator_params(axis='y', nbins=7)
             plt.locator_params(axis='x', nbins=7)
             plt.yticks(fontsize=18)
             plt.xticks(fontsize=18)
 
-        plt.legend(loc="lower right", prop={'size': 20})
+        plt.legend(loc="upper left", prop={'size': 20})
 #%%
-plot1(colors = ["orange", "green", "red", "purple", "blue"], log=True) 
-plot1(colors = ["orange", "green", "red", "purple", "blue"], log=False)
+plot1(colors = ["black", "black", "black","green", "lightblue", "lightblue", "red", "orange"], log=False)
 
-#%% PLOT 1.3
-def plot13a(fulltab):
-    
-    fulltab = fulltab[:256].astype({'typ':'int64'})
-    plt.figure(num=None, figsize=(7,7), facecolor='w', edgecolor='k')
-    #plt.suptitle("Direct transfer")
-    cols = ["green", "red", "blue", "orange", "purple"]
-
-    bplot = seaborn.boxplot(x = "typ",
-            y = "mae_val",
-            palette = "pastel",
-            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type == "A") & (fulltab.typ != 9)  & (fulltab.typ != 4)],
-            width=0.6,
-            linewidth = 1) #labels = ["5","6", "7","8","9","10"]
-    for i in range(5):
-        mybox = bplot.artists[i]
-        mybox.set_facecolor(cols[i])
-    plt.xlabel("")
-    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    #plt.ylim(0.3,3)
-    #bplot.set_xticklabels(["A2 \nunif","A3 \nfix","A3 \nnorm","A3 \nunif","A1 \nunif"])
-    bm = fulltab.loc[(fulltab.id == "MLP4nP1D0R")].reset_index()
-    bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
-    plt.hlines(bestmlp0, -1,5,colors="gray", linestyles="dashed", label="Best MLP", linewidth=2)
-    plt.legend(loc="upper right")
-
-def plot13b(fulltab):
-    
-    fulltab = fulltab[:256].astype({'typ':'int64'})
-    plt.figure(num=None, figsize=(7,7), facecolor='w', edgecolor='k')
-    #plt.suptitle("Ordinary least squares")
-    
-    cols = ["green", "red", "blue", "orange", "purple"]
-    bplot = seaborn.boxplot(x = "typ",
-            y = "mae_val",
-            palette = "pastel",
-            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type == "C-OLS")& (fulltab.simsfrac != 30) & (fulltab.typ != 9)  & (fulltab.typ != 4) ],
-            width=0.6,
-            linewidth = 1) #labels = ["5","6", "7","8","9","10"])
-    plt.xlabel("")
-    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    #bplot.set_xticklabels(["A2 \nunif","A3 \nfix","A3 \nnorm","A3 \nunif","A1 \nunif"])
-    for i in range(5):
-        mybox = bplot.artists[i]
-        mybox.set_facecolor(cols[i])
-    bm = fulltab.loc[(fulltab.id == "MLP4nP1D0R")].reset_index()
-    bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
-    plt.hlines(bestmlp0, -1, 5,colors="gray", linestyles="dashed", label="Best MLP", linewidth=2)
-    plt.legend(loc="upper right")
-
-def plot13c(fulltab):
-    
-    fulltab = fulltab[:256].astype({'typ':'int64'})
-    plt.figure(num=None, figsize=(7,7), facecolor='w', edgecolor='k')
-    #plt.suptitle("Full backpropagation")
-    
-    cols = ["green", "red", "blue", "orange", "purple"]
-    bplot = seaborn.boxplot(x = "typ",
-            y = "mae_val",
-            palette = "pastel",
-            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type == "B-fb")& (fulltab.typ != 9) & (fulltab.typ != 4)],
-            width=0.6,
-            linewidth = 1) #labels = ["5","6", "7","8","9","10"])
-    plt.xlabel("")
-    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    #bplot.set_xticklabels(["A2 \nunif","A3 \nfix","A3 \nnorm","A3 \nunif","A1 \nunif"])
-    for i in range(5):
-        mybox = bplot.artists[i]
-        mybox.set_facecolor(cols[i])
-    bm = fulltab.loc[(fulltab.id == "MLP4nP1D0R")].reset_index()
-    bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
-    plt.hlines(bestmlp0, -1, 5,colors="gray", linestyles="dashed", label="Best MLP", linewidth=2)
-    plt.legend(loc="upper right")
-
-def plot13d(fulltab):
-    
-    fulltab = fulltab[:256].astype({'typ':'int64'})
-    plt.figure(num=None, figsize=(7,7), facecolor='w', edgecolor='k')
-    #plt.suptitle("Feature Extraction")
-    
-    cols = ["green", "red", "blue", "orange", "purple"]
-    bplot = seaborn.boxplot(x = "typ",
-            y = "mae_val",
-            palette = "pastel",
-            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type == "B-fW2")& (fulltab.typ != 9)& (fulltab.typ != 4)],
-            width=0.6,
-            linewidth = 1) #labels = ["5","6", "7","8","9","10"])
-    plt.xlabel("")
-    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    #bplot.set_xticklabels(["A2 \nunif","A3 \nfix","A3 \nnorm","A3 \nunif","A1 \nunif"])
-    for i in range(4):
-        mybox = bplot.artists[i]
-        mybox.set_facecolor(cols[i])
-    bm = fulltab.loc[(fulltab.id == "MLP4nP1D0R")].reset_index()
-    bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
-    plt.hlines(bestmlp0, -1, 4,colors="gray", linestyles="dashed", label="Best MLP", linewidth=2)
-    plt.legend(loc="upper right")
-
-def plot13e(fulltab):
-    
-    fulltab = fulltab[:256].astype({'typ':'int64'})
-    plt.figure(num=None, figsize=(7,7), facecolor='w', edgecolor='k')
-    #plt.suptitle("Modified Classifier")
-    
-    cols = ["green", "red", "blue", "orange", "purple"]
-    bplot = seaborn.boxplot(x = "typ",
-            y = "mae_val",
-            palette = "pastel",
-            data = fulltab.loc[(fulltab.task =="finetuning")  & (fulltab.finetuned_type == "D-MLP2")& (fulltab.typ != 9)& (fulltab.typ != 4)],
-            width=0.6,
-            linewidth = 1) #labels = ["5","6", "7","8","9","10"])
-    plt.xlabel("")
-    plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]")
-    #bplot.set_xticklabels(["A2 \nunif","A3 \nfix","A3 \nnorm","A3 \nunif","A1 \nunif"])
-    for i in range(5):
-        mybox = bplot.artists[i]
-        mybox.set_facecolor(cols[i])
-    bm = fulltab.loc[(fulltab.id == "MLP4nP1D0R")].reset_index()
-    bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
-    plt.hlines(bestmlp0, -1, 5,colors="gray", linestyles="dashed", label="Best MLP", linewidth=2)
-    plt.legend(loc="upper right")
-    
-#%%
-plt.rcParams.update({'font.size': 18})
-plt.rcParams['figure.constrained_layout.use'] = True
-plot13a(fulltab)
-plot13b(fulltab)
-plot13c(fulltab)
-plot13d(fulltab)
-plot13e(fulltab)
 
 #%% PLOT 1.3: BUT ONLY for full simulations!! (sims_frac100, errors over CV folds)
 def DA_performances(models, df, 
@@ -329,7 +261,8 @@ def DA_performances(models, df,
     bplot = seaborn.boxplot(y="mae_val",
                 x = "archs",
                 hue = "typ",
-                hue_order = ["Base", "Pre-trained"],
+                hue_order = ["Base", "$\mathcal{D}_{S,7}$", "$\mathcal{D}_{S,12}$"],
+                palette = "colorblind",
                 data = df,
                 width=0.6,
                 showmeans=True,
@@ -341,9 +274,9 @@ def DA_performances(models, df,
                 )
     if log:
         bplot.set_yscale("log")
-    for i in range(len(models)):
-        mybox = bplot.artists[i]
-        mybox.set_facecolor(cols[i])
+    #for i in range(len(models)):
+    #    mybox = bplot.artists[i]
+    #    mybox.set_facecolor(cols[i])
 
     plt.ylim(bottom=lowerlim, top=upperlim)
     plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
@@ -351,8 +284,8 @@ def DA_performances(models, df,
     #bplot.set_xticklabels(labs)
     plt.xticks(size=20, family='Palatino Linotype')
     plt.yticks(size=20, family='Palatino Linotype')
-    plt.legend([], [], frameon=False)
-    #plt.legend(loc="upper left", prop = {'size':20, 'family':'Palatino Linotype'})
+    #plt.legend([], [], frameon=False)
+    plt.legend(loc="upper left", prop = {'size':20, 'family':'Palatino Linotype'})
     #i=0
     #for legpatch in plt.legend().get_patches():
     #    #col = legpatch.get_facecolor()
@@ -360,171 +293,261 @@ def DA_performances(models, df,
     #    legpatch.set_facecolor(cols[i])
     #    i = i+1
 #%%
-archs = []
-types = []
-# labs = ["MLP\n(A1 -wide)","MLP\n(A2 - deep)", "MLP\n(A3 - AP)" ]
-labs = ["MLP\n(A3)", "MLP\n(A4 - uniform)", "MLP\n(A4 - normal)"  ]
-
-finetuned_nns = [5,8,7]
-#finetuned_nns = [10,12, 5]
-maes = []
-for i in range(len(finetuned_nns)):
-    predictions_test, errors = finetuning.featureExtractorC("mlp", finetuned_nns[i], None, 100)
-    for err in errors[3]:
-        maes.append(err)
-        archs.append(labs[i])
-        types.append("Pre-trained")
-
-X_test, y_tests = preprocessing.get_splits(sites = ['hyytiala'],
-                                          years = [2008],
-                                          datadir = os.path.join(data_dir, "data"), 
-                                          dataset = "profound",
-                                          simulations = None)
-base_nns =  [5] 
-#finetuned_nns = [0,4, 5]
-for i in range(len(base_nns)):
-    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
-    for j in range(5):
-        maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
-        archs.append(labs[i])
-        types.append("Base")
-        
- 
-df = pd.DataFrame(list(zip(types, maes)),
-                  columns=["typ", "mae_val"])
-df["archs"] = archs
-#%%
-models = [5, 8, 7] #[0,10,4,12] #,3,5]
-DA_performances(models, df, 
-                upperlim=None,
-                cols = ["grey", "yellow", "blue", "orange"],#["grey","purple", "grey", "green"], #,  "grey", "yellow"],
-                log=False)
-
-#%%
-archs = []
-types = []
-labs = ["MLP\n(A1 -wide)","MLP\n(A2 - deep)"]#, "MLP\n(A3 - AP)" ]
-#labs = ["MLP\n(A3)", "MLP\n(A4 - uniform)", "MLP\n(A4 - normal)"  ]
-
-#finetuned_nns = [5,8,7]
-finetuned_nns = [10,12]
-maes = []
-for i in range(len(finetuned_nns)):
-    predictions_test, errors = finetuning.featureExtractorA("mlp", finetuned_nns[i], None, 100)
-    for err in errors[3]:
-        maes.append(err)
-        archs.append(labs[i])
-        types.append("Pre-trained")
-
-X_test, y_tests = preprocessing.get_splits(sites = ['hyytiala'],
-                                          years = [2008],
-                                          datadir = os.path.join(data_dir, "data"), 
-                                          dataset = "profound",
-                                          simulations = None)
-#base_nns =  [5] 
-base_nns = [0,4]
-for i in range(len(base_nns)):
-    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
-    for j in range(5):
-        maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
-        archs.append(labs[i])
-        types.append("Base")
-        
- 
-df = pd.DataFrame(list(zip(types, maes)),
-                  columns=["typ", "mae_val"])
-df["archs"] = archs
-#%%
-models = [0,10,4,12] #[5, 8, 7] #[0,10,4,12] #,3,5]
-DA_performances(models, df, 
-                upperlim=None,lowerlim = None,
-                cols = ["grey","purple", "grey", "green"], #["grey", "yellow", "blue", "orange"],#["grey","purple", "grey", "green"], #,  "grey", "yellow"],
-                log=False)
-
-#%%
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 X_test, y_tests = preprocessing.get_splits(sites = ['hyytiala'],
                                           years = [2008],
                                           datadir = os.path.join(data_dir, "data"), 
                                           dataset = "profound",
                                           simulations = None)
+#%%
 archs = []
 types = []
-#labs = ["MLP\n(A1 -wide)","MLP\n(A2 - deep)"] #, "MLP\n(A3 - AP)" ]
-labs = ["MLP\n(A3)", "MLP\n(A4 - uniform)", "MLP\n(A4 - normal)"  ]
+labs = ["A1 - shallow","A2 - deep", "A3 - AP"]
+#labs = ["MLP\n(A3 - AP)", "MLP\n(A4 - AP)"]
 
-finetuned_nns = [5,8,7]
-#finetuned_nns = [10,12] #, 5]
+finetuned_nns = [10,12,7]
+maes = []
+for i in range(len(finetuned_nns)):
+    predictions_test, errors = finetuning.featureExtractorC("mlp", finetuned_nns[i], None, 100, False)
+    mae = []
+    for err in errors[3]:
+        maes.append(err)
+        mae.append(err)
+        archs.append(labs[i])
+        types.append("$\mathcal{D}_{S,7}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+    
+finetuned_nns = [13,14,5]
+
+for i in range(len(finetuned_nns)):
+    predictions_test, errors = finetuning.featureExtractorC("mlp", finetuned_nns[i], None, 100, True)
+    mae = []
+    for err in errors[3]:
+        #if finetuned_nns[i] == 14: 
+        #    print("setting error ", err, " of model ", finetuned_nns[i], " to None")
+       #     err = None
+        #else:
+        print("error ", err, " of model ", finetuned_nns[i])
+        maes.append(err)
+        mae.append(err)
+        archs.append(labs[i])
+        types.append("$\mathcal{D}_{S,12}$")
+    try:
+        print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+    except:
+        pass
+
+#base_nns =  [0,4,5] 
+#for i in range(len(base_nns)):
+#    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
+#    for j in range(5):
+#        maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), y_preds.squeeze(2)[j,:]))
+#        archs.append(labs[i])
+#        types.append("Base") #$\mathcal{D}_{T}$
+        
+ 
+df = pd.DataFrame(list(zip(types, maes)),
+                  columns=["typ", "mae_val"])
+df["archs"] = archs
+
+df_bp = base_predictions([0, 4, 5], 
+                         architectures = ["A1 - shallow", "A2 - deep", "A3 - AP"], 
+                         types = "Base", 
+                         dummies = False, 
+                         rf = False)
+
+res = pd.concat([df, df_bp])
+#%%
+mods = [0,10,13,4,12,14, 5,7,5] #[5, 5, 8] # #,3,5]
+DA_performances(mods, res, 
+                upperlim=1.6,
+                lowerlim=0.4,
+                cols = ["grey","purple","plum", "grey", "green","lightgreen", "grey", "yellow", "khaki"],#, ["grey", "yellow", "blue"],  "grey", "yellow"],
+                log=False)
+
+
+#%%
+archs = []
+types = []
+labs = ["A1 - shallow","A2 - deep", "A3 - AP"]
+#labs = ["MLP\n(A3 - AP)", "MLP\n(A4 - AP)"]
+
+finetuned_nns = [10,12,7]
+#finetuned_nns = [13,14,5]
+maes = []
+for i in range(len(finetuned_nns)):
+    predictions_test, errors = finetuning.featureExtractorA("mlp", finetuned_nns[i], None, 100, False)
+    mae = []
+    for err in errors[3]:
+        maes.append(err)
+        mae.append(err)
+        archs.append(labs[i])
+        types.append("$\mathcal{D}_{S,7}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+
+finetuned_nns = [13,14,5]
+for i in range(len(finetuned_nns)):
+    predictions_test, errors = finetuning.featureExtractorA("mlp", finetuned_nns[i], None, 100, True)
+    mae = []
+    for err in errors[3]:
+        maes.append(err)
+        mae.append(err)
+        archs.append(labs[i])
+        types.append("$\mathcal{D}_{S,12}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+
+#base_nns =  [0,4,5] 
+#for i in range(len(base_nns)):
+#    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
+#    for j in range(5):
+#        maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), y_preds.squeeze(2)[j,:]))
+#        archs.append(labs[i])
+#        types.append("Base")
+        
+ 
+df = pd.DataFrame(list(zip(types, maes)),
+                  columns=["typ", "mae_val"])
+df["archs"] = archs
+
+df_bp = base_predictions([0, 4, 5], 
+                         architectures = ["A1 - shallow", "A2 - deep", "A3 - AP"], 
+                         types = "Base", 
+                         dummies = False, 
+                         rf = False)
+
+res = pd.concat([df, df_bp])
+#%%
+#models = [0,13,4,14, 5,5]
+mods = [0,10,13,4,12,14, 5,7,5] #[5, 5, 8] # #,3,5]
+DA_performances(mods, res, 
+                upperlim=2.6,
+                lowerlim=0.4,
+                cols = ["grey","purple","plum", "grey", "green","lightgreen", "grey", "yellow", "khaki"],#, ["grey", "yellow", "blue"],  "grey", "yellow"],
+                log=False)
+
+#%%
+archs = []
+types = []
+labs = ["A1 - shallow","A2 - deep", "A3 - AP"]
+#labs = ["MLP\n(A3 - AP)", "MLP\n(A4 - AP)"]
+
+finetuned_nns = [10,12,7]
+#finetuned_nns = [13,14,5]
 maes = []
 for i in range(len(finetuned_nns)):
     y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{finetuned_nns[i]}\\nodropout\sims_frac100\\tuned\setting0\\y_preds.npy"), allow_pickle=True)
+    mae = []
     for j in range(5):
         maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
+        mae.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
         archs.append(labs[i])
-        types.append("Pre-trained")
-        
-base_nns =  [5] 
-#base_nns = [0,4] #, 5]
-for i in range(len(base_nns)):
-    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
+        types.append("$\mathcal{D}_{S,7}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+
+
+finetuned_nns = [13,14,5]
+for i in range(len(finetuned_nns)):
+    if finetuned_nns[i] == 5:
+        y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{finetuned_nns[i]}\\nodropout\dummies\sims_frac100\\tuned\setting0\\y_preds.npy"), allow_pickle=True)
+    else:
+        y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{finetuned_nns[i]}\\nodropout\sims_frac100\\tuned\setting0\\y_preds.npy"), allow_pickle=True)
+    mae = []
     for j in range(5):
         maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
+        mae.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
         archs.append(labs[i])
-        types.append("Base")
+        types.append("$\mathcal{D}_{S,12}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+
+       
+#base_nns =  [0,4,5]
+#for i in range(len(base_nns)):
+#    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
+#    for j in range(5):
+#        maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
+#        archs.append(labs[i])
+#        types.append("Base")
         
  
 df = pd.DataFrame(list(zip(types, maes)),
                   columns=["typ", "mae_val"])
 df["archs"] = archs
+
+df_bp = base_predictions([0, 4, 5], 
+                         architectures = ["A1 - shallow", "A2 - deep", "A3 - AP"], 
+                         types = "Base", 
+                         dummies = False, 
+                         rf = False)
+
+res = pd.concat([df, df_bp])
 #%%
-models = [5, 8, 7]  #[5, 8, 7] #[0,10,4,12] #,3,5]
-DA_performances(models, df, 
-                upperlim=0.65,lowerlim=0.4,
-                cols = ["grey", "yellow", "blue", "orange"], #["grey","purple", "grey", "green"], #,  "grey", "yellow"], ["grey", "yellow", "blue", "orange"],#
+mods = [0,10,13,4,12,14, 5,7,5] #[5, 5, 8] # #,3,5]
+DA_performances(mods, res, 
+                upperlim=None,
+                lowerlim=0.4,
+                cols = ["grey","purple","plum", "grey", "green","lightgreen", "grey", "yellow", "khaki"],#, ["grey", "yellow", "blue"],  "grey", "yellow"],
                 log=False)
 
 #%%
-data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
-X_test, y_tests = preprocessing.get_splits(sites = ['hyytiala'],
-                                          years = [2008],
-                                          datadir = os.path.join(data_dir, "data"), 
-                                          dataset = "profound",
-                                          simulations = None)
 archs = []
 types = []
-labs = ["MLP\n(A1 -wide)","MLP\n(A2 - deep)", "MLP\n(A3 - AP)" ]
-#labs = ["MLP\n(A3)", "MLP\n(A4 - uniform)", "MLP\n(A4 - normal)"  ]
+labs = ["A1 - shallow","A2 - deep", "A3 - AP"]
 
-#finetuned_nns = [5,8,7]
-finetuned_nns = [10,12] #, 5]
+finetuned_nns = [10,12,7]
+#finetuned_nns = [13,14,5]
 maes = []
 for i in range(len(finetuned_nns)):
     y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{finetuned_nns[i]}\\nodropout\sims_frac100\\tuned\setting1\\y_preds.npy"), allow_pickle=True)
+    mae = []
     for j in range(5):
         maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
+        mae.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
         archs.append(labs[i])
-        types.append("Pre-trained")
-        
-#base_nns =  [5] 
-base_nns = [0,4] #, 5]
-for i in range(len(base_nns)):
-    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
+        types.append("$\mathcal{D}_{S,7}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+
+finetuned_nns = [13,14,5]
+for i in range(len(finetuned_nns)):
+    if finetuned_nns[i] == 5:
+        y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{finetuned_nns[i]}\\nodropout\dummies\sims_frac100\\tuned\setting1\\freeze2\y_preds.npy"), allow_pickle=True)
+    else:
+        y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{finetuned_nns[i]}\\nodropout\sims_frac100\\tuned\setting1\\y_preds.npy"), allow_pickle=True)
+    mae = []
     for j in range(5):
         maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
+        mae.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
         archs.append(labs[i])
-        types.append("Base")
+        types.append("$\mathcal{D}_{S,12}$")
+    print(f"model {finetuned_nns[i]} mean and std: ", np.round(np.mean(mae), 4), np.round(np.std(mae), 2))
+
+   
+#base_nns =  [0,4,5]
+#for i in range(len(base_nns)):
+#    y_preds= np.load(os.path.join(data_dir, f"python\outputs\models\mlp{base_nns[i]}\\relu\y_preds.npy"), allow_pickle=True)
+#    for j in range(5):
+#        maes.append(metrics.mean_absolute_error(y_tests.squeeze(1), np.transpose(y_preds.squeeze(2)[j,:])))
+#        archs.append(labs[i])
+#        types.append("Base")
         
  
 df = pd.DataFrame(list(zip(types, maes)),
                   columns=["typ", "mae_val"])
 df["archs"] = archs 
-#%%
-models = [0,10,4,12] #,3,5] [5, 8, 7]
-DA_performances(models, df, 
-                upperlim=0.65,lowerlim=0.4,
-                cols = ["grey","purple", "grey", "green"], #["grey", "yellow", "blue", "orange"],#["grey","purple", "grey", "green"], #,  "grey", "yellow"],
-                log=False)
 
+df_bp = base_predictions([0, 4, 5], 
+                         architectures = ["A1 - shallow", "A2 - deep", "A3 - AP"], 
+                         types = "Base", 
+                         dummies = False, 
+                         rf = False)
+
+res = pd.concat([df, df_bp])
+#%%
+mods = [0,10,13,4,12,14, 5,7,5] #[5, 5, 8] # #,3,5]
+DA_performances(mods, res, 
+                upperlim=None,
+                lowerlim=0.4,
+                cols = ["grey","purple","plum", "grey", "green","lightgreen", "grey", "yellow", "khaki"],#, ["grey", "yellow", "blue"],  "grey", "yellow"],
+                log=False)
 
 #%% PLOT 1.4
 def plot14(fulltab):
@@ -667,11 +690,11 @@ visualizations.losses("mlp", 8, "sparse1", sparse=True)
 visualizations.losses("mlp", 8, "sparse1\setting0", sparse=True)
 visualizations.losses("mlp", 8, "sparse1\setting1", sparse=True)
 
+
 #%% Plot X: Errorbar plot for size of source domain
 
 def plot5(plot="architectures"):
-    from sklearn import metrics
-    data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
+    
     df = pd.DataFrame(None, columns = ["fracs", "models", "run", "mae"])
 
     plt.rcParams.update({'font.size': 20})
@@ -680,12 +703,8 @@ def plot5(plot="architectures"):
 
     if plot=="architectures":
         mods = [10,12,5]
-        labels = ["Architecture 1", "Architecture 2","Architecture 3"]
+        labels = ["A1", "A2","A3"]
         cols = ["purple", "green","yellow"]
-    elif plot=="parameters":
-        mods = [8,7]
-        labels = [ "A4-uniform","A4-normal"]
-        cols = [ "blue",  "orange"]
     for i in range(len(mods)):
         fracs = [30,50,70,100]
         sds = [] 
@@ -706,9 +725,10 @@ def plot5(plot="architectures"):
     bplot = seaborn.boxplot(x = "fracs",
                     y = "mae",
                     hue = "models",
-                    width=0.6,
+                    width=0.4,
                     data = df,
                     dodge = True,
+                    showmeans = True,
                     meanprops={"marker":"o",
                            "markerfacecolor":"black", 
                            "markeredgecolor":"black",
@@ -743,12 +763,90 @@ def plot5(plot="architectures"):
 plot5(plot="architectures")
 plot5(plot="parameters")
 
+#%% Plot 6: ERRORBARS plot for DROPOUT A3 (WITH ADAPTIVE POOLING)
+def plot6():
+    
+    df = pd.DataFrame(None, columns = ["dropout", "models", "run", "mae_f1", "mae_f2"])
+    df2 = pd.DataFrame(None, columns = ["dropout", "mae_mean_f1", "mae_std_f1", "mae_mean_f2", "mae_std_f2"])
+
+    plt.rcParams.update({'font.size': 20})
+    fig,ax = plt.subplots(figsize=(7.1,7.1))
+    seaborn.set(style= "ticks")
+
+    dp = [0, 1,2,3,4,5, 6, 7, 8, 9]
+    sds_f1 = [] 
+    means_f1 = []
+    sds_f2 = [] 
+    means_f2 = []
+    for i in dp:  
+        if i< 1:
+            y_preds_f1 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp5\\nodropout\\sims_frac100\\tuned\setting1\\freeze1\y_preds.npy")).squeeze(2)
+            y_preds_f2 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp5\\nodropout\\sims_frac100\\tuned\setting1\\freeze2\y_preds.npy")).squeeze(2)
+        else:
+            y_preds_f1 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp5\\dropout\\0{i}\sims_frac100\\tuned\setting1\\freeze1\y_preds.npy")).squeeze(2)
+            y_preds_f2 = np.load(os.path.join(data_dir, f"python\outputs\models\mlp5\\dropout\\0{i}\sims_frac100\\tuned\setting1\\freeze2\y_preds.npy")).squeeze(2)
+            #y_tests = np.load(os.path.join(data_dir, f"python\outputs\models\mlp5\\dropout\\0{i}\sims_frac100\\tuned\setting1\y_tests.npy")).squeeze(2)
+        errors_f1 = []
+        errors_f2 = []
+        for model in range(5):
+            errors_f1.append(metrics.mean_absolute_error(Y_test, y_preds_f1[model,:]))
+            errors_f2.append(metrics.mean_absolute_error(Y_test, y_preds_f2[model,:]))
+            df = df.append({"mae_f1":metrics.mean_absolute_error(Y_test, y_preds_f1[model,:]),
+                            "mae_f2":metrics.mean_absolute_error(Y_test, y_preds_f2[model,:]),
+                            "run":model,
+                            "models":5,
+                            "dropout":i},ignore_index=True)
+        means_f1.append(np.mean(errors_f1))
+        sds_f1.append(np.std(errors_f1)*2)
+        means_f2.append(np.mean(errors_f2))
+        sds_f2.append(np.std(errors_f2)*2)
+        
+        df2 = df2.append({"mae_mean_f1":np.mean(errors_f1),
+                          "mae_std_f1":np.std(errors_f1)*2,
+                          "mae_mean_f2":np.mean(errors_f2),
+                          "mae_std_f2":np.std(errors_f2)*2,
+                            "dropout":i},ignore_index=True)
+
+    
+    plt.errorbar(dp, means_f1, yerr=sds_f1, capsize=4, capthick = 4, linewidth=3, color="darkblue", label="Re-train H2")
+    plt.errorbar(dp, means_f2, yerr=sds_f2, capsize=4, capthick = 4, linewidth=3, color="green", label="Re-train H1+H2")
+
+    ax.set_ylabel("Mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    ax.set_xlabel("Dropout probability", size=20, family='Palatino Linotype')
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(20) 
+        tick.label.set_fontfamily('Palatino Linotype') 
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(20) 
+    ax.set_xticklabels(labels = ["", "0.0",  "0.2", "0.4",  "0.6",  "0.8",  "1.0"], size=20, family='Palatino Linotype')
+    ax.set_xlim((-0.2,9.5))
+    ax.set_ylim((0.4,1.9))
+    plt.legend(loc="upper left", prop = {'size':20, 'family':'Palatino Linotype'})
+    
+    return df2
+            
+
 #%%
-def running_losses(train_losses, val_losses, 
+df2 = plot6()
+
+#%% Szie of the source domain: NUMBERS
+maes = []
+for frac in [30, 50, 70, 100]:
+    y_preds = np.load(os.path.join(data_dir, f"python\outputs\models\mlp10\\nodropout\\sims_frac{frac}\y_preds.npy")).squeeze(2)
+    y_tests = np.load(os.path.join(data_dir, f"python\outputs\models\mlp10\\nodropout\\sims_frac{frac}\y_tests.npy")).squeeze(2)
+    
+    for i in range(5):
+        maes.append(metrics.mean_absolute_error(y_tests[i,:], y_preds[i,:]))
+        
+    print(f"For simsfrac {frac}: ", np.round(np.mean(maes), 4),np.round(np.std(maes), 4))
+#%%
+def running_losses(val_losses, 
                    length = 10000, lowerlim = 0.0, upperlim = None,
                    colors1 = ["lightgreen",  "thistle"],
                    colors2 = ["green",  "blueviolet"],
-                   labels = ["fixed", "uniform"]):
+                   labels = ["fixed", "uniform"],
+                   legend = True,
+                   CI = True):
 
     #if model=="mlp":
     #    colors = ["blue","lightblue"]
@@ -766,13 +864,14 @@ def running_losses(train_losses, val_losses,
         #train_loss = np.mean(train_losses[i], axis=0)
         val_loss = np.mean(val_losses[i], axis=0)
        # ax.fill_between(np.arange(len(train_losses[i])), ci_train[0],ci_train[1], color=colors[1], alpha=0.3)
-        ax.fill_between(np.arange(length), ci_val[0],ci_val[1], color=colors1[i], alpha=0.3)
+        if CI:
+            ax.fill_between(np.arange(length), ci_val[0],ci_val[1], color=colors1[i], alpha=0.3)
         
         #ax.plot(train_loss, color=colors[0], label="Training loss", linewidth=1.2)
         ax.plot(val_loss, color=colors2[i], label = labels[i], linewidth=1.2)
 
     ax.set_xlabel("Epochs", size=20, family='Palatino Linotype')
-    ax.set_ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    ax.set_ylabel("Mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
     for tick in ax.yaxis.get_major_ticks():
                     tick.label.set_fontsize(20) 
                     tick.label.set_fontfamily('Palatino Linotype')
@@ -783,9 +882,10 @@ def running_losses(train_losses, val_losses,
     #bestmlp0 = bm.iloc[bm['mae_val'].idxmin()].to_dict()["mae_val"]
     #plt.hlines(bestmlp0, -1, length,colors="gray", linestyles="dashed", label="Best MLP", linewidth=2)
     plt.ylim(bottom = lowerlim, top = upperlim)
-    plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
+    if legend:
+        plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
 #%%
-data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python\outputs\models"
+data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 
 #%%
 rl4 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp4\relu\running_losses.npy"), allow_pickle=True).item()
@@ -793,13 +893,57 @@ rl4 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp4\relu\running_lo
 rl0 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp0\relu\running_losses.npy"), allow_pickle=True).item()
 rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\relu\running_losses.npy"), allow_pickle=True).item()
 
-epochs = 2000
-running_losses([rl0["mae_train"][:,:epochs],  rl4["mae_train"][:,:epochs], rl5["mae_train"][:,:epochs]], 
-               [rl0["mae_val"][:,:epochs],  rl4["mae_val"][:,:epochs], rl5["mae_val"][:,:epochs]],
+epochs = 5000
+running_losses(
+               [rl5["mae_val"][:,:epochs], rl0["mae_val"][:,:epochs],  rl4["mae_val"][:,:epochs]],
                length = epochs,
                colors1 = ["mediumblue",  "mediumseagreen", "grey"],
                colors2 = ["darkblue",  "seagreen", "dimgrey"],
-               labels = ["MLP (A1 - wide)","MLP (A2 - deep)", "MLP (A3 - AP)"],
+               labels = [ "A1 - shallow","A2 - deep", "A3 - AP"],
+               lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
+
+
+
+#%%
+rl7 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp7\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+#rl6 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp6\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl10 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp10\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl12 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp12\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+
+epochs = 5000
+running_losses(
+               [ rl10["mae_val"][:,:epochs],  rl12["mae_val"][:,:epochs], rl7["mae_val"][:,:epochs]],
+               length = epochs,
+               colors1 = ["mediumblue",  "mediumseagreen","grey"],
+               colors2 = [ "darkblue",  "seagreen", "dimgrey"],
+               labels = ["A1 - shallow","A2 - deep",  "A3 - AP"],
+               lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
+#%%
+rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\dummies\sims_frac100\tuned\setting1\freeze2\running_losses.npy"), allow_pickle=True).item()
+#rl6 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp6\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl13 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp13\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl14 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp14\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+
+epochs = 5000
+running_losses( 
+               [rl13["mae_val"][:,:epochs],  rl14["mae_val"][:,:epochs], rl5["mae_val"][:,:epochs]],
+               length = epochs,
+               colors1 = [ "mediumblue",  "mediumseagreen", "grey"],
+               colors2 = [ "darkblue",  "seagreen", "dimgrey"],
+               labels = [ "A1 - shallow","A2 - deep",  "A3 - AP"],
+               lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
+
+#%%
+rl8 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp8\nodropout\sims_frac100\running_losses.npy"), allow_pickle=True).item()
+
+
+epochs = 10000
+running_losses([rl8["mae_train"][:,:epochs]], 
+               [rl8["mae_val"][:,:epochs]],
+               length = epochs,
+               colors1 = ["mediumblue",  "mediumseagreen", "grey"],
+               colors2 = ["darkblue",  "seagreen", "dimgrey"],
+               labels = ["MLP (A4 - AP)"],
                lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
 
 #%%
@@ -860,54 +1004,51 @@ rl10 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp10\nodropout\sim
 rl12 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp12\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
 #rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 
-epochs = 1500
+epochs = 5000
 running_losses([rl10["mae_train"][:,:epochs], rl12["mae_train"][:,:epochs]], #, rl5["mae_train"][:,:epochs]], 
                [rl10["mae_val"][:,:epochs], rl12["mae_val"][:,:epochs]], #, rl5["mae_val"][:,:epochs]],
                length = epochs,
-               colors1 = [ "plum", "lightgreen", "khaki"],
-               colors2 = ["purple", "green", "yellow"],
-               labels = [ "MLP (A1 - Wide)", "MLP (A2 - Deep)",  "MLP (A3 - AP)"],
+               colors1 = [ "plum", "lightgreen"],
+               colors2 = ["purple", "green"],
+               labels = [ "MLP (A1 - Shallow)", "MLP (A2 - Deep)"],
                lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
 
 rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
 rl8 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp8\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
-rl7 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp7\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
 
-epochs = 1500
-running_losses([rl5["mae_train"][:,:epochs], rl8["mae_train"][:,:epochs], rl7["mae_train"][:,:epochs]], 
-               [rl5["mae_val"][:,:epochs], rl8["mae_val"][:,:epochs], rl7["mae_val"][:,:epochs]],
+epochs = 5000
+running_losses([rl5["mae_train"][:,:epochs], rl8["mae_train"][:,:epochs]], 
+               [rl5["mae_val"][:,:epochs], rl8["mae_val"][:,:epochs]],
                length = epochs,
-               colors1 = [ "khaki", "lightblue", "moccasin"],
-               colors2 = ["yellow", "blue", "orange"],
-               labels = [ "MLP (A3)", "MLP (A4 - uniform)",  "MLP (A4 - normal)"],
+               colors1 = [ "khaki", "lightblue"],
+               colors2 = ["yellow", "blue"],
+               labels = [ "MLP (A3 - AP)", "MLP (A4 - AP)"],
                lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
-#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
 
 #%% FULL-BACKPROPAGATION: LEARNINGCURVES
 rl10 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp10\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 rl12 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp12\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 #rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 
-epochs = 1500
+epochs = 2000
 running_losses([rl10["mae_train"][:,:epochs], rl12["mae_train"][:,:epochs]], #, rl5["mae_train"][:,:epochs]], 
                [rl10["mae_val"][:,:epochs], rl12["mae_val"][:,:epochs]], #, rl5["mae_val"][:,:epochs]],
                length = epochs,
-               colors1 = [ "plum", "lightgreen", "khaki"],
-               colors2 = ["purple", "green", "yellow"],
-               labels = [ "MLP (A1 - Wide)", "MLP (A2 - Deep)",  "MLP (A3 - AP)"],
+               colors1 = [ "plum", "lightgreen"],
+               colors2 = ["purple", "green"],
+               labels = [ "MLP (A1 - Shallow)", "MLP (A2 - Deep)"],
                lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
 
 rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 rl8 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp8\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
-rl7 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp7\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 
-epochs = 1500
-running_losses([rl5["mae_train"][:,:epochs], rl8["mae_train"][:,:epochs], rl7["mae_train"][:,:epochs]], 
-               [rl5["mae_val"][:,:epochs], rl8["mae_val"][:,:epochs], rl7["mae_val"][:,:epochs]],
+epochs = 2000
+running_losses([rl5["mae_train"][:,:epochs], rl8["mae_train"][:,:epochs]], 
+               [rl5["mae_val"][:,:epochs], rl8["mae_val"][:,:epochs]],
                length = epochs,
-               colors1 = [ "khaki", "lightblue", "moccasin"],
-               colors2 = ["yellow", "blue", "orange"],
-               labels = [ "MLP (A3)", "MLP (A4 - uniform)",  "MLP (A4 - normal)"],
+               colors1 = [ "khaki", "lightblue"],
+               colors2 = ["yellow", "blue"],
+               labels = ["MLP (A3 - AP)", "MLP (A4 - AP)"],
                lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
 
 #%% PLOT PARAMETER SAMPLES
@@ -991,102 +1132,195 @@ X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
                                 dataset = "profound",
                                 simulations = None)
 #%%
-sparse = [2,3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,100]
-dp = [int(np.floor(X.shape[0]/100*spa)) for spa in sparse]
-errors = []
-steps = []
-fb_errors = []
-fw_errors = []
-ols_errors = []
-direct_errors = []
-dps = []
+def sparse_results(dd_yref, dd_ytrans):
+
+        sparse = [1,2,3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,100]
+        dp = [int(np.floor(X.shape[0]/100*spa)) for spa in sparse]
+        errors = []
+        steps = []
+        fb_errors = []
+        fw_errors = []
+        ols_errors = []
+        direct_errors = []
+        for spa in sparse:
+            y_preds = np.load(os.path.join(dd_yref, f"{spa}\y_preds.npy")).squeeze(2)
+            y_preds_fb = np.load(os.path.join(dd_ytrans, f"setting0\sparse\\{spa}\y_preds.npy")).squeeze(2)
+            y_preds_fw = np.load(os.path.join(dd_ytrans, f"setting1\sparse\\{spa}\y_preds.npy")).squeeze(2)
+            predictions_test, ols_errs = finetuning.featureExtractorC("mlp", 4, None, 100, sparse = spa)
+            predictions_test, direct_errs = finetuning.featureExtractorA("mlp", 4, None, 100, sparse = spa, dummies = False)
+            for i in range(5):
+                errors.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds)[:,i]))
+                fb_errors.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_fb)[:,i]))
+                fw_errors.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_fw)[:,i]))
+                steps.append(spa)
+                ols_errors.append(ols_errs[3][i])
+                direct_errors.append(direct_errs[3][i])
+        
+        
+        df = pd.DataFrame(list(zip(errors, steps)),
+                          columns=["maes_test", "sparse"]) 
+        df["datapoints"] = np.repeat(dp,5)
+        df["maes_ols"] = ols_errors
+        df["maes_direct"] = direct_errors
+        df["maes_fb"] = fb_errors
+        df["diff_fb"] = df["maes_test"] - df["maes_fb"]
+        df["maes_fw"] = fw_errors
+        df["diff_fw"] = df["maes_test"] - df["maes_fw"]
+        
+        return df, dp
+#%%
+df_shallow, dp = sparse_results(dd_yref=os.path.join(data_dir, "python\outputs\models\mlp0\\relu\sparse\\"), 
+                    dd_ytrans=os.path.join(data_dir, "python\outputs\models\mlp10\\nodropout\sims_frac100\\tuned"))      
+
+df_deep, dp = sparse_results(dd_yref=os.path.join(data_dir, "python\outputs\models\mlp4\\relu\sparse\\"), 
+                    dd_ytrans=os.path.join(data_dir, "python\outputs\models\mlp12\\nodropout\sims_frac100\\tuned"))   
+
+df_AP, dp = sparse_results(dd_yref=os.path.join(data_dir, "python\outputs\models\mlp5\\relu\sparse\\"), 
+                    dd_ytrans=os.path.join(data_dir, "python\outputs\models\mlp7\\nodropout\sims_frac100\\tuned"))  
+
+df_shallow_D, dp = sparse_results(dd_yref=os.path.join(data_dir, "python\outputs\models\mlp0\\relu\sparse\\"), 
+                    dd_ytrans=os.path.join(data_dir, "python\outputs\models\mlp13\\nodropout\sims_frac100\\tuned"))      
+
+df_deep_D, dp = sparse_results(dd_yref=os.path.join(data_dir, "python\outputs\models\mlp4\\relu\sparse\\"), 
+                    dd_ytrans=os.path.join(data_dir, "python\outputs\models\mlp14\\nodropout\sims_frac100\\tuned"))   
+
+df_AP_D, dp = sparse_results(dd_yref=os.path.join(data_dir, "python\outputs\models\mlp5\\relu\sparse\\"), 
+                    dd_ytrans=os.path.join(data_dir, "python\outputs\models\mlp5\\nodropout\dummies\sims_frac100\\tuned")) 
+
+#%%
+
+def prep(df, finetuning = "fw", diff=True):
+        
+    means = df.groupby("datapoints")[f"maes_{finetuning}"].mean()
+    sds = df.groupby("datapoints")[f"maes_{finetuning}"].std()
+    q1 = df.groupby("datapoints")[f"maes_{finetuning}"].quantile(0.05)
+    q2 = df.groupby("datapoints")[f"maes_{finetuning}"].quantile(0.95)
+    
+    print("Absolute means: ", np.array(means))
+    print("Absolute standard deviations: ", np.array(2*sds))
+
+    means_diff = df.groupby("datapoints")[f"diff_{finetuning}"].mean()
+    sds_diff = df.groupby("datapoints")[f"diff_{finetuning}"].std()
+    q1_diff = df.groupby("datapoints")[f"diff_{finetuning}"].quantile(0.05)
+    q2_diff = df.groupby("datapoints")[f"diff_{finetuning}"].quantile(0.95)
+
+    print("Difference in means: ", np.array(means_diff))
+    print("Difference in standard deviations: ", np.array(2*sds_diff))
+    
+    means_test = df.groupby("datapoints")[f"maes_test"].mean()
+    sds_test = df.groupby("datapoints")[f"maes_test"].std()
+    
+    print("Base network means: ", np.array(means_test))
+    print("Base network standard deviations: ", np.array(2*sds_test))
+    
+    if diff:
+        return means_diff, q1_diff, q2_diff
+    else:
+        return means, q1, q2
+    
+#%%
+means, q1, q2 = prep(df_shallow, "fw", diff=True)
+print(dp)
+means, q1, q2 = prep(df_shallow_D, "fw", diff=True)
+print(dp)
+#%% PARTIAL BACK-PROB: Difference
+        
+def plot_sparse(df, dp, finetuning,
+                colors = ["purple"], fill=["plum"],labels = ["E$_{reference}$ - E$_{finetuned}$"],
+                diff=True):
+
+    fig, ax = plt.subplots(figsize=(7,7))
+    
+    for d in range(len(df)):
+        means, q1, q2 = prep(df[d], finetuning = finetuning, diff=diff)
+
+        ax.fill_between(dp, q1,q2, color=fill[d], alpha=0.6)
+        ax.plot(means, color=colors[d], label=labels[d] )
+
+    plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
+    plt.xlabel("Available training data [days]", size=20, family='Palatino Linotype')
+    if diff:
+        plt.ylabel("Difference in mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    else:
+        plt.ylabel("Mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    plt.xticks(size=20, family='Palatino Linotype')
+    plt.yticks(size=20, family='Palatino Linotype')
+    if diff:
+        plt.ylim((-0.4, 0.3))
+        plt.hlines(y = 0, xmin = 50, xmax = 1826, color="black", linestyle = "dashed")
+    else:
+        plt.ylim(top= 2.5)
+#%%
+plot_sparse([df_shallow, df_deep, df_AP], dp, "fw",
+            colors = ["darkblue", "green", "gray"], fill=["lightblue", "lightgreen", "lightgray"], labels = ["A1 - shallow", "A2 - deep", "A3 - AP"],
+            diff = False)
+#%%
+plot_sparse([df_shallow_D, df_deep_D, df_AP_D], dp, "fw", 
+            colors = ["darkblue", "green", "gray"], fill=["lightblue", "lightgreen", "lightgray"], labels = ["A1 - shallow", "A2 - deep", "A3 - AP"],
+            diff=False)
+
+#%%
+plot_sparse([df_shallow, df_deep, df_AP], dp, "fb",
+            colors = ["darkblue", "green", "gray"], fill=["lightblue", "lightgreen", "lightgray"], labels = ["A1 - shallow", "A2 - deep", "A3 - AP"])
+#%%
+plot_sparse([df_shallow_D, df_deep_D, df_AP_D], dp, "fb", 
+            colors = ["darkblue", "green", "gray"], fill=["lightblue", "lightgreen", "lightgray"], labels = ["A1 - shallow", "A2 - deep", "A3 - AP"])
+
+#%%
+sparse = [1,2,3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50] #, 55, 60, 65, 70, 75, 80, 85, 90, 95,100]
+rls = []
 for spa in sparse:
-    y_preds = np.load(os.path.join(data_dir, f"python\outputs\models\mlp4\\relu\sparse\\{spa}\y_preds.npy")).squeeze(2)
-    y_preds_fb = np.load(os.path.join(data_dir, f"python\outputs\models\mlp4\\nodropout\sims_frac100\\tuned\setting0\sparse\\{spa}\y_preds.npy")).squeeze(2)
-    y_preds_fw = np.load(os.path.join(data_dir, f"python\outputs\models\mlp4\\nodropout\sims_frac100\\tuned\setting1\sparse\\{spa}\y_preds.npy")).squeeze(2)
-    predictions_test, ols_errs = finetuning.featureExtractorC("mlp", 4, None, 100, sparse = spa)
-    predictions_test, direct_errs, Y_test = finetuning.featureExtractorA("mlp", 4, None, 100, sparse = spa)
-    for i in range(5):
-        errors.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds)[:,i]))
-        fb_errors.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_fb)[:,i]))
-        fw_errors.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_fw)[:,i]))
-        steps.append(spa)
-        ols_errors.append(ols_errs[3][i])
-        direct_errors.append(direct_errs[3][i])
-        
-        
-df = pd.DataFrame(list(zip(errors, steps)),
-                  columns=["maes_test", "sparse"]) 
-df["datapoints"] = np.repeat(dp,5)
-df["maes_ols"] = ols_errors
-df["maes_direct"] = direct_errors
-df["maes_fb"] = fb_errors
-df["maes_fw"] = fw_errors
+     rls.append(np.load(os.path.join(data_dir,f"python\outputs\models\mlp0\\relu\\sparse\\{spa}\\running_losses.npy"), allow_pickle=True).item())
+     rls.append(np.load(os.path.join(data_dir,f"python\outputs\models\mlp10\\nodropout\\sims_frac100\\tuned\\setting1\\sparse\\{spa}\\running_losses.npy"), allow_pickle=True).item())
+   
+
+epochs = 5000
+running_losses(
+               [rls[0]["mae_val"][:,:epochs], rls[1]["mae_val"][:,:epochs], rls[2]["mae_val"][:,:epochs], rls[3]["mae_val"][:,:epochs], rls[4]["mae_val"][:,:epochs], 
+                rls[5]["mae_val"][:,:epochs], rls[6]["mae_val"][:,:epochs], rls[7]["mae_val"][:,:epochs], rls[8]["mae_val"][:,:epochs], rls[9]["mae_val"][:,:epochs],
+                rls[10]["mae_val"][:,:epochs], rls[11]["mae_val"][:,:epochs], rls[12]["mae_val"][:,:epochs], rls[13]["mae_val"][:,:epochs], rls[14]["mae_val"][:,:epochs]],
+               length = epochs,
+               colors1 = ["grey", "lightblue",  "grey", "lightblue", "grey",  "lightblue", "grey","lightblue", "grey",  "lightblue", "grey",  "lightblue", "grey","lightblue", "grey"],
+               colors2 = ["dimgrey", "blue",  "dimgrey", "blue", "dimgrey",  "blue", "dimgrey","blue", "dimgrey", "blue", "dimgrey",  "blue", "dimgrey","blue", "dimgrey"],
+               labels = [ "A3 - AP", "","","","","","","","","","","","","",""],
+               lowerlim=None,
+               legend=False,
+               CI=True)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
+
+
+
 #%%
-means_fw = df.groupby("datapoints")["maes_fw"].mean()
-q1_fw = df.groupby("datapoints")["maes_fw"].quantile(0.05)
-q2_fw = df.groupby("datapoints")["maes_fw"].quantile(0.95)
-#sparse_fw = [x+1 for x in sparse]
-means_fb = df.groupby("datapoints")["maes_fb"].mean()
-q1_fb = df.groupby("datapoints")["maes_fb"].quantile(0.05)
-q2_fb = df.groupby("datapoints")["maes_fb"].quantile(0.95)
-#sparse_fb = [x+2 for x in sparse]
-means_test = df.groupby("datapoints")["maes_test"].mean()
-q1_test = df.groupby("datapoints")["maes_test"].quantile(0.05)
-q2_test = df.groupby("datapoints")["maes_test"].quantile(0.95)
-#
-means_ols = df.groupby("datapoints")["maes_ols"].mean()
-q1_ols = df.groupby("datapoints")["maes_ols"].quantile(0.05)
-q2_ols = df.groupby("datapoints")["maes_ols"].quantile(0.95)
-#
-means_direct = df.groupby("datapoints")["maes_direct"].mean()
-q1_direct = df.groupby("datapoints")["maes_direct"].quantile(0.05)
-q2_direct = df.groupby("datapoints")["maes_direct"].quantile(0.95)
+dp_prob = [1,2,3,4,5, 6, 7, 8, 9]
+rls = []
+for dp in dp_prob:
+    rls.append(np.load(os.path.join(data_dir,f"python\outputs\models\mlp5\dropout\\0{dp}\sims_frac100\\tuned\\setting1\\freeze1\\running_losses.npy"), allow_pickle=True).item())
+    rls.append(np.load(os.path.join(data_dir,f"python\outputs\models\mlp5\dropout\\0{dp}\sims_frac100\\tuned\\setting1\\freeze2\\running_losses.npy"), allow_pickle=True).item())
+
+epochs = 5000
+running_losses(
+               [rls[0]["mae_val"][:,:epochs], rls[1]["mae_val"][:,:epochs], rls[2]["mae_val"][:,:epochs], rls[3]["mae_val"][:,:epochs], rls[4]["mae_val"][:,:epochs], 
+                rls[5]["mae_val"][:,:epochs], rls[6]["mae_val"][:,:epochs], rls[7]["mae_val"][:,:epochs], rls[8]["mae_val"][:,:epochs],
+                rls[9]["mae_val"][:,:epochs], rls[10]["mae_val"][:,:epochs], rls[11]["mae_val"][:,:epochs], rls[12]["mae_val"][:,:epochs], rls[13]["mae_val"][:,:epochs], 
+                rls[14]["mae_val"][:,:epochs], rls[15]["mae_val"][:,:epochs], rls[16]["mae_val"][:,:epochs], rls[17]["mae_val"][:,:epochs]],
+               length = epochs,
+               colors2 = ["darkblue", "green", "darkblue", "green", "darkblue", "green", "darkblue", "green", "darkblue", "green", "darkblue", "green", "darkblue", "green", "darkblue", "green" ,"darkblue", "green"],
+               colors1 = ["lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen","lightblue", "lightgreen"],
+               labels = [ "Re-train H2", "Re-train H1+H2","","","","","","","","", "","", "","", "","" ,"",""],
+               lowerlim=None,
+               legend=True)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
+
 #%%
-fig, ax = plt.subplots(figsize=(7,7))
-ax.fill_between(dp, q1_test,q2_test, color="gray", alpha=0.8)
-ax.plot(means_test, color="black", label= "Base MLP")
-ax.fill_between(dp, q1_fw,q2_fw, color="salmon", alpha=0.7)
-ax.plot(means_fw, color="red", label="Re-train\nlast layer")
-
-plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
-plt.xlabel("Available training data [days]", size=20, family='Palatino Linotype')
-plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
-plt.xticks(size=20, family='Palatino Linotype')
-plt.yticks(size=20, family='Palatino Linotype')
-#%%ax.fill_between(sparse, q1_test,q2_test, color="gray", alpha=0.8)
-fig, ax = plt.subplots(figsize=(7,7))
-ax.fill_between(dp, q1_test,q2_test, color="gray", alpha=0.8)
-ax.plot( means_test, color="black", label= "Base MLP")
-ax.fill_between(dp, q1_fb,q2_fb, color="lightblue", alpha=0.6)
-ax.plot(means_fb, color="blue", label="Retrain\nfull network")
-
-plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
-plt.xlabel("Available training data [days]", size=20, family='Palatino Linotype')
-plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
-plt.xticks(size=20, family='Palatino Linotype')
-plt.yticks(size=20, family='Palatino Linotype')
-#%%ax.fill_between(sparse, q1_test,q2_test, color="gray", alpha=0.8)
-fig, ax = plt.subplots(figsize=(7,7))
-ax.fill_between(dp, q1_test,q2_test, color="gray", alpha=0.8)
-ax.plot(means_test, color="black", label= "Base MLP")
-ax.fill_between(dp, q1_ols,q2_ols, color="lightgreen", alpha=0.6)
-ax.plot(means_ols, color="green", label="OLS")
-
-plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
-plt.xlabel("Available training data [days]", size=20, family='Palatino')
-plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino')
-plt.xticks(size=20, family='Palatino')
-plt.yticks(size=20, family='Palatino')
-#%%ax.fill_between(sparse, q1_test,q2_test, color="gray", alpha=0.8)
-fig, ax = plt.subplots(figsize=(7,7))
-ax.fill_between(dp, q1_test,q2_test, color="gray", alpha=0.8)
-ax.plot(means_test, color="black", label= "Base MLP")
-ax.fill_between(dp, q1_direct,q2_direct, color="lightgreen", alpha=0.6)
-ax.plot(means_direct, color="green", label="Direct\n transfer")
-
-plt.legend(loc="upper right", prop = {'size':20, 'family':'Palatino Linotype'})
-plt.xlabel("Available training data [days]", size=20, family='Palatino')
-plt.ylabel("Mean Absolute Error [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino')
-plt.xticks(size=20, family='Palatino')
-plt.yticks(size=20, family='Palatino')
+freeze = [1,2]
+rls = []
+for fr in freeze:
+    rls.append(np.load(os.path.join(data_dir,f"python\outputs\models\mlp5\\nodropout\\sims_frac100\\tuned\\setting1\\freeze{fr}\\running_losses.npy"), allow_pickle=True).item())
+    
+epochs = 5000
+running_losses(
+               [rls[0]["mae_val"][:,:epochs], rls[1]["mae_val"][:,:epochs]],
+               length = epochs,
+               colors2 = ["darkblue", "green"],
+               colors1 = ["lightblue", "lightgreen"],
+               labels = [ "Re-train H2", "Re-train H1+H2","","","","","","",""],
+               lowerlim=None,
+               legend=True)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS

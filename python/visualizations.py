@@ -252,8 +252,8 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         else:
             error="MAE"
         
-        plt.xlabel(f"Test mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=22, family='Palatino Linotype')
-        plt.ylabel(f"Train mean absolute error [g C m$^{-2}$ day$^{-1}$]", size=22, family='Palatino Linotype')
+        plt.xlabel(f"Mean absolute test error [g C m$^{-2}$ day$^{-1}$]", size=22, family='Palatino Linotype')
+        plt.ylabel(f"Mean absolute training error [g C m$^{-2}$ day$^{-1}$]", size=22, family='Palatino Linotype')
         plt.xticks(size=22, family='Palatino Linotype')
         plt.yticks(size=22, family='Palatino Linotype')
     else:

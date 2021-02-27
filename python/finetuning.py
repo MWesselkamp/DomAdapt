@@ -22,7 +22,7 @@ from scipy.optimize import nnls
 import statsmodels.api as sm
 
 #%%
-def settings(model, typ, epochs, data_dir, sparse = None,
+def settings(model, typ, epochs, data_dir, dummies, sparse = None,
              years = [2001,2002,2003, 2004, 2005, 2006, 2007],
              random_days = None):
 
@@ -36,6 +36,16 @@ def settings(model, typ, epochs, data_dir, sparse = None,
                                               datadir = os.path.join(data_dir, "data"), 
                                               dataset = "profound",
                                               simulations = None)
+    
+    if dummies:
+      
+        Xf = np.zeros((X.shape[0], 12))
+        Xf_test = np.zeros((X_test.shape[0], 12))
+        Xf[:,:7] = X
+        X = Xf
+        Xf_test[:,:7] = X_test
+        X_test = Xf_test
+        
     if not random_days is None:
         ind = np.random.choice(X.shape[0], random_days)
         X, Y = X[ind], Y[ind]
@@ -43,27 +53,23 @@ def settings(model, typ, epochs, data_dir, sparse = None,
         ind = np.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\relu\sparse\\{sparse}\ind.npy"))
         X, Y = X[ind], Y[ind]
         
-    if ((typ == 6) | (typ==7) | (typ==8)) :
+    if ((typ == 6) | (typ==8)) :
         #gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\\7features\grid_search_results_{model}2_np.csv"))
-    elif ((typ==9) | (typ == 10)):
+    elif ((typ==0) | (typ==9) | (typ == 10)| (typ == 13)):
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\grid_search_results_{model}2.csv"))
-    elif ((typ ==4) |(typ == 11)| (typ == 12)):
+    elif ((typ ==4) |(typ == 11)| (typ == 12) | (typ == 14)):
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\grid_search_results_{model}2.csv"))
         gridsearch_results = gridsearch_results[(gridsearch_results.nlayers == 3)].reset_index()
-    elif (typ == 5):
+    elif ((typ == 5) | (typ==7) ):
         gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\AdaptPool\\7features\grid_search_results_{model}2.csv"))
     
     setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
 
-    if ((typ == 6) | (typ==7) | (typ==8) | (typ==5)):
-        dimensions = literal_eval(setup["hiddensize"])
-        dimensions.append(1) # adds the output dimension!
-    else:
-        dimensions = [X.shape[1]]
-        for dim in literal_eval(setup["hiddensize"]):
-            dimensions.append(dim)
-        dimensions.append(Y.shape[1])
+    dimensions = [X.shape[1]]
+    for dim in literal_eval(setup["hiddensize"]):
+        dimensions.append(dim)
+    dimensions.append(Y.shape[1])
     
     if ((typ == 6) | (typ==7) | (typ==8) | (typ==5)):
         featuresize = setup["featuresize"]
@@ -272,15 +278,14 @@ def finetune(X, Y, epochs, model, pretrained_type, searchpath, featuresize, save
     return(running_losses,performance, y_tests, y_preds)
 
 #%%
-def featureExtractorA(model, typ, epochs, simsfrac, sparse = None,
+def featureExtractorA(model, typ, epochs, simsfrac,dummies, sparse = None,
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007],random_days=None, 
                       splits=5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
-    if ((typ==4) | (typ == 9)| (typ == 10)):
-        hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, years = years,  random_days= random_days)
-        model_design["featuresize"] = None
-    else:
-        hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, random_days= random_days, years = years)
     
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, dummies, sparse, years = years,  random_days= random_days)
+    if ((typ==4) | (typ == 9)| (typ == 10)| (typ == 12)| (typ == 13)| (typ == 14)):
+        model_design["featuresize"] = None
+       
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
     
@@ -292,11 +297,19 @@ def featureExtractorA(model, typ, epochs, simsfrac, sparse = None,
 
     for i in range(splits):
         
-        if ((typ==4) |(typ == 9)| (typ == 10) |(typ == 11)| (typ == 12)):
+        if ((typ==4) |(typ == 9)| (typ == 10) |(typ == 11)| (typ == 12) | (typ == 13)| (typ == 14)):
             model = models.MLP(model_design["dimensions"], model_design["activation"])
-        else:
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
+
+        elif typ == 7:
+            print("load for model", typ)
             model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
-        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
+        
+        elif typ == 5:
+            print("load for model", typ)
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\dummies\sims_frac{simsfrac}\model{i}.pth")))
         
         preds_test = model(X_test).detach().numpy()
         preds_train = model(X).detach().numpy()
@@ -326,11 +339,11 @@ def featureExtractorB(model, typ, epochs, simsfrac, sparse = None, feature_extra
 
 #%% 1) Ordinary Least Squares and friends
     
-def featureExtractorC(model, typ, epochs, simsfrac, sparse = None, classifier = "ols", 
+def featureExtractorC(model, typ, epochs, simsfrac, dummies = False, sparse = None, classifier = "ols", 
                       years = [2001,2002,2003, 2004, 2005, 2006, 2007], random_days = None, 
                       splits = 5, data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, sparse, years = years, random_days= random_days)
+    hparams, model_design, X, Y, X_test, Y_test = settings(model, typ, epochs, data_dir, dummies, sparse, years = years, random_days= random_days)
     
     X = torch.tensor(X).type(dtype=torch.float)
     X_test = torch.tensor(X_test).type(dtype=torch.float)
@@ -340,15 +353,23 @@ def featureExtractorC(model, typ, epochs, simsfrac, sparse = None, classifier = 
     
     for i in range(splits):
     
-        if ((typ==4) |(typ == 9)| (typ == 10) |(typ == 11)| (typ == 12)):
+        if ((typ==4) |(typ == 9)| (typ == 10) |(typ == 11)| (typ == 12) | (typ == 13)| (typ == 14)):
             model = models.MLP(model_design["dimensions"], model_design["activation"])
-        else:
-            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
-            
-        model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
 
+        elif typ == 7:
+            print("load for model", typ)
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\sims_frac{simsfrac}\model{i}.pth")))
+        
+        elif typ == 5:
+            print("load for model", typ)
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+            model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{typ}\\nodropout\dummies\sims_frac{simsfrac}\model{i}.pth")))
+
+        
             
-        if ((typ==4) |(typ == 9)| (typ == 10) |(typ == 11)| (typ == 12)):
+        if ((typ==4) |(typ == 9)| (typ == 10) |(typ == 11)| (typ == 12) | (typ == 13)| (typ == 14)):
             model = model[:-1]
         else:
             model.classifier = nn.Sequential(*list(model.classifier.children())[:-1]) # Remove Final layer and activation.

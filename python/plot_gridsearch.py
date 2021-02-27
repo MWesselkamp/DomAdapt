@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 #%%
 data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"
 plt.rcParams.update({'font.size': 20, 'font.serif':'Palatino'})
+plt.rcParams['figure.constrained_layout.use'] = True
 #%% load GRID SEARCH results
 rets_mlp = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\observations\mlp\grid_search_results_mlp2.csv"))
 rets_mlp_adapt = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\observations\mlp\AdaptPool\7features\grid_search_results_mlp2.csv"))
@@ -39,8 +40,8 @@ visualizations.hparams_optimization_errors([rets_mlp, rets_cnn, rets_lstm,  rets
                                            error="mae",
                                            train_val = True)
 #%% MAE and RMSE of Grid search
-visualizations.hparams_optimization_errors([rets_mlp, rets_mlp_adapt, rets_mlp_sim], 
-                                           ["Bily Kriz","Bily Kriz (Adaptive Pooling)", "Simulations (Adaptive Pooling)"], 
+visualizations.hparams_optimization_errors([rets_mlp, rets_mlp_adapt], 
+                                           ["MLP","MLP with adaptive pooling"], 
                                            error="mae",
                                            train_val = True)
 #%%
