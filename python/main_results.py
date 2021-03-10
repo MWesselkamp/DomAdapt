@@ -28,6 +28,7 @@ from sklearn import metrics
 import setup.preprocessing as preprocessing
 import torch
 import setup.models as models
+from scipy.stats import pearsonr
 
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams.update({'font.size': 18})
@@ -60,6 +61,8 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
     typ = []
     archs = []
     
+    predictions = []
+    
     j = 0
     
     for mod in mods:
@@ -73,7 +76,11 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
             model = models.MLP(model_design["dimensions"], model_design["activation"])
         else:
             model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
-
+        
+        
+        mod_predictions = []
+        mod_maes = []
+        mod_corr = []
         for i in range(5):
         
             model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{mod}\\relu\model{i}.pth")))
@@ -81,6 +88,9 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
             pred_test = model(X_test)#
             with torch.no_grad():
                 maes.append(metrics.mean_absolute_error(y_test, pred_test))
+                mod_maes.append(metrics.mean_absolute_error(y_test, pred_test))
+                mod_corr.append(pearsonr(Y_test.squeeze(1), pred_test.squeeze(1))[0])
+                mod_predictions.append(pred_test.numpy())
             if not types is None:
                 typ.append(types)
             else:
@@ -88,14 +98,25 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
             if not architectures is None:
                 archs.append(architectures[j])
         
+        error = np.round(np.mean(mod_maes), 4)
+        corr = np.round(np.mean(mod_corr),4)
+        print(error)
+        visualizations.plot_prediction(Y_test, np.array(mod_predictions).squeeze(2), mae=error)
+        visualizations.scatter_prediction(Y_test, np.array(mod_predictions).squeeze(2), corr=corr)
+        predictions.append(mod_predictions)
+        
         j += 1
             
     if rf:
         y_preds_rf0 = np.load(os.path.join(data_dir, f"python\outputs\models\\rf0\y_preds.npy"))
+        mod_maes = []
         for i in range(5):
             maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
+            mod_maes.append(metrics.mean_absolute_error(Y_test, np.transpose(y_preds_rf0)[:,i]))
             typ.append("rf0")
             archs.append("rf")
+        error = np.round(np.mean(mod_maes), 4)
+        visualizations.plot_prediction(Y_test, y_preds_rf0, mae=error)
 
 
     df = pd.DataFrame(list(zip(typ, maes)),
@@ -104,12 +125,95 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
     if not architectures is None:
         df["archs"] = archs
         
-    return(df)
+    return(df, predictions)
 
 #%%
-df = base_predictions([0, 4, 5], architectures=None, types = None, dummies = False, rf = True)
-df.groupby("typ")["mae_val"].std()*2
-df.groupby("typ")["mae_val"].mean()
+df, predictions = base_predictions([0, 4, 5], architectures=None, types = None, dummies = False, rf = True)
+
+utils.error_in_percent(df.groupby("typ")["mae_val"].mean())
+
+#%%
+def finetuned_predictions(mods, setting, architectures=None, types = None, dummies = False):
+
+    maes = []
+    typ = []
+    archs = []
+    
+    predictions = []
+    
+    j = 0
+    
+    for mod in mods:
+        
+        hparams, model_design, X, Y, X_test, Y_test = finetuning.settings("mlp", mod, None, data_dir, dummies)
+    
+        X_test = torch.tensor(X_test).type(dtype=torch.float)
+        y_test = torch.tensor(Y_test).type(dtype=torch.float)
+        
+        if ((mod > 7) | (mod == 0) | (mod == 4)):
+            model = models.MLP(model_design["dimensions"], model_design["activation"])
+        else:
+            model = models.MLPmod(model_design["featuresize"], model_design["dimensions"], model_design["activation"])
+        
+        
+        mod_predictions = []
+        mod_maes = []
+        mod_corr = []
+        
+        for i in range(5):
+        
+            try:
+                model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{mod}\\nodropout\sims_frac100\\tuned\\setting{setting}\\model{i}.pth")))
+            except:
+                model.load_state_dict(torch.load(os.path.join(data_dir, f"python\outputs\models\mlp{mod}\\nodropout\sims_frac100\\tuned\\setting{setting}\\freeze2\\model{i}.pth")))
+            
+            pred_test = model(X_test)#
+            with torch.no_grad():
+                maes.append(metrics.mean_absolute_error(y_test, pred_test))
+                mod_maes.append(metrics.mean_absolute_error(y_test, pred_test))
+                mod_corr.append(pearsonr(Y_test.squeeze(1), pred_test.squeeze(1))[0])
+                mod_predictions.append(pred_test.numpy())
+            if not types is None:
+                typ.append(types)
+            else:
+                typ.append(f"mlp{mod}")
+            if not architectures is None:
+                archs.append(architectures[j])
+        
+        error = np.round(np.mean(mod_maes), 4)
+        corr = np.round(np.mean(mod_corr),4)
+        print(error)
+        visualizations.plot_prediction(Y_test, np.array(mod_predictions).squeeze(2), mae=error)
+        visualizations.scatter_prediction(Y_test, np.array(mod_predictions).squeeze(2), corr=corr)
+        predictions.append(mod_predictions)
+        
+        j += 1
+
+
+    df = pd.DataFrame(list(zip(typ, maes)),
+                 columns=["typ", "mae_val"]) 
+    
+    if not architectures is None:
+        df["archs"] = archs
+        
+    return(df, predictions)
+    
+#%%
+df, predictions = finetuned_predictions([10, 12, 7], setting = 1)
+df, predictions = finetuned_predictions([13, 14, 5], setting = 1, dummies=True)
+
+#%% Predictions OLS
+
+predictions_test, errors = finetuning.featureExtractorC(10, None, 100)
+visualizations.plot_prediction(Y_test, np.array(predictions_test).squeeze(2), mae=np.mean(errors))
+
+#%% Predictions: Weekly 
+Y_test_rm = np.convolve(Y_test.squeeze(1), 14)
+Y_preds_rm = []
+for i in range(len(predictions_test)):
+    Y_preds_rm.append(np.convolve(predictions_test[i].squeeze(1), 14))
+
+visualizations.plot_prediction(Y_test_rm, np.array(Y_preds_rm), mae=np.mean(errors))
 #%%
 fig, ax = plt.subplots(figsize=(7,7))
 

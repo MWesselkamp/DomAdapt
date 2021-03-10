@@ -91,68 +91,9 @@ def losses(model, typ, searchpath, error = "mae", plot = True, legend=True, spar
     #return(y_tests,y_preds)
     return(results)
     
+
 #%%
-def predictions(model, typ, searchpath,
-                      data_dir = "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt\python"):
-    
-    """
-    Plot model predictions.
-    """
-    
-    data_dir = os.path.join(data_dir, f"outputs\models\{model}{typ}")
-    data_dir = os.path.join(data_dir, searchpath)
-        
-    y_tests = np.load(os.path.join(data_dir,"y_tests.npy"), allow_pickle=True).tolist()
-    y_preds = np.load(os.path.join(data_dir,"y_preds.npy"), allow_pickle=True).tolist()
-    
-    try:
-        results = pd.read_csv(os.path.join(data_dir, "selected_results.csv"))
-    except:
-        pass
-    
-    fig, ax = plt.subplots(figsize=(10,10))
-    
-    ax.plot(y_tests[0], color="grey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
-    
-    try:
-        preds_arr = np.array(y_preds).squeeze(2)
-    except:
-        preds_arr = np.array(y_preds)
-        
-    ci_preds = np.quantile(preds_arr, (0.05,0.95), axis=0)
-    m_preds = np.mean(preds_arr, axis=0)
-        
-    ax.fill_between(np.arange(preds_arr.shape[1]), ci_preds[0],ci_preds[1], color="lightgreen", alpha=0.9)
-    ax.plot(m_preds, color="green", label="Predictions", marker = "", alpha=0.5)
-    ax.set(xlabel="Day of Year", ylabel="GPP [g C m$^{-2}$ day$^{-1}$]")
-    
-    
-    tests_arr = np.array(y_tests).squeeze(2)
-    errors = np.subtract(preds_arr, tests_arr)
-    ci_preds = np.quantile(errors, (0.05,0.95), axis=0)
-    m_errors = np.mean(errors, axis=0)
-    
-    ax.fill_between(np.arange(errors.shape[1]), ci_preds[0],ci_preds[1], color="lightsalmon", alpha=0.9)
-    ax.plot(m_errors, color="red", label="Absolute Error", marker = "", alpha=0.5)
-    
-    #return(results)
-    try:
-        ax.text(280,10, f"MAE = {np.round(results['mae_val'].item(), 4)}")
-    except:
-        errors = np.load(os.path.join(data_dir,"errors.npy"), allow_pickle=True)
-        ax.text(280,10, f"MAE = {np.round(np.mean(errors, axis = 0), 4)[4]}")
-        
-    ax.legend(loc="upper left")
-    #for i in range(len(y_tests)):
-    #    ax.plot(y_preds[i], color="darkblue", label="Network Prediction", linewidth=0.9, alpha=0.6)
-        #ax.plot(y_tests[i] - y_preds[i], color="lightgreen", label="absolute error", linewidth=0.9, alpha=0.6)
-    
-    #handles, labels = ax[0].get_legend_handles_labels()
-    #fig.legend(handles, labels, loc='upper right')
-    
-    
-#%%
-def plot_prediction(y_tests, predictions, mae, suptitle):
+def plot_prediction(y_tests, predictions, mae):
     
     """
     Plot Model Prediction Error (root mean squared error).
@@ -160,9 +101,8 @@ def plot_prediction(y_tests, predictions, mae, suptitle):
     """
     
     fig, ax = plt.subplots(figsize=(7,7))
-    fig.suptitle(suptitle)
     
-    ax.plot(y_tests, color="lightgrey", label="Ground Truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
+    ax.plot(y_tests, color="lightgrey", label="Ground truth", marker = "o", linewidth=0.8, alpha=0.9, markerfacecolor='lightgrey', markersize=4)
     try:
         ci_preds = np.quantile(np.array(predictions), (0.05,0.95), axis=0)
         m_preds = np.mean(np.array(predictions), axis=0)
@@ -174,8 +114,14 @@ def plot_prediction(y_tests, predictions, mae, suptitle):
         ax.plot(predictions, color="green", label="Predictions", marker = "", alpha=0.5)
         mae = metrics.mean_absolute_error(y_tests, predictions)
         
+    errors = np.subtract(np.transpose(np.array(predictions)), y_tests)
+    ci_preds = np.transpose(np.quantile(errors, (0.05,0.95), axis=1))
+    m_errors = np.mean(errors, axis=1)
+    ax.fill_between(np.arange(errors.shape[0]), ci_preds[:,0],ci_preds[:,1], color="lightsalmon", alpha=0.9)
+    ax.plot(m_errors, color="red", label="Error", marker = "", alpha=0.5)
+        
     ax.set_xlabel("Day of Year", size=20, family='Palatino Linotype')
-    ax.set_ylabel("Gross Primary Produdction [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    ax.set_ylabel("Gross primary produdction [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(20) 
         tick.label.set_fontfamily('Palatino Linotype') 
@@ -184,10 +130,21 @@ def plot_prediction(y_tests, predictions, mae, suptitle):
         tick.label.set_fontfamily('Palatino Linotype') 
     
     ax.legend(loc="upper left", prop={'size':20, 'family':'Palatino Linotype'})
-    ax.set_ylim((-1,12.5))
+    ax.set_ylim((-4,14.2))
     
-    plt.text(250, 11.5, f"MAE = {np.round(mae,4)}", family='Palatino Linotype', size=20)
+    plt.text(250, 13.0, f"MAE = {mae: .4f}", family='Palatino Linotype', size=20)
+#%%
+def scatter_prediction(y_tests, predictions, corr):
     
+    fig, ax = plt.subplots(figsize=(7,7))
+    for i in range(5):
+        plt.scatter(predictions[i], y_tests, color="gray", alpha=0.6)
+        plt.plot(np.arange(12), np.arange(12), color="red")
+    
+    ax.set_xlabel("Predicted gross primary produdction [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+    ax.set_ylabel("Gross primary produdction [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
+
+    plt.text(0, 11.0, f"Pearson's r = {corr: .4f}", family='Palatino Linotype', size=20)
     
 #%%
 def hparams_optimization_errors(results, model = "all", error = "rmse", train_val = False):
