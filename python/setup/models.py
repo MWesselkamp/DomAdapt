@@ -6,6 +6,7 @@ Created on Tue Jun 30 10:48:40 2020
 """
 import torch
 import torch.nn as nn
+import numpy as np
 
 import setup.utils as utils
 #%%
@@ -28,23 +29,37 @@ def MLP(dimensions, activation):
 #%%
 class MLPmod(nn.Module):
     
-    def __init__(self, featuresize, dimensions, activation, dropout_prob = 0.0):
+    def __init__(self, featuresize, dimensions, activation, dropout_prob = 0.0, dropout = False):
         
         super(MLPmod, self).__init__()
         self.featuresize = featuresize
-        self.hidden_features = dimensions[0]
+        self.hidden_features = dimensions[1]
         self.activation = activation()
+        self.dropout_prob = dropout_prob
+        self.dropout = dropout
         
         self.encoder = nn.Linear(1, self.hidden_features)
-        self.dropout = nn.Dropout(dropout_prob)
-        self.avgpool = nn.AdaptiveAvgPool1d(self.featuresize)
+        self.layers = nn.ModuleList()
+        for i in range(dimensions[0]):
+            self.layers.append(nn.Linear(1, self.hidden_features))
+        self.avgpool = nn.AdaptiveMaxPool1d(self.featuresize)
         self.classifier = self.mlp(dimensions, activation)
         
     def forward(self, x):
         
-        out = self.encode(x)
-        out = self.activation(out)
-        out = self.dropout(out)
+        latent = torch.empty(size=(x.shape[0], self.hidden_features, x.shape[1]))
+        for i in range(x.shape[1]):
+            layer = self.layers[i]
+            encoded_feature = layer(x[:,i].unsqueeze(1))
+            if self.dropout:
+                if i > 7:
+                    drop = np.random.binomial(1, self.dropout_prob)
+                    if drop == 1:
+                        encoded_feature[encoded_feature!=0] = 0
+                    
+            latent[:,:,i] = encoded_feature
+            
+        out = self.activation(latent)
         out = self.avgpool(out).view(x.shape[0],-1)
         #out = self.activation(out)
         out = self.classifier(out)
@@ -54,11 +69,11 @@ class MLPmod(nn.Module):
     def mlp(self, dimensions, activation):
     
         network = nn.Sequential()
-        network.add_module(f"hidden0", nn.Linear(self.featuresize*self.hidden_features, dimensions[0]))
+        network.add_module(f"hidden0", nn.Linear(self.featuresize*self.hidden_features, dimensions[1]))
         network.add_module(f'activation0', activation())
-        for i in range(len(dimensions)-1):
-            network.add_module(f'hidden{i+1}', nn.Linear(dimensions[i], dimensions[i+1]))
-            if i < len(dimensions)-2:
+        for i in range(len(dimensions)-2):
+            network.add_module(f'hidden{i+1}', nn.Linear(dimensions[i+1], dimensions[i+2]))
+            if i < len(dimensions)-3:
                 network.add_module(f'activation{i+1}', activation())
     
         return(network)
@@ -67,13 +82,19 @@ class MLPmod(nn.Module):
         
         latent = []
         
-        for feature in range(x.shape[1]):         
-            latent.append(self.encoder(x.unsqueeze(1)[:,:,feature]).unsqueeze(2))
+        for i in range(x.shape[1]):
+            encoded_feature = self.encoder(x.unsqueeze(1)[:,:,i]).unsqueeze(2)
+            if i > 7:
+                drop = np.random.binomial(1, self.dropout_prob)
+                if drop == 1:
+                    encoded_feature[encoded_feature!=0] = 0
+                    
+            latent.append(encoded_feature)
+                    
         
         latent = torch.stack(latent, dim=2).squeeze(3)
-        
+
         return(latent)
-            
             
         
 #%%

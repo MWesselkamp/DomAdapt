@@ -35,8 +35,8 @@ rets_cnn_sim = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\s
 rets_rf_sim = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\simulations\grid_search_results_rf2.csv"))
 rets_lstm_sim = pd.read_csv(os.path.join(data_dir, r"python\outputs\grid_search\simulations\grid_search_results_lstm2.csv"))
 #%% MAE and RMSE of Grid search
-visualizations.hparams_optimization_errors([rets_mlp, rets_cnn, rets_lstm,  rets_rf], 
-                                           ["MLP",  "CNN", "LSTM", "RF"], 
+visualizations.hparams_optimization_errors([rets_mlp,rets_mlp_adapt, rets_cnn, rets_lstm,  rets_rf], 
+                                           ["MLP", "MLP-AP", "CNN", "LSTM", "RF"], 
                                            error="mae",
                                            train_val = True)
 #%% MAE and RMSE of Grid search

@@ -67,7 +67,7 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
     
     for mod in mods:
         
-        hparams, model_design, X, Y, X_test, Y_test = finetuning.settings("mlp", mod, None, data_dir, dummies)
+        hparams, model_design, X, Y, X_test, Y_test = finetuning.settings(mod, None, data_dir, dummies)
     
         X_test = torch.tensor(X_test).type(dtype=torch.float)
         y_test = torch.tensor(Y_test).type(dtype=torch.float)
@@ -129,6 +129,10 @@ def base_predictions(mods, architectures=None, types = None, dummies = False,  r
 
 #%%
 df, predictions = base_predictions([0, 4, 5], architectures=None, types = None, dummies = False, rf = True)
+
+res = Y_test - predictions[0][0]
+res_s = (res - np.min(res)) / (np.max(res)-np.min(res))
+plt.plot(res_s)
 
 utils.error_in_percent(df.groupby("typ")["mae_val"].mean())
 
@@ -1009,10 +1013,10 @@ running_losses(
 
 
 #%%
-rl7 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp7\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl7 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp7\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 #rl6 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp6\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
-rl10 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp10\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
-rl12 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp12\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl10 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp10\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
+rl12 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp12\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 
 epochs = 5000
 running_losses(
@@ -1023,10 +1027,10 @@ running_losses(
                labels = ["A1 - shallow","A2 - deep",  "A3 - AP"],
                lowerlim=None)#%% PLOT4: PLOT PARAMETER SAMPLED FOR PRELES SIMULATIONS
 #%%
-rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\dummies\sims_frac100\tuned\setting1\freeze2\running_losses.npy"), allow_pickle=True).item()
+rl5 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp5\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 #rl6 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp6\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
-rl13 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp13\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
-rl14 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp14\nodropout\sims_frac100\tuned\setting1\running_losses.npy"), allow_pickle=True).item()
+rl13 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp13\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
+rl14 = np.load(os.path.join(data_dir,r"python\outputs\models\mlp14\nodropout\sims_frac100\tuned\setting0\running_losses.npy"), allow_pickle=True).item()
 
 epochs = 5000
 running_losses( 

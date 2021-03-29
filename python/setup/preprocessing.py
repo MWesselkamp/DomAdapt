@@ -47,7 +47,7 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
 
     if all([site in X["site"].values for site in sites]):
         row_ind = X['site'].isin(sites)
-        print(f"Returns {sites} from \n", X["site"].unique())
+        #print(f"Returns {sites} from \n", X["site"].unique())
         X, Y = X[row_ind], Y[row_ind]
     else: 
         print("Not all sites in dataset!")
@@ -57,7 +57,7 @@ def get_splits(sites, years, datadir, dataset = "profound", simulations = None, 
         
     try:
         row_ind = X["date"].isin(years)
-        print(f"Returns valid years from {years} in \n", X["date"].unique())
+        #print(f"Returns valid years from {years} in \n", X["date"].unique())
         X, Y = X[row_ind], Y[row_ind]
     except: 
         print(" years specification invalid. Returns all years.")

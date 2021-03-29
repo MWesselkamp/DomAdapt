@@ -137,7 +137,12 @@ def plot_prediction(y_tests, predictions, mae):
 def scatter_prediction(y_tests, predictions, corr):
     
     fig, ax = plt.subplots(figsize=(7,7))
+    r2 = []
     for i in range(5):
+        rss = np.sum(np.square(y_tests - predictions[i]))
+        tss = np.sum(np.square(y_tests - np.mean(y_tests)))
+        r2.append((1-(rss/tss)))
+        #plt.scatter(np.arange(366), res)
         plt.scatter(predictions[i], y_tests, color="gray", alpha=0.6)
         plt.plot(np.arange(12), np.arange(12), color="red")
     
@@ -145,6 +150,7 @@ def scatter_prediction(y_tests, predictions, corr):
     ax.set_ylabel("Gross primary produdction [g C m$^{-2}$ day$^{-1}$]", size=20, family='Palatino Linotype')
 
     plt.text(0, 11.0, f"Pearson's r = {corr: .4f}", family='Palatino Linotype', size=20)
+    plt.text(0, 10.0, f"R$^2$ = {np.mean(r2): .4f}", family='Palatino Linotype', size=20)
     
 #%%
 def hparams_optimization_errors(results, model = "all", error = "rmse", train_val = False):
@@ -191,7 +197,7 @@ def hparams_optimization_errors(results, model = "all", error = "rmse", train_va
         #fig.suptitle(f"Hyperparameter Optimization\n Validation Errors")
         data_dir = os.path.join(data_dir, f"_val_errors_")
     
-    cols = ["green","orange", "red", "blue", "yellow", "purple"]
+    cols = ["gray","green", "darkred", "steelblue", "orange", "purple"]
     markers = ['o', 'o', 'o', 'o', 'o', '*']
     if isinstance(model, list):
         colors = [cols[0], cols[1], cols[2], cols[3], cols[4], cols[5]]

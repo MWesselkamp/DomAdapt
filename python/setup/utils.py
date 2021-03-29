@@ -8,8 +8,14 @@ import numpy as np
 import pandas as pd
 import itertools
 import torch
+import torch.nn as nn
 import random
 import torch.nn.functional as F
+import setup.models as models
+import setup.preprocessing as preprocessing
+import os.path
+from ast import literal_eval
+from sklearn import metrics
 
 def merge_XY(data):
     """
@@ -176,17 +182,70 @@ def rmse(targets, predictions):
     
     return rmse
 
-def use_activation(act):
+def error_in_percent(error,
+                     test_error = 2.8394):
     
-    if "relu" in act:
-        return(F.relu)
-    else:
-        return(torch.sigmoid)
+    percent = np.round(((test_error*100)/(error*100))**(-1)*100,2)
     
+    return percent
 
-def nash_sutcliffe(targets, predictions):
+def settings(typ, 
+             years = [2001,2002,2003, 2004, 2005, 2006, 2007],
+             data_dir =  "OneDrive\Dokumente\Sc_Master\Masterthesis\Project\DomAdapt"):
     
-    nash = 1-np.sum(np.square(predictions-targets) / np.square(targets - np.mean(targets)))
+    X, Y = preprocessing.get_splits(sites = ['hyytiala'],
+                                    years = years,
+                                    datadir = os.path.join(data_dir, "data"), 
+                                    dataset = "profound",
+                                    simulations = None)
+    X_test, Y_test = preprocessing.get_splits(sites = ['hyytiala'],
+                                              years = [2008],
+                                              datadir = os.path.join(data_dir, "data"), 
+                                              dataset = "profound",
+                                              simulations = None)
     
-    return nash
+    if ((typ == 5) | (typ == 13) | (typ==14)) :
+      
+        Xf = np.zeros((X.shape[0], 12))
+        Xf_test = np.zeros((X_test.shape[0], 12))
+        Xf[:,:7] = X
+        X = Xf
+        Xf_test[:,:7] = X_test
+        X_test = Xf_test
+        
+        
+    if ((typ == 6) | (typ==8)) :
+        #gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\grid_search_results_{model}2_adaptPool.csv"))
+        gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\simulations\\7features\grid_search_results_mlp2_np.csv"))
+    elif ((typ==0) | (typ==9) | (typ == 10)| (typ == 13)):
+        gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\grid_search_results_mlp2.csv"))
+    elif ((typ ==4) |(typ == 11)| (typ == 12) | (typ == 14)):
+        gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\grid_search_results_mlp2.csv"))
+        gridsearch_results = gridsearch_results[(gridsearch_results.nlayers == 3)].reset_index()
+    elif ((typ == 5) | (typ==7) ):
+        gridsearch_results = pd.read_csv(os.path.join(data_dir, f"python\outputs\grid_search\observations\mlp\AdaptPool\\7features\grid_search_results_mlp2.csv"))
+    
+    setup = gridsearch_results.iloc[gridsearch_results['mae_val'].idxmin()].to_dict()
+
+    dimensions = [X.shape[1]]
+    for dim in literal_eval(setup["hiddensize"]):
+        dimensions.append(dim)
+    dimensions.append(Y.shape[1])
+    
+    if ((typ == 6) | (typ==7) | (typ==8) | (typ==5)):
+        featuresize = setup["featuresize"]
+    else:
+        featuresize = None
+
+    hparams = {"batchsize": int(setup["batchsize"]), 
+               "epochs":None, 
+               "history": int(setup["history"]), 
+               "hiddensize":literal_eval(setup["hiddensize"]),
+               "learningrate":setup["learningrate"]}
+
+    model_design = {"dimensions":dimensions,
+                    "activation":nn.ReLU,
+                    "featuresize":featuresize}
+    
+    return hparams, model_design, X, Y, X_test, Y_test
 
